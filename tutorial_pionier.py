@@ -1,4 +1,6 @@
 from __future__ import division
+
+
 # =============================================================================
 # IMPORTS
 # =============================================================================
@@ -9,7 +11,7 @@ import numpy as np
 
 import os
 
-from fouriever import uvfit
+from fouriever import intercorr, uvfit
 
 
 # =============================================================================
@@ -17,27 +19,41 @@ from fouriever import uvfit
 # =============================================================================
 
 # PIONIER test data.
-idir = 'data/'
-fitsfiles = ['AXCir.oifits'] # real data of AX Cir
+idir = 'data/AXCir/'
+odir = 'data/AXCir_cov/'
+fitsfiles = ['axcir.oifits'] # real data of AX Cir
 
-# Perform model fitting.
-data = uvfit.data(idir=idir,
+# Load data.
+data = intercorr.data(idir=idir,
+                      fitsfiles=fitsfiles)
+
+# Add covariance.
+data.add_cov(odir=odir)
+
+# Load data.
+data = uvfit.data(idir=odir,
                   fitsfiles=fitsfiles)
-fit = data.gridsearch(model='ud_bin', # fit uniform disk with an unresolved companion
-                      cov=False, # this data set has no covariance
-                      sep_range=None, # use default separation range
-                      step_size=None, # use default step size
-                      smear=3, # use bandwidth smearing of 3
-                      ofile='figures/axcir_smear') # save figures
+
+# Compute chi-squared map.
+fit = data.chi2map(model='ud_bin', # fit uniform disk with unresolved companion
+                   cov=True, # this data set has covariance
+                   sep_range=None, # use default separation range
+                   step_size=None, # use default step size
+                   smear=3, # use bandwidth smearing of 3
+                   ofile='figures/axcir_smear_cov') # save figures
+
+# Run MCMC around best fit position.
 fit = data.mcmc(fit=fit, # best fit from gridsearch
                 temp=None, # use default temperature (reduced chi-squared of best fit)
-                cov=False, # this data set has no covariance
+                cov=True, # this data set has covariance
                 smear=3, # use bandwidth smearing of 3
-                ofile='figures/axcir_smear') # save figures
-fit_sub = data.gridsearch_sub(fit_sub=fit, # best fit from MCMC
-                              model='ud_bin', # fit uniform disk with an unresolved companion
-                              cov=False, # this data set has no covariance
-                              sep_range=None, # use default separation range
-                              step_size=None, # use default step size
-                              smear=3, # use bandwidth smearing of 3
-                              ofile='figures/axcir_smear_sub') # save figures
+                ofile='figures/axcir_smear_cov') # save figures
+
+# Compute chi-squared map after subtracting best fit companion.
+fit_sub = data.chi2map_sub(fit_sub=fit, # best fit from MCMC
+                           model='ud_bin', # fit uniform disk with unresolved companion
+                           cov=True, # this data set has covariance
+                           sep_range=None, # use default separation range
+                           step_size=None, # use default step size
+                           smear=3, # use bandwidth smearing of 3
+                           ofile='figures/axcir_smear_cov_sub') # save figures

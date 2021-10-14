@@ -1,4 +1,6 @@
 from __future__ import division
+
+
 # =============================================================================
 # IMPORTS
 # =============================================================================
@@ -9,7 +11,7 @@ import numpy as np
 
 import os
 
-from fouriever import uvfit
+from fouriever import intercorr, uvfit
 
 
 # =============================================================================
@@ -17,27 +19,43 @@ from fouriever import uvfit
 # =============================================================================
 
 # NIRISS/AMI test data.
-idir = 'data/'
+idir = 'data/ABDor/'
+odir = 'data/ABDor_cov/'
 fitsfiles = ['ABDor_NIRISS_F480M.oifits'] # simulated data of AB Dor
+# fitsfiles = ['obs001_pri1_sub0_calib_obs004_pri1_sub0_F380M.oifits']
+# fitsfiles = ['obs001_pri1_sub0_calib_obs004_pri1_sub0_F480M.oifits']
 
-# Perform model fitting.
-data = uvfit.data(idir=idir,
+# Load data.
+data = intercorr.data(idir=idir,
+                      fitsfiles=fitsfiles)
+
+# Add covariance.
+data.add_cov(odir=odir)
+
+# Load data.
+data = uvfit.data(idir=odir,
                   fitsfiles=fitsfiles)
-fit = data.gridsearch(model='bin', # fit uniform disk with an unresolved companion
-                      cov=False, # this data set has no covariance
-                      sep_range=(50., 500.), # use custom separation range
-                      step_size=20., # use custom step size
-                      smear=None, # use no bandwidth smearing
-                      ofile='figures/abdor') # save figures
+
+# Compute chi-squared map.
+fit = data.chi2map(model='bin', # fit unresolved companion
+                   cov=True, # this data set has covariance
+                   sep_range=(50., 500.), # use custom separation range
+                   step_size=20., # use custom step size
+                   smear=3, # use bandwidth smearing of 3
+                   ofile='figures/abdor_smear_cov') # save figures
+
+# Run MCMC around best fit position.
 fit = data.mcmc(fit=fit, # best fit from gridsearch
                 temp=None, # use default temperature (reduced chi-squared of best fit)
-                cov=False, # this data set has no covariance
-                smear=None, # use no bandwidth smearing
-                ofile='figures/abdor') # save figures
-fit_sub = data.gridsearch_sub(fit_sub=fit, # best fit from MCMC
-                              model='bin', # fit uniform disk with an unresolved companion
-                              cov=False, # this data set has no covariance
-                              sep_range=(50., 500.), # use custom separation range
-                              step_size=20., # use custom step size
-                              smear=None, # use no bandwidth smearing
-                              ofile='figures/abdor_sub') # save figures
+                cov=True, # this data set has covariance
+                smear=3, # use bandwidth smearing of 3
+                ofile='figures/abdor_smear_cov') # save figures
+
+# Compute chi-squared map after subtracting best fit companion.
+fit_sub = data.chi2map_sub(fit_sub=fit, # best fit from MCMC
+                           model='bin', # fit unresolved companion
+                           cov=True, # this data set has covariance
+                           sep_range=(50., 500.), # use custom separation range
+                           step_size=20., # use custom step size
+                           smear=3, # use bandwidth smearing of 3
+                           ofile='figures/abdor_smear_cov_sub') # save figures

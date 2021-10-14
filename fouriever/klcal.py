@@ -1,4 +1,6 @@
 from __future__ import division
+
+
 # =============================================================================
 # IMPORTS
 # =============================================================================
@@ -11,6 +13,8 @@ import os
 import sys
 
 from . import inst
+
+observables_known = ['vis', 'vis2', 't3', 'kp']
 
 
 # =============================================================================
@@ -28,11 +32,11 @@ class data():
         Parameters
         ----------
         scidir: str
-            Input directory where the science fits files are located.
+            Input directory where science fits files are located.
         scifiles: list of str
             List of science fits files which shall be opened.
         caldir: str
-            Input directory where the calibrator fits files are located.
+            Input directory where calibrator fits files are located.
         calfiles: list of str
             List of calibrator fits files which shall be opened.
         """
@@ -98,10 +102,9 @@ class data():
         Returns
         -------
         observables: list of str
-            List of observables available for the currently selected instrument.
+            List of observables available for currently selected instrument.
         """
         
-        observables_known = ['vis', 'vis2', 't3', 'kp']
         observables = []
         ww = np.where(np.array(self.sci_inst_list) == self.inst)[0]
         for i in range(len(observables_known)):
@@ -142,7 +145,7 @@ class data():
         Parameters
         ----------
         odir: str
-            Output directory where the calibrated science fits files shall be saved to.
+            Output directory where calibrated science fits files shall be saved to.
         K_klip: int
             Order of Karhunen-Loeve calibration.
         """
@@ -213,7 +216,7 @@ class data():
         Parameters
         ----------
         odir: str
-            Output directory where the calibrated science fits files shall be saved to.
+            Output directory where calibrated science fits files shall be saved to.
         """
         
         print('Computing Karhunen-Loeve projection')
@@ -227,22 +230,109 @@ class data():
         data_after = []
         Nscifiles = len(self.scifiles)
         for i in range(Nscifiles):
-            hdul = pyfits.open(self.scidir+self.scifiles[i])
+            hdul = pyfits.open(self.scidir+self.scifiles[i], memmap=False)
             
             try:
-                try:
-                    inst = hdul[0].header['INSTRUME']
-                except:
-                    inst = hdul[0].header['CURRINST']
+                hdul.index_of('KP-DATA')
                 sys.stdout.write('\r   File %.0f of %.0f: kernel phase FITS file' % (i+1, Nscifiles))
                 sys.stdout.flush()
                 
                 for j in range(len(self.observables)):
                     if (self.observables[j] == 'kp'):
                         data_before += [hdul['KP-DATA'].data.flatten()]
+                        
                         hdul['KER-MAT'].data = self.P[self.observables[j]].dot(hdul['KER-MAT'].data)
-                        hdul['KP-DATA'].data = self.P[self.observables[j]].dot(hdul['KP-DATA'].data)
-                        hdul['KP-SIGM'].data = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data).dot(self.P[self.observables[j]].T)
+                        
+                        if (len(hdul['KP-DATA'].data.shape) == 1):
+                            hdul['KP-DATA'].data = self.P[self.observables[j]].dot(hdul['KP-DATA'].data)
+                        elif (len(hdul['KP-DATA'].data.shape) == 2):
+                            temp = np.zeros((hdul['KP-DATA'].data.shape[0], self.P[self.observables[j]].shape[0]))
+                            for k in range(hdul['KP-DATA'].data.shape[0]):
+                                temp[k] = self.P[self.observables[j]].dot(hdul['KP-DATA'].data[k])
+                            hdul['KP-DATA'].data = temp
+                        elif (len(hdul['KP-DATA'].data.shape) == 3):
+                            temp = np.zeros((hdul['KP-DATA'].data.shape[0], hdul['KP-DATA'].data.shape[1], self.P[self.observables[j]].shape[0]))
+                            for k in range(hdul['KP-DATA'].data.shape[0]):
+                                for l in range(hdul['KP-DATA'].data.shape[1]):
+                                    temp[k, l] = self.P[self.observables[j]].dot(hdul['KP-DATA'].data[k, l])
+                            hdul['KP-DATA'].data = temp
+                       
+                        if (len(hdul['KP-SIGM'].data.shape) == 1):
+                            hdul['KP-SIGM'].data = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data)
+                        elif (len(hdul['KP-SIGM'].data.shape) == 2):
+                            try:
+                                hdul[0].header['PROCSOFT']
+                                temp = np.zeros((hdul['KP-SIGM'].data.shape[0], self.P[self.observables[j]].shape[0]))
+                                for k in range(hdul['KP-SIGM'].data.shape[0]):
+                                    temp[k] = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data[k])
+                                hdul['KP-SIGM'].data = temp
+                            except:
+                                hdul['KP-SIGM'].data = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data).dot(self.P[self.observables[j]].T)
+                        elif (len(hdul['KP-SIGM'].data.shape) == 3):
+                            try:
+                                hdul[0].header['PROCSOFT']
+                                temp = np.zeros((hdul['KP-SIGM'].data.shape[0], hdul['KP-SIGM'].data.shape[1], self.P[self.observables[j]].shape[0]))
+                                for k in range(hdul['KP-SIGM'].data.shape[0]):
+                                    for l in range(hdul['KP-SIGM'].data.shape[1]):
+                                        temp[k, l] = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data[k, l])
+                                hdul['KP-SIGM'].data = temp
+                            except:
+                                temp = np.zeros((hdul['KP-SIGM'].data.shape[0], self.P[self.observables[j]].shape[0], self.P[self.observables[j]].shape[0]))
+                                for k in range(hdul['KP-SIGM'].data.shape[0]):
+                                    temp[k] = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data[k]).dot(self.P[self.observables[j]].T)
+                                hdul['KP-SIGM'].data = temp
+                        
+                        try:
+                            if (len(hdul['EKP-SIGM'].data.shape) == 1):
+                                hdul['EKP-SIGM'].data = self.P[self.observables[j]].dot(hdul['EKP-SIGM'].data)
+                            elif (len(hdul['EKP-SIGM'].data.shape) == 2):
+                                temp = np.zeros((hdul['EKP-SIGM'].data.shape[0], self.P[self.observables[j]].shape[0]))
+                                for k in range(hdul['EKP-SIGM'].data.shape[0]):
+                                    temp[k] = self.P[self.observables[j]].dot(hdul['EKP-SIGM'].data[k])
+                                hdul['EKP-SIGM'].data = temp
+                            elif (len(hdul['EKP-SIGM'].data.shape) == 3):
+                                temp = np.zeros((hdul['EKP-SIGM'].data.shape[0], hdul['EKP-SIGM'].data.shape[1], self.P[self.observables[j]].shape[0]))
+                                for k in range(hdul['EKP-SIGM'].data.shape[0]):
+                                    for l in range(hdul['EKP-SIGM'].data.shape[1]):
+                                        temp[k, l] = self.P[self.observables[j]].dot(hdul['EKP-SIGM'].data[k, l])
+                                hdul['EKP-SIGM'].data = temp
+                        except:
+                            pass
+                        
+                        try:
+                            if (len(hdul['KP-COV'].data.shape) == 2):
+                                hdul['KP-COV'].data = self.P[self.observables[j]].dot(hdul['KP-COV'].data).dot(self.P[self.observables[j]].T)
+                            elif (len(hdul['KP-COV'].data.shape) == 3):
+                                temp = np.zeros((hdul['KP-COV'].data.shape[0], self.P[self.observables[j]].shape[0], self.P[self.observables[j]].shape[0]))
+                                for k in range(hdul['KP-COV'].data.shape[0]):
+                                    temp[k] = self.P[self.observables[j]].dot(hdul['KP-COV'].data[k]).dot(self.P[self.observables[j]].T)
+                                hdul['KP-COV'].data = temp
+                            elif (len(hdul['KP-COV'].data.shape) == 4):
+                                temp = np.zeros((hdul['KP-COV'].data.shape[0], hdul['KP-COV'].data.shape[1], self.P[self.observables[j]].shape[0], self.P[self.observables[j]].shape[0]))
+                                for k in range(hdul['KP-COV'].data.shape[0]):
+                                    for l in range(hdul['KP-COV'].data.shape[1]):
+                                        temp[k, l] = self.P[self.observables[j]].dot(hdul['KP-COV'].data[k, l]).dot(self.P[self.observables[j]].T)
+                                hdul['KP-COV'].data = temp
+                        except:
+                            pass
+                        
+                        try:
+                            if (len(hdul['EKP-COV'].data.shape) == 2):
+                                hdul['EKP-COV'].data = self.P[self.observables[j]].dot(hdul['EKP-COV'].data).dot(self.P[self.observables[j]].T)
+                            elif (len(hdul['EKP-COV'].data.shape) == 3):
+                                temp = np.zeros((hdul['EKP-COV'].data.shape[0], self.P[self.observables[j]].shape[0], self.P[self.observables[j]].shape[0]))
+                                for k in range(hdul['EKP-COV'].data.shape[0]):
+                                    temp[k] = self.P[self.observables[j]].dot(hdul['EKP-COV'].data[k]).dot(self.P[self.observables[j]].T)
+                                hdul['EKP-COV'].data = temp
+                            elif (len(hdul['EKP-COV'].data.shape) == 4):
+                                temp = np.zeros((hdul['EKP-COV'].data.shape[0], hdul['EKP-COV'].data.shape[1], self.P[self.observables[j]].shape[0], self.P[self.observables[j]].shape[0]))
+                                for k in range(hdul['EKP-COV'].data.shape[0]):
+                                    for l in range(hdul['EKP-COV'].data.shape[1]):
+                                        temp[k, l] = self.P[self.observables[j]].dot(hdul['EKP-COV'].data[k, l]).dot(self.P[self.observables[j]].T)
+                                hdul['EKP-COV'].data = temp
+                        except:
+                            pass
+                        
                         data_after += [hdul['KP-DATA'].data.flatten()]
             
             except:
@@ -255,14 +345,15 @@ class data():
             hdul.close()
         print('')
         
-        data_before = np.array(data_before)
-        data_after = np.array(data_after)
-        plt.plot(np.mean(data_before, axis=0), label='before')
-        plt.plot(np.mean(data_after, axis=0), label='after')
-        plt.xlabel('Index')
-        plt.ylabel('Kernel phase')
-        plt.title('Karhunen-Loeve calibration')
-        plt.legend()
-        plt.show()
+        # data_before = np.array(data_before)
+        # data_after = np.array(data_after)
+        # plt.plot(np.mean(data_before, axis=0), label='before')
+        # plt.plot(np.mean(data_after, axis=0), label='after')
+        # plt.xlabel('Index')
+        # plt.ylabel('Kernel phase')
+        # plt.title('Karhunen-Loeve calibration')
+        # plt.legend()
+        # plt.show()
+        # plt.close()
         
         return None

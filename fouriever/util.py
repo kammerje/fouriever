@@ -1,4 +1,6 @@
 from __future__ import division
+
+
 # =============================================================================
 # IMPORTS
 # =============================================================================
@@ -20,30 +22,34 @@ pa_mtoc = '-' # model to chip conversion for position angle
 # =============================================================================
 
 def get_grid(sep_range,
-             step_size):
+             step_size,
+             verbose=True):
     """
     Parameters
     ----------
     sep_range: tuple of float
-        Min. and max. angular separation of the grid (mas).
+        Min. and max. angular separation of grid (mas).
     step_size: float
-        Step size of the grid (mas).
+        Step size of grid (mas).
+    verbose: bool
+        True if feedback shall be printed.
     
     Returns
     -------
     grid_ra_dec: tuple of array
         grid_ra_dec[0]: array
-            Right ascension offset of the grid cells (mas).
+            Right ascension offset of grid cells (mas).
         grid_ra_dec[1]: array
-            Declination offset of the grid cells (mas).
+            Declination offset of grid cells (mas).
     grid_sep_pa: tuple of array
         grid_sep_pa[0]: array
-            Angular separation of the grid cells (mas).
+            Angular separation of grid cells (mas).
         grid_sep_pa[1]: array
-            Position angle of the grid cells (deg).
+            Position angle of grid cells (deg).
     """
     
-    print('Computing grid')
+    if (verbose == True):
+        print('Computing grid')
     
     nc = int(np.ceil(sep_range[1]/step_size))
     temp = np.linspace(-nc*step_size, nc*step_size, 2*nc+1)
@@ -59,9 +65,10 @@ def get_grid(sep_range,
     grid_sep_pa[0][mask] = np.nan
     grid_sep_pa[1][mask] = np.nan
     
-    print('   Min. sep. = %.1f mas' % np.nanmin(grid_sep_pa[0]))
-    print('   Max. sep. = %.1f mas' % np.nanmax(grid_sep_pa[0]))
-    print('   %.0f non-empty grid cells' % np.sum(np.logical_not(np.isnan(grid_sep_pa[0]))))
+    if (verbose == True):
+        print('   Min. sep. = %.1f mas' % np.nanmin(grid_sep_pa[0]))
+        print('   Max. sep. = %.1f mas' % np.nanmax(grid_sep_pa[0]))
+        print('   %.0f non-empty grid cells' % np.sum(np.logical_not(np.isnan(grid_sep_pa[0]))))
     
     return grid_ra_dec, grid_sep_pa
 
@@ -116,6 +123,90 @@ def vis2kp(vis,
     
     return np.dot(data['kpmat'], np.angle(vis))
 
+def clin(p0,
+         data_list,
+         observables,
+         cov=False,
+         smear=None):
+    """
+    Parameters
+    ----------
+    p0: array
+        p0[0]: float
+            Relative flux of companion.
+        p0[1]: float
+            Right ascension offset of companion.
+        p0[2]: float
+            Declination offset of companion.
+    data_list: list of dict
+        List of data whose chi-squared shall be computed. The list contains one
+        data structure for each observation.
+    observables: list of str
+        List of observables which shall be considered.
+    cov: bool
+        True if covariance shall be considered.
+    smear: int
+        Numerical bandwidth smearing which shall be used.
+    
+    Returns
+    -------
+    vis: array
+        Chi-squared of unresolved companion model.
+    """
+    
+    mod_icv_sig = []
+    mod_icv_mod = []
+    for i in range(len(data_list)):
+        dra = p0[1].copy()
+        ddec = p0[2].copy()
+        rho = np.sqrt(dra**2+ddec**2)
+        phi = np.rad2deg(np.arctan2(dra, ddec))
+        if (pa_mtoc == '-'):
+            phi -= data_list[i]['pa']
+        elif (pa_mtoc == '+'):
+            phi += data_list[i]['pa']
+        else:
+            raise UserWarning('Model to chip conversion for position angle not known')
+        phi = ((phi+180.) % 360.)-180.
+        dra_temp = rho*np.sin(np.deg2rad(phi))
+        ddec_temp = rho*np.cos(np.deg2rad(phi))
+        p0_temp = np.array([p0[0].copy(), dra_temp, ddec_temp])
+        
+        vis_mod = vis_bin(p0=p0_temp,
+                          data=data_list[i],
+                          smear=smear)
+        sig = []
+        err = []
+        mod = []
+        for j in range(len(observables)):
+            if (observables[j] == 't3'):
+                sig += [data_list[i]['t3']]
+                err += [data_list[i]['dt3']]
+                mod += [vis2t3(vis_mod,
+                               data=data_list[i])/p0[0]]
+            elif (observables[j] == 'kp'):
+                sig += [data_list[i]['kp']]
+                err += [data_list[i]['dkp']]
+                mod += [vis2kp(vis_mod,
+                               data=data_list[i])/p0[0]]
+        sig = np.concatenate(sig).flatten()
+        mod = np.concatenate(mod).flatten()
+        if (cov == False):
+            var = np.concatenate(err).flatten()**2
+            mod_icv = np.divide(mod, var)
+        else:
+            if (data_list[i]['covflag'] == False):
+                var = np.concatenate(err).flatten()**2
+                mod_icv = np.divide(mod, var)
+            else:
+                mod_icv = mod.dot(data_list[i]['icv'])
+        mod_icv_sig += [mod_icv.dot(sig)]
+        mod_icv_mod += [mod_icv.dot(mod)]
+    ff = np.sum(mod_icv_sig)/np.sum(mod_icv_mod)
+    fe = 1./np.sum(mod_icv_mod)
+    
+    return ff, fe
+
 def vis_ud(p0,
            data,
            smear=None):
@@ -127,13 +218,13 @@ def vis_ud(p0,
             Uniform disk diameter (mas).
     data: dict
         Data structure.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     
     Returns
     -------
     vis: array
-        Complex visibility of a uniform disk.
+        Complex visibility of uniform disk.
     """
     
     if (smear is None):
@@ -168,13 +259,13 @@ def chi2_ud(p0,
         List of observables which shall be considered.
     cov: bool
         True if covariance shall be considered.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     
     Returns
     -------
     chi2: array
-        Chi-squared of a uniform disk model.
+        Chi-squared of uniform disk model.
     """
     
     chi2 = []
@@ -239,15 +330,15 @@ def lnprob_ud(p0,
         List of observables which shall be considered.
     cov: bool
         True if covariance shall be considered.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     temp: float
         Covariance inflation factor.
     
     Returns
     -------
     lnprob: float
-        Log-likelihood of the uniform disk model.
+        Log-likelihood of uniform disk model.
     """
     
     if (p0[0] < 0.):
@@ -278,13 +369,13 @@ def vis_bin(p0,
             Declination offset of companion.
     data: dict
         Data structure.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     
     Returns
     -------
     vis: array
-        Complex visibility of an unresolved companion.
+        Complex visibility of unresolved companion.
     """
     
     if (smear is None):
@@ -325,18 +416,17 @@ def chi2_bin(p0,
         List of observables which shall be considered.
     cov: bool
         True if covariance shall be considered.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     
     Returns
     -------
     vis: array
-        Chi-squared of an unresolved companion model.
+        Chi-squared of unresolved companion model.
     """
     
     chi2 = []
     for i in range(len(data_list)):
-        
         dra = p0[1].copy()
         ddec = p0[2].copy()
         rho = np.sqrt(dra**2+ddec**2)
@@ -416,15 +506,15 @@ def lnprob_bin(p0,
         List of observables which shall be considered.
     cov: bool
         True if covariance shall be considered.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     temp: float
         Covariance inflation factor.
     
     Returns
     -------
     lnprob: float
-        Log-likelihood of the unresolved companion model.
+        Log-likelihood of unresolved companion model.
     """
     
     chi2 = chi2_bin(p0,
@@ -452,13 +542,13 @@ def vis_ud_bin(p0,
             Uniform disk diameter (mas).
     data: dict
         Data structure.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     
     Returns
     -------
     vis: array
-        Complex visibility of a uniform disk with an unresolved companion.
+        Complex visibility of uniform disk with unresolved companion.
     """
     
     if (smear is None):
@@ -505,18 +595,17 @@ def chi2_ud_bin(p0,
         List of observables which shall be considered.
     cov: bool
         True if covariance shall be considered.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     
     Returns
     -------
     vis: array
-        Chi-squared of a uniform disk with an unresolved companion model.
+        Chi-squared of uniform disk with unresolved companion model.
     """
     
     chi2 = []
     for i in range(len(data_list)):
-        
         dra = p0[1].copy()
         ddec = p0[2].copy()
         rho = np.sqrt(dra**2+ddec**2)
@@ -595,15 +684,15 @@ def lnprob_ud_bin(p0,
         List of observables which shall be considered.
     cov: bool
         True if covariance shall be considered.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     temp: float
         Covariance inflation factor.
     
     Returns
     -------
     lnprob: float
-        Log-likelihood of the uniform disk with an unresolved companion model.
+        Log-likelihood of uniform disk with unresolved companion model.
     """
     
     if (p0[3] < 0.):

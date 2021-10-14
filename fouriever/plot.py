@@ -1,4 +1,6 @@
 from __future__ import division
+
+
 # =============================================================================
 # IMPORTS
 # =============================================================================
@@ -10,9 +12,12 @@ import numpy as np
 import corner as cp
 import matplotlib.patheffects as PathEffects
 import os
+import sys
+
 from scipy.interpolate import Rbf
 
 from . import util
+from .opticstools import opticstools as ot
 
 pa_mtoc = '-' # model to chip conversion for position angle
 
@@ -45,10 +50,10 @@ def vis2_ud(data_list,
         list contains one data structure for each observation.
     fit: dict
         Uniform disk fit whose squared visibility amplitudes shall be plotted.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     ofile: str
-        Path under which the figure shall be saved.
+        Path under which figures shall be saved.
     """
     
     bb = []
@@ -111,7 +116,8 @@ def vis2_ud(data_list,
         if (not os.path.exists(temp)):
             os.makedirs(temp)
         plt.savefig(ofile+'_vis2_ud.pdf')
-    plt.show()
+    # plt.show()
+    plt.close()
 
 def t3_bin(data_list,
            fit,
@@ -125,10 +131,10 @@ def t3_bin(data_list,
         one data structure for each observation.
     fit: dict
         Point-source companion fit whose closure phase shall be plotted.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     ofile: str
-        Path under which the figure shall be saved.
+        Path under which figures shall be saved.
     """
     
     t3 = []
@@ -185,7 +191,8 @@ def t3_bin(data_list,
         if (not os.path.exists(temp)):
             os.makedirs(temp)
         plt.savefig(ofile+'_t3_bin.pdf')
-    plt.show()
+    # plt.show()
+    plt.close()
 
 def vis2_t3_ud_bin(data_list,
                    fit,
@@ -201,10 +208,10 @@ def vis2_t3_ud_bin(data_list,
     fit: dict
         Uniform disk with point-source companion fit whose squared visibility
         amplitudes and closure phases shall be plotted.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     ofile: str
-        Path under which the figure shall be saved.
+        Path under which figures shall be saved.
     """
     
     vis2 = []
@@ -286,7 +293,8 @@ def vis2_t3_ud_bin(data_list,
         if (not os.path.exists(temp)):
             os.makedirs(temp)
         plt.savefig(ofile+'_vis2_t3_ud_bin.pdf')
-    plt.show()
+    # plt.show()
+    plt.close()
 
 def kp_bin(data_list,
            fit,
@@ -300,10 +308,10 @@ def kp_bin(data_list,
         one data structure for each observation.
     fit: dict
         Point-source companion fit whose kernel phase shall be plotted.
-    smear: TBD
-        
+    smear: int
+        Numerical bandwidth smearing which shall be used.
     ofile: str
-        Path under which the figure shall be saved.
+        Path under which figures shall be saved.
     """
     
     kp = []
@@ -360,35 +368,130 @@ def kp_bin(data_list,
         if (not os.path.exists(temp)):
             os.makedirs(temp)
         plt.savefig(ofile+'_kp_bin.pdf')
-    plt.show()
+    # plt.show()
+    plt.close()
 
-def chi2_map(pps_unique,
-             chi2s_unique,
-             fit,
-             sep_range,
-             step_size,
-             ofile=None):
+def lincmap(pps,
+            pes,
+            chi2s,
+            fit,
+            sep_range,
+            step_size,
+            ofile=None):
+    """
+    Parameters
+    ----------
+    pps: array
+        Array of shape (model parameters x RA steps x DEC steps) containing
+        best fit model parameters for grid.
+    pes: array
+        Array of shape (model parameters x RA steps x DEC steps) containing
+        uncertainties of best fit model parameters for grid.
+    chi2s: array
+        Array of shape (1 x RA steps x DEC steps) containing best fit
+        chi-squared for the grid.
+    fit: dict
+        Model fit whose chi-squared map shall be plotted.
+    sep_range: tuple of float
+        Min. and max. angular separation of grid (mas).
+    step_size: float
+        Step size of grid (mas).
+    ofile: str
+        Path under which figures shall be saved.
+    """
+    
+    grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
+                                             step_size=step_size,
+                                             verbose=False)
+    emax = np.nanmax(grid_ra_dec[0])
+    sep = np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
+    pa = np.rad2deg(np.arctan2(fit['p'][1], fit['p'][2]))
+    rad, max = ot.azimuthalAverage(np.abs(pps[0]), returnradii=True, binsize=1., return_max=True)
+    avg = ot.azimuthalAverage(np.abs(pps[0]), binsize=1.)
+    rad *= step_size
+    
+    fig, ax = plt.subplots(1, 3, figsize=(19.2, 4.8))
+    temp = pps[0]
+    temp[temp <= 0.] = np.min(temp[temp > 0.])
+    p0 = ax[0].imshow(np.log10(temp), cmap='hot', vmin=-4, vmax=-1, origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
+    c0 = plt.colorbar(p0, ax=ax[0])
+    c0.set_label(r'$\mathrm{log_{10}}$(relative flux)', rotation=270, labelpad=20)
+    ax[0].plot(0., 0., marker='*', color='black', markersize=10)
+    cc = plt.Circle((fit['p'][1], fit['p'][2]), emax/10., color='white', lw=5, fill=False)
+    ax[0].add_artist(cc)
+    cc = plt.Circle((fit['p'][1], fit['p'][2]), emax/10., color='black', lw=2.5, fill=False)
+    ax[0].add_artist(cc)
+    text = ax[0].text(0.01, 0.99, '$f$ = %.3e +/- %.3e %%' % (fit['p'][0], fit['dp'][0]), ha='left', va='top', color='black', transform=ax[0].transAxes)
+    text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
+    text = ax[0].text(0.01, 0.06, '$\\rho$ = %.1f mas' % sep, ha='left', va='bottom', color='black', transform=ax[0].transAxes)
+    text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
+    text = ax[0].text(0.01, 0.01, '$\\varphi$ = %.1f deg' % pa, ha='left', va='bottom', color='black', transform=ax[0].transAxes)
+    text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
+    ax[0].set_xlabel('$\Delta$RA [mas]')
+    ax[0].set_ylabel('$\Delta$DEC [mas]')
+    ax[0].set_title('Linear contrast map')
+    p1 = ax[1].imshow(chi2s/fit['ndof'], cmap='cubehelix', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
+    c1 = plt.colorbar(p1, ax=ax[1])
+    c1.set_label('$\chi^2$', rotation=270, labelpad=20)
+    ax[1].plot(0., 0., marker='*', color='black', markersize=10)
+    cc = plt.Circle((fit['p'][1], fit['p'][2]), emax/10., color='white', lw=5, fill=False)
+    ax[1].add_artist(cc)
+    cc = plt.Circle((fit['p'][1], fit['p'][2]), emax/10., color='black', lw=2.5, fill=False)
+    ax[1].add_artist(cc)
+    text = ax[1].text(0.99, 0.99, '$N_{\sigma}$ = %.1f' % fit['nsigma'], ha='right', va='top', color='black', transform=ax[1].transAxes)
+    text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
+    text = ax[1].text(0.99, 0.01, '$\chi^2$ = %.3f' % fit['chi2_red'], ha='right', va='bottom', color='black', transform=ax[1].transAxes)
+    text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
+    ax[1].set_xlabel('$\Delta$RA [mas]')
+    ax[1].set_ylabel('$\Delta$DEC [mas]')
+    ax[1].set_title('Chi-squared map')
+    ax[2].plot(rad, max, label='max')
+    ax[2].plot(rad, avg, label='avg')
+    ax[2].set_yscale('log')
+    ax[2].set_xlabel('Separation [mas]')
+    ax[2].set_ylabel('Contrast')
+    ax[2].set_title('Detection limits')
+    ax[2].legend(loc='upper right')
+    ax = ax[2].twinx()
+    ax.plot(rad, max/avg, color='black', ls=':')
+    ax.set_ylabel(r'Significance [$\sigma$]', rotation=270, labelpad=20)
+    plt.tight_layout()
+    if (ofile is not None):
+        temp = ofile[:ofile.rfind('/')]
+        if (not os.path.exists(temp)):
+            os.makedirs(temp)
+        plt.savefig(ofile+'_lincmap.pdf')
+    # plt.show()
+    plt.close()
+
+def chi2map(pps_unique,
+            chi2s_unique,
+            fit,
+            sep_range,
+            step_size,
+            ofile=None):
     """
     Parameters
     ----------
     pps_unique: array
-        Array of shape (unique minima x model parameters) containing the best
-        fit model parameters for each unique minimum.
+        Array of shape (unique minima x model parameters) containing best fit
+        model parameters for each unique minimum.
     chi2s_unique: array
-        Array of shape (unique minima) containing the best fit chi-squared for
+        Array of shape (unique minima) containing best fit chi-squared for
         each unique minimum.
     fit: dict
         Model fit whose chi-squared map shall be plotted.
     sep_range: tuple of float
-        Min. and max. angular separation of the grid (mas).
+        Min. and max. angular separation of grid (mas).
     step_size: float
-        Step size of the grid (mas).
+        Step size of grid (mas).
     ofile: str
-        Path under which the figure shall be saved.
+        Path under which figures shall be saved.
     """
     
     grid_ra_dec_fine, grid_sep_pa_fine = util.get_grid(sep_range=sep_range,
-                                                       step_size=step_size/4.)
+                                                       step_size=step_size/4.,
+                                                       verbose=False)
     emax = np.nanmax(grid_ra_dec_fine[0])
     func = Rbf(pps_unique[:, 1], pps_unique[:, 2], chi2s_unique, function='linear')
     chi2s_rbf = func(grid_ra_dec_fine[0].flatten(), grid_ra_dec_fine[1].flatten()).reshape(grid_ra_dec_fine[0].shape)
@@ -424,8 +527,9 @@ def chi2_map(pps_unique,
         temp = ofile[:ofile.rfind('/')]
         if (not os.path.exists(temp)):
             os.makedirs(temp)
-        plt.savefig(ofile+'_chi2_map.pdf')
-    plt.show()
+        plt.savefig(ofile+'_chi2map.pdf')
+    # plt.show()
+    plt.close()
 
 def chains(fit,
            sampler,
@@ -436,9 +540,9 @@ def chains(fit,
     fit: dict
         Model fit whose MCMC chains shall be plotted.
     sampler: array
-        Sampler of the MCMC.
+        Sampler of MCMC.
     ofile: str
-            Path under which the figure shall be saved.
+        Path under which figures shall be saved.
     """
     
     if (fit['model'] == 'ud'):
@@ -455,7 +559,8 @@ def chains(fit,
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
             plt.savefig(ofile+'_mcmc_chains.pdf')
-        plt.show()
+        # plt.show()
+        plt.close()
     elif (fit['model'] == 'bin'):
         ylabels = ['$f$ [%]', '$\\rho$ [mas]', '$\\varphi$ [deg]']
         rho = np.sqrt(sampler.flatchain[:, 1]**2+sampler.flatchain[:, 2]**2)
@@ -485,7 +590,8 @@ def chains(fit,
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
             plt.savefig(ofile+'_mcmc_chains.pdf')
-        plt.show()
+        # plt.show()
+        plt.close()
     else:
         ylabels = ['$f$ [%]', '$\\rho$ [mas]', '$\\varphi$ [deg]', '$\\theta$ [mas]']
         rho = np.sqrt(sampler.flatchain[:, 1]**2+sampler.flatchain[:, 2]**2)
@@ -518,7 +624,8 @@ def chains(fit,
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
             plt.savefig(ofile+'_mcmc_chains.pdf')
-        plt.show()
+        # plt.show()
+        plt.close()
 
 def corner(fit,
            sampler,
@@ -529,9 +636,9 @@ def corner(fit,
     fit: dict
         Model fit whose posterior distribution shall be plotted.
     sampler: array
-        Sampler of the MCMC.
+        Sampler of MCMC.
     ofile: str
-            Path under which the figure shall be saved.
+        Path under which figures shall be saved.
     """
     
     if (fit['model'] == 'ud'):
@@ -546,7 +653,8 @@ def corner(fit,
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
             plt.savefig(ofile+'_mcmc_corner.pdf')
-        plt.show()
+        # plt.show()
+        plt.close()
     elif (fit['model'] == 'bin'):
         temp = sampler.flatchain.copy()
         temp[:, 0] *= 100.
@@ -563,7 +671,8 @@ def corner(fit,
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
             plt.savefig(ofile+'_mcmc_corner.pdf')
-        plt.show()
+        # plt.show()
+        plt.close()
     else:
         temp = sampler.flatchain.copy()
         temp[:, 0] *= 100.
@@ -580,4 +689,5 @@ def corner(fit,
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
             plt.savefig(ofile+'_mcmc_corner.pdf')
-        plt.show()
+        # plt.show()
+        plt.close()
