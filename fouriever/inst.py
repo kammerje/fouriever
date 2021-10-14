@@ -1,4 +1,6 @@
 from __future__ import division
+
+
 # =============================================================================
 # IMPORTS
 # =============================================================================
@@ -6,6 +8,8 @@ from __future__ import division
 import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
 import numpy as np
+
+from scipy.linalg import block_diag
 
 
 # =============================================================================
@@ -28,11 +32,9 @@ def invert(M):
     sx, sy = M.shape
     if (sx != sy):
         raise UserWarning('Can only invert square matrices')
-    M_inv = np.linalg.inv(M)
-    if (np.logical_not(np.allclose(M.dot(M_inv), np.eye(sx, sy)))):
-        raise UserWarning('Matrix inversion failed')
-    else:
-        return M_inv
+    M_inv = np.linalg.pinv(M)
+    
+    return M_inv
 
 def open(idir,
          fitsfile,
@@ -41,7 +43,7 @@ def open(idir,
     Parameters
     ----------
     idir: str
-        Input directory where the fits files are located.
+        Input directory where fits files are located.
     fitsfile: str
         Fits file which shall be opened.
     verbose: bool
@@ -57,13 +59,17 @@ def open(idir,
         observation.
     """
     
-    hdul = pyfits.open(idir+fitsfile)
+    hdul = pyfits.open(idir+fitsfile, memmap=False)
     try:
         hdul.index_of('OI_TARGET')
         inst_list, data_list = open_oifile(hdul)
     except:
         hdul.index_of('KP-DATA')
-        inst_list, data_list = open_kpfile(hdul)
+        try:
+            hdul[0].header['PROCSOFT']
+            inst_list, data_list = open_kpfile_new(hdul)
+        except:
+            inst_list, data_list = open_kpfile_old(hdul)
     hdul.close()
     
     if (verbose == True):
@@ -91,8 +97,8 @@ def open_oifile(hdul):
     """
     Parameters
     ----------
-    hdul: hdul
-        HDU list of fits file which shall be opened.
+    hdul: HDUList
+        Fits file which shall be opened.
     
     Returns
     -------
@@ -145,6 +151,22 @@ def open_oifile(hdul):
                     data[inst]['t3'] = np.deg2rad(hdul[i].data['T3PHI'])
                     data[inst]['dt3'] = np.deg2rad(hdul[i].data['T3PHIERR'])
                     data[inst]['t3sta'] = hdul[i].data['STA_INDEX']
+            if (hdul[i].header['EXTNAME'] == 'VIS2COV'):
+                inst = hdul[i].header['INSNAME']
+                try:
+                    data[inst]['vis2cov'] = np.append(data[inst]['vis2cov'], hdul[i].data, axis=0)
+                except:
+                    if (inst not in data):
+                        data[inst] = {}
+                    data[inst]['vis2cov'] = hdul[i].data
+            if (hdul[i].header['EXTNAME'] == 'T3COV'):
+                inst = hdul[i].header['INSNAME']
+                try:
+                    data[inst]['t3cov'] = np.append(data[inst]['t3cov'], hdul[i].data, axis=0)
+                except:
+                    if (inst not in data):
+                        data[inst] = {}
+                    data[inst]['t3cov'] = hdul[i].data
         except:
             continue
     
@@ -188,7 +210,22 @@ def open_oifile(hdul):
             data_list[i][j]['t3'] = data[key]['t3'][j*ntria:(j+1)*ntria].copy()
             data_list[i][j]['dt3'] = data[key]['dt3'][j*ntria:(j+1)*ntria].copy()
             data_list[i][j]['t3sta'] = data[key]['t3sta'][j*ntria:(j+1)*ntria].copy()
-            data_list[i][j]['covflag'] = False
+            
+            covs = []
+            try:
+                covs += [data[key]['vis2cov'][j]]
+            except:
+                pass
+            try:
+                covs += [data[key]['t3cov'][j]]
+            except:
+                pass
+            if (len(covs) > 0):
+                data_list[i][j]['cov'] = block_diag(*covs)
+                data_list[i][j]['icv'] = invert(data_list[i][j]['cov'])
+                data_list[i][j]['covflag'] = True
+            else:
+                data_list[i][j]['covflag'] = False
             t3mat = np.zeros((data_list[i][j]['t3'].shape[0], data_list[i][j]['vis2'].shape[0]))
             for k in range(t3mat.shape[0]):
                 base1 = data_list[i][j]['t3sta'][k][[0, 1]]
@@ -228,7 +265,6 @@ def open_oifile(hdul):
                 elif (hdul[0].header['TELESCOP'] == 'JWST'):
                     data_list[i][j]['diam'] = 6.5
                 else:
-#                    import pdb; pdb.set_trace()
                     raise UserWarning('Telescope not known')
             except:
                 if ('GRAVITY' in inst_list[i]):
@@ -236,17 +272,16 @@ def open_oifile(hdul):
                 elif ('PIONIER' in inst_list[i]):
                     data_list[i][j]['diam'] = 1.8
                 else:
-#                    import pdb; pdb.set_trace()
                     raise UserWarning('Telescope not known')
     
     return inst_list, data_list
 
-def open_kpfile(hdul):
+def open_kpfile_old(hdul):
     """
     Parameters
     ----------
-    hdul: hdul
-        HDU list of fits file which shall be opened.
+    hdul: HDUList
+        Fits file which shall be opened.
     
     Returns
     -------
@@ -290,9 +325,8 @@ def open_kpfile(hdul):
         if ('ESO-VLT' in hdul[0].header['TELESCOP']):
             data_list[0][0]['diam'] = 8.2
         elif ('Keck' in hdul[0].header['TELESCOP']):
-            data_list[0][0]['diam'] = 10.
+            data_list[0][0]['diam'] = 10.95
         else:
-#            import pdb; pdb.set_trace()
             raise UserWarning('Telescope not known')
     elif (len(hdul['KP-DATA'].data.shape) == 2):
         nobs = hdul['KP-DATA'].data.shape[0]
@@ -329,11 +363,57 @@ def open_kpfile(hdul):
             if ('ESO-VLT' in hdul[0].header['TELESCOP']):
                 temp['diam'] = 8.2
             elif ('Keck' in hdul[0].header['TELESCOP']):
-                temp['diam'] = 10.
+                temp['diam'] = 10.95
             else:
-#                import pdb; pdb.set_trace()
                 raise UserWarning('Telescope not known')
             data_list += [temp]
         data_list = [data_list]
+    
+    return inst_list, data_list
+
+def open_kpfile_new(hdul):
+    """
+    Parameters
+    ----------
+    hdul: HDUList
+        Fits file which shall be opened.
+    
+    Returns
+    -------
+    inst_list: list of str
+        List of instruments from which data was opened.
+    data_list: list of list of dict
+        List of list of data which was opened. The list contains one list for
+        each instrument, and this list contains one data structure for each
+        observation.
+    """
+    
+    nobs = hdul['KP-DATA'].data.shape[0]
+    inst_list = [hdul[0].header['INSTRUME']]
+    data_list = []
+    for i in range(nobs):
+        temp = {}
+        temp['wave'] = hdul['CWAVEL'].data['CWAVEL']
+        temp['dwave'] = hdul['CWAVEL'].data['DWAVEL']
+        temp['pa'] = hdul['DETPA'].data[i]
+        temp['kp'] = np.swapaxes(hdul['KP-DATA'].data.copy()[i], 0, 1)
+        # temp['dkp'] = np.swapaxes(hdul['KP-SIGM'].data.copy()[i], 0, 1)
+        temp['dkp'] = np.swapaxes(hdul['EKP-SIGM'].data.copy()[i], 0, 1)
+        temp['kpu'] = -hdul['UV-PLANE'].data['UUC'].copy()
+        temp['kpv'] = hdul['UV-PLANE'].data['VVC'].copy()
+        temp['base'] = np.sqrt(temp['kpu']**2+temp['kpv']**2)
+        temp['uu'] = np.divide(temp['kpu'][:, np.newaxis], temp['wave'][np.newaxis, :])
+        temp['vv'] = np.divide(temp['kpv'][:, np.newaxis], temp['wave'][np.newaxis, :])
+        try:
+            # temp['cov'] = hdul['KP-COV'].data.copy()[i, 0] # FIXME
+            temp['cov'] = hdul['EKP-COV'].data.copy()[i, 0] # FIXME
+            temp['icv'] = invert(temp['cov'])
+            temp['covflag'] = True
+        except:
+            temp['covflag'] = False
+        temp['kpmat'] = hdul['KER-MAT'].data.copy()
+        temp['diam'] = hdul[0].header['DIAM']
+        data_list += [temp]
+    data_list = [data_list]
     
     return inst_list, data_list
