@@ -727,6 +727,15 @@ def nsigma(chi2r_test,
         Detection significance.
     """
     
+    q = stats.chi2.cdf(ndof*chi2r_test/chi2r_true, ndof)
+    p = 1.-q
+    nsigma = np.sqrt(stats.chi2.ppf(1.-p, 1.))
+    if (p < 1e-15):
+        nsigma = np.sqrt(stats.chi2.ppf(1.-1e-15, 1.))
+    
+    return nsigma
+    
+    # THIS IS WRONG (CF. CANDID)
     p = stats.chi2.cdf(ndof, ndof*chi2r_test/chi2r_true)
     log10p = np.log10(max(p, 10**(-155.623))) # 50 sigma max.
     nsigma = np.sqrt(stats.chi2.ppf(1.-p, 1.))

@@ -182,8 +182,8 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'NIRISS']):
-            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'NIRISS', 'SPHERE']):
+            smin = 0.25*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = lmin/bmin*rad2mas # diffraction field-of-view (mas)
             smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
@@ -378,6 +378,9 @@ class data():
             Best fit model parameters.
         """
         
+        if (model not in ['ud', 'bin', 'ud_bin']):
+            raise UserWarning('Supported models are ud, bin, ud_bin')
+        
         data_list = []
         bmax = []
         bmin = []
@@ -404,8 +407,8 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'NIRISS']):
-            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'NIRISS', 'SPHERE']):
+            smin = 0.25*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = lmin/bmin*rad2mas # diffraction field-of-view (mas)
             smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
@@ -674,6 +677,9 @@ class data():
         fit: dict
             Best fit model parameters.
         """
+        
+        if (model not in ['ud', 'bin', 'ud_bin']):
+            raise UserWarning('Supported models are ud, bin, ud_bin')
         
         print('Subtracting '+fit_sub['model']+' model')
         
