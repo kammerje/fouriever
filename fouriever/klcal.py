@@ -9,6 +9,7 @@ import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
 import numpy as np
 
+import glob
 import os
 import sys
 
@@ -33,19 +34,33 @@ class data():
         ----------
         scidir: str
             Input directory where science fits files are located.
-        scifiles: list of str
-            List of science fits files which shall be opened.
+        scifiles: list of str, None
+            List of science fits files which shall be opened. All fits
+            files from ``scidir`` are opened with ``scifiles=None``.
         caldir: str
             Input directory where calibrator fits files are located.
-        calfiles: list of str
-            List of calibrator fits files which shall be opened.
+        calfiles: list of str, None
+            List of calibrator fits files which shall be opened. All
+            fits files from ``caldir`` are opened with ``calfiles=None``.
         """
         
         self.scidir = scidir
         self.scifiles = scifiles
         self.caldir = caldir
         self.calfiles = calfiles
-        
+
+        if self.scifiles is None:
+            self.scifiles = glob.glob(self.scidir+'*fits')
+            for i, item in enumerate(self.scifiles):
+                head, tail = os.path.split(item)
+                self.scifiles[i] = tail
+
+        if self.calfiles is None:
+            self.calfiles = glob.glob(self.caldir+'*fits')
+            for i, item in enumerate(self.calfiles):
+                head, tail = os.path.split(item)
+                self.calfiles[i] = tail
+
         self.sci_inst_list = []
         self.sci_data_list = []
         for i in range(len(self.scifiles)):
@@ -181,7 +196,7 @@ class data():
                     data_temp += [data_list[j][self.observables[i]].flatten()]
                 except:
                     pass
-            
+                        
             print('   '+self.observables[i]+': '+str(len(data_temp))+' data sets')
             
             if (int(K_klip) > len(data_temp)):
@@ -231,9 +246,8 @@ class data():
         Nscifiles = len(self.scifiles)
         for i in range(Nscifiles):
             hdul = pyfits.open(self.scidir+self.scifiles[i], memmap=False)
-            
-            try:
-                hdul.index_of('KP-DATA')
+
+            if 'KP-DATA' in hdul:
                 sys.stdout.write('\r   File %.0f of %.0f: kernel phase FITS file' % (i+1, Nscifiles))
                 sys.stdout.flush()
                 
@@ -256,7 +270,7 @@ class data():
                                 for l in range(hdul['KP-DATA'].data.shape[1]):
                                     temp[k, l] = self.P[self.observables[j]].dot(hdul['KP-DATA'].data[k, l])
                             hdul['KP-DATA'].data = temp
-                       
+
                         if (len(hdul['KP-SIGM'].data.shape) == 1):
                             hdul['KP-SIGM'].data = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data)
                         elif (len(hdul['KP-SIGM'].data.shape) == 2):
@@ -281,7 +295,7 @@ class data():
                                 for k in range(hdul['KP-SIGM'].data.shape[0]):
                                     temp[k] = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data[k]).dot(self.P[self.observables[j]].T)
                                 hdul['KP-SIGM'].data = temp
-                        
+
                         try:
                             if (len(hdul['EKP-SIGM'].data.shape) == 1):
                                 hdul['EKP-SIGM'].data = self.P[self.observables[j]].dot(hdul['EKP-SIGM'].data)
@@ -298,7 +312,7 @@ class data():
                                 hdul['EKP-SIGM'].data = temp
                         except:
                             pass
-                        
+
                         try:
                             if (len(hdul['KP-COV'].data.shape) == 2):
                                 hdul['KP-COV'].data = self.P[self.observables[j]].dot(hdul['KP-COV'].data).dot(self.P[self.observables[j]].T)
@@ -315,7 +329,7 @@ class data():
                                 hdul['KP-COV'].data = temp
                         except:
                             pass
-                        
+
                         try:
                             if (len(hdul['EKP-COV'].data.shape) == 2):
                                 hdul['EKP-COV'].data = self.P[self.observables[j]].dot(hdul['EKP-COV'].data).dot(self.P[self.observables[j]].T)
@@ -332,17 +346,85 @@ class data():
                                 hdul['EKP-COV'].data = temp
                         except:
                             pass
-                        
+
+
                         data_after += [hdul['KP-DATA'].data.flatten()]
-            
-            except:
+
+                hdul.writeto(odir+self.scifiles[i][:-5]+'_klcal.fits', overwrite=True, output_verify='fix')
+                hdul.close()
+
+            elif 'OI_VIS2' in hdul and 'OI_T3' in hdul:
                 sys.stdout.write('\r   File %.0f of %.0f: OIFITS file' % (i+1, Nscifiles))
                 sys.stdout.flush()
-                
-                raise UserWarning('Not implemented yet')
-            
-            hdul.writeto(odir+self.scifiles[i][:-5]+'_klcal.fits', overwrite=True, output_verify='fix')
-            hdul.close()
+
+                for j in range(len(self.observables)):
+                    if self.observables[j] == 'vis2':
+                        data_before += [hdul['OI_VIS2'].data]
+
+                        if hdul['OI_VIS2'].data['VIS2DATA'].ndim == 1:
+                            col_list = []
+
+                            for col_idx, col_name in enumerate(hdul['OI_VIS2'].columns.names):
+                                if col_name == 'VIS2DATA':
+                                    array = self.P[self.observables[j]].dot(hdul['OI_VIS2'].data['VIS2DATA'])
+                                elif col_name == 'VIS2ERR':
+                                    # FIXME ?
+                                    array = self.P[self.observables[j]].dot(hdul['OI_VIS2'].data['VIS2ERR'])
+                                else:
+                                    array = hdul['OI_VIS2'].data[col_name]
+
+                                col_list.append(pyfits.Column(
+                                    name=col_name, array=hdul['OI_VIS2'].data[col_name],
+                                    format=hdul['OI_VIS2'].columns.formats[col_idx]))
+
+                            vis2_table = pyfits.BinTableHDU.from_columns(
+                                col_list, header=hdul['OI_VIS2'].header, name='OI_VIS2')
+
+                        else:
+                            raise UserWarning('Only 1D is implemented for VIS2DATA')
+
+                    elif self.observables[j] == 't3':
+                        data_before += [hdul['OI_T3'].data]
+
+                        if hdul['OI_T3'].data['T3PHI'].ndim == 1:
+                            col_list = []
+
+                            for col_idx, col_name in enumerate(hdul['OI_T3'].columns.names):
+                                if col_name == 'T3PHI':
+                                    array = self.P[self.observables[j]].dot(hdul['OI_T3'].data['T3PHI'])
+                                elif col_name == 'T3PHIERR':
+                                    # FIXME ?
+                                    array = self.P[self.observables[j]].dot(hdul['OI_T3'].data['T3PHIERR'])
+                                else:
+                                    array = hdul['OI_T3'].data[col_name]
+
+                                col_list.append(pyfits.Column(
+                                    name=col_name, array=hdul['OI_T3'].data[col_name],
+                                    format=hdul['OI_T3'].columns.formats[col_idx]))
+
+                            t3_table = pyfits.BinTableHDU.from_columns(
+                                col_list, header=hdul['OI_T3'].header, name='OI_T3')
+
+                        else:
+                            raise UserWarning('Only 1D is implemented for T3PHI')
+
+                    else:
+                        raise UserWarning('Only vis2 and t3 are implemented for OIFITS')
+
+                new_hdul = pyfits.HDUList([pyfits.PrimaryHDU(header=hdul[0].header),
+                                           hdul['OI_WAVELENGTH'],
+                                           hdul['OI_TARGET'],
+                                           hdul['OI_ARRAY'],
+                                           vis2_table,
+                                           t3_table])
+
+                new_hdul.writeto(odir+self.scifiles[i][:-7]+'_cal.oifits', overwrite=True)
+
+                hdul.close()
+
+            else:
+                raise UserWarning('Support for this data format is not implemented')
+
         print('')
         
         # data_before = np.array(data_before)

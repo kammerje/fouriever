@@ -11,6 +11,9 @@ import numpy as np
 
 import emcee
 from scipy.optimize import minimize
+
+import glob
+import os
 import sys
 
 from . import inst
@@ -38,9 +41,16 @@ class data():
         ----------
         idir: str
             Input directory where fits files are located.
-        fitsfiles: list of str
-            List of fits files which shall be opened.
+        fitsfiles: list of str, None
+            List of fits files which shall be opened. All fits files
+            from ``idir`` are opened with ``fitsfiles=None``.
         """
+        
+        if fitsfiles is None:
+            fitsfiles = glob.glob(idir+'*fits')
+            for i, item in enumerate(fitsfiles):
+                head, tail = os.path.split(item)
+                fitsfiles[i] = tail
         
         self.inst_list = []
         self.data_list = []

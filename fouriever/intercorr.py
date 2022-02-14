@@ -9,6 +9,7 @@ import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
 import numpy as np
 
+import glob
 import os
 import sys
 
@@ -31,13 +32,20 @@ class data():
         ----------
         idir: str
             Input directory where fits files are located.
-        fitsfiles: list of str
-            List of fits files which shall be opened.
+        fitsfiles: list of str, None
+            List of fits files which shall be opened. All fits files
+            from ``idir`` are opened with ``fitsfiles=None``.
         """
         
         self.idir = idir
         self.fitsfiles = fitsfiles
-        
+
+        if self.fitsfiles is None:
+            self.fitsfiles = glob.glob(self.idir+'*fits')
+            for i, item in enumerate(self.fitsfiles):
+                head, tail = os.path.split(item)
+                self.fitsfiles[i] = tail
+
         self.inst_list = []
         self.data_list = []
         for i in range(len(self.fitsfiles)):
@@ -46,7 +54,7 @@ class data():
                                              verbose=False)
             self.inst_list += inst_list
             self.data_list += data_list
-        
+
         self.set_inst(inst=self.inst_list[0])
         self.set_observables(self.get_observables())
         
