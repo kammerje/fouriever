@@ -72,12 +72,15 @@ def get_grid(sep_range,
     
     return grid_ra_dec, grid_sep_pa
 
-def vis2vis2(vis):
+def vis2vis2(vis,
+             data):
     """
     Parameters
     ----------
     vis: array
         Complex visibility.
+    data: dict
+        Data structure.
     
     Returns
     -------
@@ -85,7 +88,10 @@ def vis2vis2(vis):
         Squared visibility amplitude.
     """
     
-    return np.abs(vis)**2
+    if (data['klflag'] == True):
+        return np.abs(np.dot(data['vis2mat'], vis))**2
+    else:
+        return np.abs(vis)**2
 
 def vis2t3(vis,
            data):
@@ -277,14 +283,11 @@ def chi2_ud(p0,
         err = []
         mod = []
         for j in range(len(observables)):
-            if (observables[j] == 'vis'):
-                sig += [data_list[i]['vis']]
-                err += [data_list[i]['dvis']]
-                mod += [vis_mod]
-            elif (observables[j] == 'vis2'):
+            if (observables[j] == 'vis2'):
                 sig += [data_list[i]['vis2']]
                 err += [data_list[i]['dvis2']]
-                mod += [vis2vis2(vis_mod)]
+                mod += [vis2vis2(vis_mod,
+                                 data=data_list[i])]
             elif (observables[j] == 't3'):
                 sig += [data_list[i]['t3']]
                 err += [data_list[i]['dt3']]
@@ -449,14 +452,11 @@ def chi2_bin(p0,
         err = []
         mod = []
         for j in range(len(observables)):
-            if (observables[j] == 'vis'):
-                sig += [data_list[i]['vis']]
-                err += [data_list[i]['dvis']]
-                mod += [vis_mod]
-            elif (observables[j] == 'vis2'):
+            if (observables[j] == 'vis2'):
                 sig += [data_list[i]['vis2']]
                 err += [data_list[i]['dvis2']]
-                mod += [vis2vis2(vis_mod)]
+                mod += [vis2vis2(vis_mod,
+                                 data=data_list[i])]
             elif (observables[j] == 't3'):
                 sig += [data_list[i]['t3']]
                 err += [data_list[i]['dt3']]
@@ -628,14 +628,11 @@ def chi2_ud_bin(p0,
         err = []
         mod = []
         for j in range(len(observables)):
-            if (observables[j] == 'vis'):
-                sig += [data_list[i]['vis']]
-                err += [data_list[i]['dvis']]
-                mod += [vis_mod]
-            elif (observables[j] == 'vis2'):
+            if (observables[j] == 'vis2'):
                 sig += [data_list[i]['vis2']]
                 err += [data_list[i]['dvis2']]
-                mod += [vis2vis2(vis_mod)]
+                mod += [vis2vis2(vis_mod,
+                                 data=data_list[i])]
             elif (observables[j] == 't3'):
                 sig += [data_list[i]['t3']]
                 err += [data_list[i]['dt3']]

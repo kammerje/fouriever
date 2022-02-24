@@ -9,12 +9,13 @@ import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
 import numpy as np
 
+import glob
 import os
 import sys
 
 from . import inst
 
-observables_known = ['vis', 'vis2', 't3', 'kp']
+observables_known = ['vis2', 't3', 'kp']
 
 
 # =============================================================================
@@ -33,18 +34,32 @@ class data():
         ----------
         scidir: str
             Input directory where science fits files are located.
-        scifiles: list of str
-            List of science fits files which shall be opened.
+        scifiles: list of str, None
+            List of science fits files which shall be opened. All fits files
+            from ``scidir`` are opened with ``scifiles=None``.
         caldir: str
             Input directory where calibrator fits files are located.
-        calfiles: list of str
-            List of calibrator fits files which shall be opened.
+        calfiles: list of str, None
+            List of calibrator fits files which shall be opened. All fits
+            files from ``caldir`` are opened with ``calfiles=None``.
         """
         
         self.scidir = scidir
         self.scifiles = scifiles
         self.caldir = caldir
         self.calfiles = calfiles
+        
+        if (self.scifiles is None):
+            self.scifiles = glob.glob(self.scidir+'*fits')
+            for i, item in enumerate(self.scifiles):
+                head, tail = os.path.split(item)
+                self.scifiles[i] = tail
+        
+        if (self.calfiles is None):
+            self.calfiles = glob.glob(self.caldir+'*fits')
+            for i, item in enumerate(self.calfiles):
+                head, tail = os.path.split(item)
+                self.calfiles[i] = tail
         
         self.sci_inst_list = []
         self.sci_data_list = []
@@ -195,7 +210,7 @@ class data():
             for j in range(len(w)):
                 v_sort[:, j] = v[:, temp[j]]
             w_sort = np.sort(w)[::-1] # eigenvalues sorted in descending order
-            w_sort[w_sort <= 0.] = 1e-30
+            w_sort[w_sort <= 0.] = 1e-10
             
             v_norm = np.divide(v_sort, np.sqrt(w_sort))
             Z_KL = data_temp.T.dot(v_norm) # Equation 14 in Kammerer et al. 2019
@@ -204,7 +219,7 @@ class data():
             P = np.identity(Z_prim.shape[0])-Z_prim.dot(Z_prim.T) # Equation 15 in Kammerer et al. 2019
             
             w, v = np.linalg.eigh(P)
-            self.P[self.observables[i]] = v[np.where(w > 1e-10)[0]].dot(np.diag(w)).dot(v.T)
+            self.P[self.observables[i]] = v[np.where(w > 1e-3)[0]].dot(np.diag(w)).dot(v.T)
             
             print('   '+self.observables[i]+': projection matrix shape = '+str(self.P[self.observables[i]].shape))
         
@@ -226,20 +241,16 @@ class data():
         if (not os.path.exists(odir)):
             os.makedirs(odir)
         
-        data_before = []
-        data_after = []
         Nscifiles = len(self.scifiles)
         for i in range(Nscifiles):
             hdul = pyfits.open(self.scidir+self.scifiles[i], memmap=False)
             
-            try:
-                hdul.index_of('KP-DATA')
+            if ('KP-DATA' in hdul):
                 sys.stdout.write('\r   File %.0f of %.0f: kernel phase FITS file' % (i+1, Nscifiles))
                 sys.stdout.flush()
                 
                 for j in range(len(self.observables)):
                     if (self.observables[j] == 'kp'):
-                        data_before += [hdul['KP-DATA'].data.flatten()]
                         
                         hdul['KER-MAT'].data = self.P[self.observables[j]].dot(hdul['KER-MAT'].data)
                         
@@ -256,15 +267,19 @@ class data():
                                 for l in range(hdul['KP-DATA'].data.shape[1]):
                                     temp[k, l] = self.P[self.observables[j]].dot(hdul['KP-DATA'].data[k, l])
                             hdul['KP-DATA'].data = temp
-                       
+                        
                         if (len(hdul['KP-SIGM'].data.shape) == 1):
-                            hdul['KP-SIGM'].data = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data)
+                            var = np.diag(hdul['KP-SIGM'].data**2)
+                            cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
+                            hdul['KP-SIGM'].data = np.sqrt(np.diag(cov))
                         elif (len(hdul['KP-SIGM'].data.shape) == 2):
                             try:
                                 hdul[0].header['PROCSOFT']
                                 temp = np.zeros((hdul['KP-SIGM'].data.shape[0], self.P[self.observables[j]].shape[0]))
                                 for k in range(hdul['KP-SIGM'].data.shape[0]):
-                                    temp[k] = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data[k])
+                                    var = np.diag(hdul['KP-SIGM'].data[k]**2)
+                                    cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
+                                    temp[k] = np.sqrt(np.diag(cov))
                                 hdul['KP-SIGM'].data = temp
                             except:
                                 hdul['KP-SIGM'].data = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data).dot(self.P[self.observables[j]].T)
@@ -274,7 +289,9 @@ class data():
                                 temp = np.zeros((hdul['KP-SIGM'].data.shape[0], hdul['KP-SIGM'].data.shape[1], self.P[self.observables[j]].shape[0]))
                                 for k in range(hdul['KP-SIGM'].data.shape[0]):
                                     for l in range(hdul['KP-SIGM'].data.shape[1]):
-                                        temp[k, l] = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data[k, l])
+                                        var = np.diag(hdul['KP-SIGM'].data[k, l]**2)
+                                        cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
+                                        temp[k, l] = np.sqrt(np.diag(cov))
                                 hdul['KP-SIGM'].data = temp
                             except:
                                 temp = np.zeros((hdul['KP-SIGM'].data.shape[0], self.P[self.observables[j]].shape[0], self.P[self.observables[j]].shape[0]))
@@ -284,17 +301,23 @@ class data():
                         
                         try:
                             if (len(hdul['EKP-SIGM'].data.shape) == 1):
-                                hdul['EKP-SIGM'].data = self.P[self.observables[j]].dot(hdul['EKP-SIGM'].data)
+                                var = np.diag(hdul['EKP-SIGM'].data**2)
+                                cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
+                                hdul['EKP-SIGM'].data = np.sqrt(np.diag(cov))
                             elif (len(hdul['EKP-SIGM'].data.shape) == 2):
                                 temp = np.zeros((hdul['EKP-SIGM'].data.shape[0], self.P[self.observables[j]].shape[0]))
                                 for k in range(hdul['EKP-SIGM'].data.shape[0]):
-                                    temp[k] = self.P[self.observables[j]].dot(hdul['EKP-SIGM'].data[k])
+                                    var = np.diag(hdul['EKP-SIGM'].data[k]**2)
+                                    cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
+                                    temp[k] = np.sqrt(np.diag(cov))
                                 hdul['EKP-SIGM'].data = temp
                             elif (len(hdul['EKP-SIGM'].data.shape) == 3):
                                 temp = np.zeros((hdul['EKP-SIGM'].data.shape[0], hdul['EKP-SIGM'].data.shape[1], self.P[self.observables[j]].shape[0]))
                                 for k in range(hdul['EKP-SIGM'].data.shape[0]):
                                     for l in range(hdul['EKP-SIGM'].data.shape[1]):
-                                        temp[k, l] = self.P[self.observables[j]].dot(hdul['EKP-SIGM'].data[k, l])
+                                        var = np.diag(hdul['EKP-SIGM'].data[k, l]**2)
+                                        cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
+                                        temp[k, l] = np.sqrt(np.diag(cov))
                                 hdul['EKP-SIGM'].data = temp
                         except:
                             pass
@@ -332,28 +355,54 @@ class data():
                                 hdul['EKP-COV'].data = temp
                         except:
                             pass
-                        
-                        data_after += [hdul['KP-DATA'].data.flatten()]
+                
+                hdul.writeto(odir+self.scifiles[i][:-5]+'_klcal.fits', overwrite=True, output_verify='fix')
+                hdul.close()
             
-            except:
+            elif (('OI_VIS2' in hdul) and ('OI_T3' in hdul)):
                 sys.stdout.write('\r   File %.0f of %.0f: OIFITS file' % (i+1, Nscifiles))
                 sys.stdout.flush()
                 
-                raise UserWarning('Not implemented yet')
+                for j in range(len(self.observables)):
+                    if (self.observables[j] == 'vis2'):
+                        
+                        hdu0 = pyfits.ImageHDU(self.P[self.observables[j]])
+                        hdu0.header['EXTNAME'] = 'VIS2PROJ'
+                        if (hdul['OI_VIS2'].data['VIS2DATA'].ndim == 1):
+                            hdu1 = pyfits.ImageHDU(self.P[self.observables[j]].dot(hdul['OI_VIS2'].data['VIS2DATA']))
+                            hdu1.header['EXTNAME'] = 'VIS2DATA'
+                            var = np.diag(hdul['OI_VIS2'].data['VIS2ERR']**2)
+                            cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
+                            hdu2 = pyfits.ImageHDU(np.sqrt(np.diag(cov)))
+                            hdu2.header['EXTNAME'] = 'VIS2ERR'
+                            if ('VIS2COV' in hdul):
+                                hdul['VIS2COV'].data = self.P[self.observables[j]].dot(hdul['VIS2COV'].data[0]).dot(self.P[self.observables[j]].T)[np.newaxis, :]
+                        else:
+                            raise UserWarning('Only 1D is implemented for VIS2DATA')
+                        hdul += [hdu0, hdu1, hdu2]
+                    
+                    elif (self.observables[j] == 't3'):
+                        
+                        hdu0 = pyfits.ImageHDU(self.P[self.observables[j]])
+                        hdu0.header['EXTNAME'] = 'T3PROJ'
+                        if (hdul['OI_T3'].data['T3PHI'].ndim == 1):
+                            hdu1 = pyfits.ImageHDU(self.P[self.observables[j]].dot(hdul['OI_T3'].data['T3PHI']))
+                            hdu1.header['EXTNAME'] = 'T3PHI'
+                            var = np.diag(np.deg2rad(hdul['OI_T3'].data['T3PHIERR'])**2)
+                            cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
+                            hdu2 = pyfits.ImageHDU(np.rad2deg(np.sqrt(np.diag(cov))))
+                            hdu2.header['EXTNAME'] = 'T3PHIERR'
+                            if ('T3COV' in hdul):
+                                hdul['T3COV'].data = self.P[self.observables[j]].dot(hdul['T3COV'].data[0]).dot(self.P[self.observables[j]].T)[np.newaxis, :]
+                        else:
+                            raise UserWarning('Only 1D is implemented for T3PHI')
+                        hdul += [hdu0, hdu1, hdu2]
+                
+                hdul.writeto(odir+self.scifiles[i][:-7]+'_klcal.oifits', overwrite=True, output_verify='fix')
+                hdul.close()
             
-            hdul.writeto(odir+self.scifiles[i][:-5]+'_klcal.fits', overwrite=True, output_verify='fix')
-            hdul.close()
+            else:
+                raise UserWarning('Support for this data format is not implemented')
         print('')
-        
-        # data_before = np.array(data_before)
-        # data_after = np.array(data_after)
-        # plt.plot(np.mean(data_before, axis=0), label='before')
-        # plt.plot(np.mean(data_after, axis=0), label='after')
-        # plt.xlabel('Index')
-        # plt.ylabel('Kernel phase')
-        # plt.title('Karhunen-Loeve calibration')
-        # plt.legend()
-        # plt.show()
-        # plt.close()
         
         return None

@@ -38,10 +38,10 @@ plt.rc('figure', titlesize=18)
 # MAIN
 # =============================================================================
 
-def vis2_ud(data_list,
-            fit,
-            smear=None,
-            ofile=None):
+def vis2_ud_base(data_list,
+                 fit,
+                 smear=None,
+                 ofile=None):
     """
     Parameters
     ----------
@@ -67,7 +67,8 @@ def vis2_ud(data_list,
         vis_mod = util.vis_ud(p0=fit['p'],
                               data=data_list[i],
                               smear=smear)
-        vis2_mod += [util.vis2vis2(vis_mod).flatten()]
+        vis2_mod += [util.vis2vis2(vis_mod,
+                                   data=data_list[i]).flatten()]
     bb = np.concatenate(bb)
     vis2 = np.concatenate(vis2)
     dvis2 = np.concatenate(dvis2)
@@ -87,27 +88,94 @@ def vis2_ud(data_list,
     vis_mod_u = util.vis_ud(p0=fit['p']+fit['dp'],
                             data=data,
                             smear=None)
-    vis2_mod = util.vis2vis2(vis_mod)
-    vis2_mod_l = util.vis2vis2(vis_mod_l)
-    vis2_mod_u = util.vis2vis2(vis_mod_u)
+    vis2_mod = np.abs(vis_mod)**2
+    vis2_mod_l = np.abs(vis_mod_l)**2
+    vis2_mod_u = np.abs(vis_mod_u)**2
     
     fig, ax = plt.subplots(2, 1, sharex='col', gridspec_kw={'height_ratios': [4, 1]}, figsize=(6.4, 4.8))
     ax[0].errorbar(bb/1e6, vis2, yerr=dvis2, elinewidth=1, ls='none', marker='s', ms=2, color=datacol, zorder=1, label='Data')
     ax[0].plot(data['uu']/1e6, vis2_mod, color=modelcol, zorder=4, label='Model')
     ax[0].fill_between(data['uu']/1e6, vis2_mod_l, vis2_mod_u, facecolor=modelcol, alpha=2./3., edgecolor='none', zorder=3)
+    temp = ax[0].get_ylim()
     ax[0].axhline(1., ls='--', color=gridcol, zorder=2)
     text = ax[0].text(0.01, 0.01, '$\\theta$ = %.5f +/- %.5f mas' % (fit['p'][0], fit['dp'][0]), ha='left', va='bottom', transform=ax[0].transAxes, zorder=5)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
+    ax[0].set_ylim(temp)
     ax[0].set_ylabel('$|V|^2$')
     ax[0].legend(loc='upper right')
-    ax[1].plot(bb/1e6, vis2_res/dvis2, ls='none', marker='s', ms=2, color=datacol, zorder=1)
+    ax[1].plot(bb/1e6, vis2_res/dvis2/np.sqrt(fit['chi2_red']), ls='none', marker='s', ms=2, color=datacol, zorder=1)
     ax[1].axhline(0., ls='--', color=gridcol, zorder=2)
     text = ax[1].text(0.99, 0.96, '$\chi^2$ = %.3f' % fit['chi2_red'], ha='right', va='top', transform=ax[1].transAxes, zorder=3)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ylim = np.max(np.abs(ax[1].get_ylim()))
     ax[1].set_ylim(-ylim, ylim)
     ax[1].set_xlabel('Baseline [M$\lambda$]')
-    ax[1].set_ylabel('Res. [$\sigma$]')
+    ax[1].set_ylabel('Res. [$\sigma$/$\chi$]')
+    plt.subplots_adjust(wspace=0., hspace=0.)
+    fig.align_ylabels()
+    plt.suptitle('Uniform disk fit')
+    if (ofile is not None):
+        index = ofile.rfind('/')
+        if index != -1:
+            temp = ofile[:index]
+            if (not os.path.exists(temp)):
+                os.makedirs(temp)
+        plt.savefig(ofile+'_vis2_ud.pdf')
+    # plt.show()
+    plt.close()
+
+def vis2_ud(data_list,
+            fit,
+            smear=None,
+            ofile=None):
+    """
+    Parameters
+    ----------
+    data_list: list of dict
+        List of data whose squared visibility amplitudes shall be plotted. The
+        list contains one data structure for each observation.
+    fit: dict
+        Uniform disk fit whose squared visibility amplitudes shall be plotted.
+    smear: int
+        Numerical bandwidth smearing which shall be used.
+    ofile: str
+        Path under which figures shall be saved.
+    """
+    
+    vis2 = []
+    dvis2 = []
+    vis2_mod = []
+    for i in range(len(data_list)):
+        vis2 += [data_list[i]['vis2'].flatten()]
+        dvis2 += [data_list[i]['dvis2'].flatten()]
+        vis_mod = util.vis_ud(p0=fit['p'],
+                              data=data_list[i],
+                              smear=smear)
+        vis2_mod += [util.vis2vis2(vis_mod,
+                                   data=data_list[i]).flatten()]
+    vis2 = np.concatenate(vis2)
+    dvis2 = np.concatenate(dvis2)
+    vis2_mod = np.concatenate(vis2_mod)
+    vis2_res = vis2-vis2_mod
+    
+    fig, ax = plt.subplots(2, 1, sharex='col', gridspec_kw={'height_ratios': [4, 1]}, figsize=(6.4, 4.8))
+    ax[0].errorbar(vis2_mod, vis2, yerr=dvis2, elinewidth=1, ls='none', marker='s', ms=2, color=datacol, zorder=1, label='Data')
+    ax[0].plot([np.min(vis2_mod), np.max(vis2_mod)], [np.min(vis2_mod), np.max(vis2_mod)], color=modelcol, zorder=4, label='Model')
+    temp = ax[0].get_ylim()
+    ax[0].axhline(1., ls='--', color=gridcol, zorder=2)
+    text = ax[0].text(0.01, 0.01, '$\\theta$ = %.5f +/- %.5f mas' % (fit['p'][0], fit['dp'][0]), ha='left', va='bottom', transform=ax[0].transAxes, zorder=5)
+    text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
+    ax[0].set_ylim(temp)
+    ax[0].set_ylabel('Data $|V|^2$')
+    ax[0].legend(loc='upper right')
+    ax[1].plot(vis2_mod, vis2_res/dvis2/np.sqrt(fit['chi2_red']), ls='none', marker='s', ms=2, color=datacol, zorder=1)
+    ax[1].axhline(0., ls='--', color=gridcol, zorder=2)
+    text = ax[1].text(0.99, 0.96, '$\chi^2$ = %.3f' % fit['chi2_red'], ha='right', va='top', transform=ax[1].transAxes, zorder=3)
+    text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
+    ylim = np.max(np.abs(ax[1].get_ylim()))
+    ax[1].set_ylim(-ylim, ylim)
+    ax[1].set_xlabel('Model $|V|^2$')
+    ax[1].set_ylabel('Res. [$\sigma$/$\chi$]')
     plt.subplots_adjust(wspace=0., hspace=0.)
     fig.align_ylabels()
     plt.suptitle('Uniform disk fit')
@@ -177,14 +245,14 @@ def t3_bin(data_list,
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ax[0].set_ylabel('Data closure phase [rad]')
     ax[0].legend(loc='upper right')
-    ax[1].plot(t3_mod, t3_res/dt3, ls='none', marker='s', ms=2, color=datacol, zorder=1)
+    ax[1].plot(t3_mod, t3_res/dt3/np.sqrt(fit['chi2_red']), ls='none', marker='s', ms=2, color=datacol, zorder=1)
     ax[1].axhline(0., ls='--', color=gridcol, zorder=2)
     text = ax[1].text(0.99, 0.96, '$\chi^2$ = %.3f' % fit['chi2_red'], ha='right', va='top', transform=ax[1].transAxes, zorder=3)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ylim = np.max(np.abs(ax[1].get_ylim()))
     ax[1].set_ylim(-ylim, ylim)
     ax[1].set_xlabel('Model closure phase [rad]')
-    ax[1].set_ylabel('Res. [$\sigma$]')
+    ax[1].set_ylabel('Res. [$\sigma$/$\chi$]')
     plt.subplots_adjust(wspace=0.25, hspace=0.)
     fig.align_ylabels()
     plt.suptitle('Point-source companion fit')
@@ -246,7 +314,8 @@ def vis2_t3_ud_bin(data_list,
         vis_mod = util.vis_ud_bin(p0=p0_temp,
                                   data=data_list[i],
                                   smear=smear)
-        vis2_mod += [util.vis2vis2(vis_mod).flatten()]
+        vis2_mod += [util.vis2vis2(vis_mod,
+                                   data=data_list[i]).flatten()]
         t3_mod += [util.vis2t3(vis_mod,
                                data=data_list[i]).flatten()]
     vis2 = np.concatenate(vis2)
@@ -261,19 +330,21 @@ def vis2_t3_ud_bin(data_list,
     fig, ax = plt.subplots(2, 2, sharex='col', gridspec_kw={'height_ratios': [4, 1]}, figsize=(9.6, 4.8))
     ax[0, 0].errorbar(vis2_mod, vis2, yerr=dvis2, elinewidth=1, ls='none', marker='s', ms=2, color=datacol, zorder=1, label='Data')
     ax[0, 0].plot([np.min(vis2_mod), np.max(vis2_mod)], [np.min(vis2_mod), np.max(vis2_mod)], color=modelcol, zorder=4, label='Model')
+    temp = ax[0, 0].get_ylim()
     ax[0, 0].axhline(1., ls='--', color=gridcol, zorder=2)
     text = ax[0, 0].text(0.01, 0.01, '$\\theta$ = %.5f +/- %.5f mas' % (fit['p'][3], fit['dp'][3]), ha='left', va='bottom', transform=ax[0, 0].transAxes, zorder=5)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
+    ax[0, 0].set_ylim(temp)
     ax[0, 0].set_ylabel('Data $|V|^2$')
     ax[0, 0].legend(loc='upper right')
-    ax[1, 0].plot(vis2_mod, vis2_res/dvis2, ls='none', marker='s', ms=2, color=datacol, zorder=1)
+    ax[1, 0].plot(vis2_mod, vis2_res/dvis2/np.sqrt(fit['chi2_red']), ls='none', marker='s', ms=2, color=datacol, zorder=1)
     ax[1, 0].axhline(0., ls='--', color=gridcol, zorder=2)
     text = ax[1, 0].text(0.99, 0.96, '$\chi^2$ = %.3f' % fit['chi2_red'], ha='right', va='top', transform=ax[1, 0].transAxes, zorder=3)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ylim = np.max(np.abs(ax[1, 0].get_ylim()))
     ax[1, 0].set_ylim(-ylim, ylim)
     ax[1, 0].set_xlabel('Model $|V|^2$')
-    ax[1, 0].set_ylabel('Res. [$\sigma$]')
+    ax[1, 0].set_ylabel('Res. [$\sigma$/$\chi$]')
     ax[0, 1].errorbar(t3_mod, t3, yerr=dt3, elinewidth=1, ls='none', marker='s', ms=2, color=datacol, zorder=1, label='Data')
     ax[0, 1].plot([np.min(t3_mod), np.max(t3_mod)], [np.min(t3_mod), np.max(t3_mod)], color=modelcol, zorder=4, label='Model')
     ax[0, 1].axhline(0., ls='--', color=gridcol, zorder=2)
@@ -281,14 +352,14 @@ def vis2_t3_ud_bin(data_list,
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ax[0, 1].set_ylabel('Data closure phase [rad]')
     ax[0, 1].legend(loc='upper right')
-    ax[1, 1].plot(t3_mod, t3_res/dt3, ls='none', marker='s', ms=2, color=datacol, zorder=1)
+    ax[1, 1].plot(t3_mod, t3_res/dt3/np.sqrt(fit['chi2_red']), ls='none', marker='s', ms=2, color=datacol, zorder=1)
     ax[1, 1].axhline(0., ls='--', color=gridcol, zorder=2)
     text = ax[1, 1].text(0.99, 0.96, '$\chi^2$ = %.3f' % fit['chi2_red'], ha='right', va='top', transform=ax[1, 1].transAxes, zorder=3)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ylim = np.max(np.abs(ax[1, 1].get_ylim()))
     ax[1, 1].set_ylim(-ylim, ylim)
     ax[1, 1].set_xlabel('Model closure phase [rad]')
-    ax[1, 1].set_ylabel('Res. [$\sigma$]')
+    ax[1, 1].set_ylabel('Res. [$\sigma$/$\chi$]')
     plt.subplots_adjust(wspace=1./3., hspace=0.)
     fig.align_ylabels()
     plt.suptitle('Uniform disk with point-source companion fit')
@@ -358,14 +429,14 @@ def kp_bin(data_list,
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ax[0].set_ylabel('Data kernel phase [rad]')
     ax[0].legend(loc='upper right')
-    ax[1].plot(kp_mod, kp_res/dkp, ls='none', marker='s', ms=2, color=datacol, zorder=1)
+    ax[1].plot(kp_mod, kp_res/dkp/np.sqrt(fit['chi2_red']), ls='none', marker='s', ms=2, color=datacol, zorder=1)
     ax[1].axhline(0., ls='--', color=gridcol, zorder=2)
     text = ax[1].text(0.99, 0.96, '$\chi^2$ = %.3f' % fit['chi2_red'], ha='right', va='top', transform=ax[1].transAxes, zorder=3)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ylim = np.max(np.abs(ax[1].get_ylim()))
     ax[1].set_ylim(-ylim, ylim)
     ax[1].set_xlabel('Model kernel phase [rad]')
-    ax[1].set_ylabel('Res. [$\sigma$]')
+    ax[1].set_ylabel('Res. [$\sigma$/$\chi$]')
     plt.subplots_adjust(wspace=0.25, hspace=0.)
     fig.align_ylabels()
     plt.suptitle('Point-source companion fit')

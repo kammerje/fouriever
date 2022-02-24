@@ -11,6 +11,9 @@ import numpy as np
 
 import emcee
 from scipy.optimize import minimize
+
+import glob
+import os
 import sys
 
 from . import inst
@@ -21,7 +24,7 @@ rad2mas = 180./np.pi*3600.*1000. # convert rad to mas
 mas2rad = np.pi/180./3600./1000. # convert mas to rad
 pa_mtoc = '-' # model to chip conversion for position angle
 ftol = 1e-5
-observables_known = ['vis', 'vis2', 't3', 'kp']
+observables_known = ['vis2', 't3', 'kp']
 
 
 # =============================================================================
@@ -38,9 +41,16 @@ class data():
         ----------
         idir: str
             Input directory where fits files are located.
-        fitsfiles: list of str
-            List of fits files which shall be opened.
+        fitsfiles: list of str, None
+            List of fits files which shall be opened. All fits files from
+            ``idir`` are opened with ``fitsfiles=None``.
         """
+        
+        if (fitsfiles is None):
+            fitsfiles = glob.glob(idir+'*fits')
+            for i, item in enumerate(fitsfiles):
+                head, tail = os.path.split(item)
+                fitsfiles[i] = tail
         
         self.inst_list = []
         self.data_list = []
@@ -182,8 +192,8 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'NIRISS', 'SPHERE']):
-            smin = 0.25*lmin/bmax*rad2mas # smallest spatial scale (mas)
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'NIRISS']):
+            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = lmin/bmin*rad2mas # diffraction field-of-view (mas)
             smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
@@ -378,9 +388,6 @@ class data():
             Best fit model parameters.
         """
         
-        if (model not in ['ud', 'bin', 'ud_bin']):
-            raise UserWarning('Supported models are ud, bin, ud_bin')
-        
         data_list = []
         bmax = []
         bmin = []
@@ -407,8 +414,8 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'NIRISS', 'SPHERE']):
-            smin = 0.25*lmin/bmax*rad2mas # smallest spatial scale (mas)
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'NIRISS']):
+            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = lmin/bmin*rad2mas # diffraction field-of-view (mas)
             smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
@@ -450,10 +457,13 @@ class data():
             else:
                 break
         allcov = True
+        klflag = False
         ndof = []
         for i in range(len(data_list)):
             if (data_list[i]['covflag'] == False):
                 allcov = False
+            if (data_list[i]['klflag'] == True):
+                klflag = True
             for j in range(len(self.observables)):
                 ndof += [np.prod(data_list[i][self.observables[j]].shape)]
         ndof = np.sum(ndof)
@@ -472,7 +482,7 @@ class data():
                               bounds=[(0., np.inf)],
                               tol=ftol,
                               options={'maxiter': 1000})
-            thetae = np.sqrt(thetap['fun']*ftol*np.diag(thetap['hess_inv'].todense()))
+            thetae = np.sqrt(max(1., abs(thetap['fun']))*ftol*np.diag(thetap['hess_inv'].todense()))
             print('   Best fit uniform disk diameter = %.5f +/- %.5f mas' % (thetap['x'][0], thetae))
             print('   Best fit red. chi2 = %.3f (ud)' % (thetap['fun']/ndof))
             fit = {}
@@ -483,10 +493,16 @@ class data():
             fit['ndof'] = ndof
             fit['smear'] = smear
             fit['cov'] = str(cov)
-            plot.vis2_ud(data_list=data_list,
-                         fit=fit,
-                         smear=smear,
-                         ofile=ofile)
+            if (klflag == True):
+                plot.vis2_ud(data_list=data_list,
+                             fit=fit,
+                             smear=smear,
+                             ofile=ofile)
+            else:
+                plot.vis2_ud_base(data_list=data_list,
+                                  fit=fit,
+                                  smear=smear,
+                                  ofile=ofile)
         else:
             thetap = {}
             thetap['fun'] = util.chi2_ud(p0=np.array([0.]),
@@ -537,7 +553,7 @@ class data():
                                           options={'maxiter': 1000})
                         p0s += [p0]
                         pps += [pp['x']]
-                        pe = np.sqrt(pp['fun']*ftol*np.diag(pp['hess_inv'].todense()))
+                        pe = np.sqrt(max(1., abs(pp['fun']))*ftol*np.diag(pp['hess_inv'].todense()))
                         pes += [pe]
                         chi2s += [pp['fun']]
             print('')
@@ -678,9 +694,6 @@ class data():
             Best fit model parameters.
         """
         
-        if (model not in ['ud', 'bin', 'ud_bin']):
-            raise UserWarning('Supported models are ud, bin, ud_bin')
-        
         print('Subtracting '+fit_sub['model']+' model')
         
         buffer = self.data_list.copy()
@@ -717,10 +730,9 @@ class data():
                                        data=self.data_list[ww[i]][j],
                                        smear=fit_sub['smear'])
                 
-                if ('vis' in self.observables):
-                    self.data_list[ww[i]][j]['vis'] /= vis_sub # divide vis
                 if ('vis2' in self.observables):
-                    self.data_list[ww[i]][j]['vis2'] /= util.vis2vis2(vis_sub) # divide vis2
+                    self.data_list[ww[i]][j]['vis2'] /= util.vis2vis2(vis_sub,
+                                                                      data=self.data_list[ww[i]][j]) # divide vis2
                 if ('t3' in self.observables):
                     data_before += [self.data_list[ww[i]][j]['t3'].copy()]
                     self.data_list[ww[i]][j]['t3'] -= util.vis2t3(vis_sub,

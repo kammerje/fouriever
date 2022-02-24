@@ -60,16 +60,15 @@ def open(idir,
     """
     
     hdul = pyfits.open(idir+fitsfile, memmap=False)
-    try:
-        hdul.index_of('OI_TARGET')
+    if ('OI_TARGET' in hdul):
         inst_list, data_list = open_oifile(hdul)
-    except:
-        hdul.index_of('KP-DATA')
-        try:
-            hdul[0].header['PROCSOFT']
+    elif ('KP-DATA' in hdul):
+        if ('PROCSOFT' in hdul[0].header):
             inst_list, data_list = open_kpfile_new(hdul)
-        except:
+        else:
             inst_list, data_list = open_kpfile_old(hdul)
+    else:
+        raise UserWarning('Unknown file type')
     hdul.close()
     
     if (verbose == True):
@@ -111,6 +110,7 @@ def open_oifile(hdul):
     """
     
     data = {}
+    klflag = False
     for i in range(len(hdul)):
         try:
             if (hdul[i].header['EXTNAME'] == 'OI_WAVELENGTH'):
@@ -126,30 +126,50 @@ def open_oifile(hdul):
             if (hdul[i].header['EXTNAME'] == 'OI_VIS2'):
                 inst = hdul[i].header['INSNAME']
                 try:
-                    data[inst]['vis2'] = np.append(data[inst]['vis2'], hdul[i].data['VIS2DATA'], axis=0)
-                    data[inst]['dvis2'] = np.append(data[inst]['dvis2'], hdul[i].data['VIS2ERR'], axis=0)
+                    if ((klflag == True) or ('VIS2DATA' in hdul)):
+                        klflag = True
+                        data[inst]['vis2'] = np.append(data[inst]['vis2'], hdul['VIS2DATA'].data, axis=0)
+                        data[inst]['dvis2'] = np.append(data[inst]['dvis2'], hdul['VIS2ERR'].data, axis=0)
+                    else:
+                        data[inst]['vis2'] = np.append(data[inst]['vis2'], hdul[i].data['VIS2DATA'], axis=0)
+                        data[inst]['dvis2'] = np.append(data[inst]['dvis2'], hdul[i].data['VIS2ERR'], axis=0)
                     data[inst]['vis2u'] = np.append(data[inst]['vis2u'], hdul[i].data['UCOORD'], axis=0)
                     data[inst]['vis2v'] = np.append(data[inst]['vis2v'], hdul[i].data['VCOORD'], axis=0)
                     data[inst]['vis2sta'] = np.append(data[inst]['vis2sta'], hdul[i].data['STA_INDEX'], axis=0)
                 except:
                     if (inst not in data):
                         data[inst] = {}
-                    data[inst]['vis2'] = hdul[i].data['VIS2DATA']
-                    data[inst]['dvis2'] = hdul[i].data['VIS2ERR']
+                    if ((klflag == True) or ('VIS2DATA' in hdul)):
+                        klflag = True
+                        data[inst]['vis2'] = hdul['VIS2DATA'].data
+                        data[inst]['dvis2'] = hdul['VIS2ERR'].data
+                    else:
+                        data[inst]['vis2'] = hdul[i].data['VIS2DATA']
+                        data[inst]['dvis2'] = hdul[i].data['VIS2ERR']
                     data[inst]['vis2u'] = hdul[i].data['UCOORD']
                     data[inst]['vis2v'] = hdul[i].data['VCOORD']
                     data[inst]['vis2sta'] = hdul[i].data['STA_INDEX']
             if (hdul[i].header['EXTNAME'] == 'OI_T3'):
                 inst = hdul[i].header['INSNAME']
                 try:
-                    data[inst]['t3'] = np.append(data[inst]['t3'], np.deg2rad(hdul[i].data['T3PHI']), axis=0)
-                    data[inst]['dt3'] = np.append(data[inst]['dt3'], np.deg2rad(hdul[i].data['T3PHIERR']), axis=0)
+                    if ((klflag == True) or ('T3PHI' in hdul)):
+                        klflag = True
+                        data[inst]['t3'] = np.append(data[inst]['t3'], np.deg2rad(hdul['T3PHI'].data), axis=0)
+                        data[inst]['dt3'] = np.append(data[inst]['dt3'], np.deg2rad(hdul['T3PHIERR'].data), axis=0)
+                    else:
+                        data[inst]['t3'] = np.append(data[inst]['t3'], np.deg2rad(hdul[i].data['T3PHI']), axis=0)
+                        data[inst]['dt3'] = np.append(data[inst]['dt3'], np.deg2rad(hdul[i].data['T3PHIERR']), axis=0)
                     data[inst]['t3sta'] = np.append(data[inst]['t3sta'], hdul[i].data['STA_INDEX'], axis=0)
                 except:
                     if (inst not in data):
                         data[inst] = {}
-                    data[inst]['t3'] = np.deg2rad(hdul[i].data['T3PHI'])
-                    data[inst]['dt3'] = np.deg2rad(hdul[i].data['T3PHIERR'])
+                    if ((klflag == True) or ('T3PHI' in hdul)):
+                        klflag = True
+                        data[inst]['t3'] = np.deg2rad(hdul['T3PHI'].data)
+                        data[inst]['dt3'] = np.deg2rad(hdul['T3PHIERR'].data)
+                    else:
+                        data[inst]['t3'] = np.deg2rad(hdul[i].data['T3PHI'])
+                        data[inst]['dt3'] = np.deg2rad(hdul[i].data['T3PHIERR'])
                     data[inst]['t3sta'] = hdul[i].data['STA_INDEX']
             if (hdul[i].header['EXTNAME'] == 'VIS2COV'):
                 inst = hdul[i].header['INSNAME']
@@ -186,31 +206,50 @@ def open_oifile(hdul):
             data[key]['dt3'] = data[key]['dt3'][:, np.newaxis]
         nbase = np.unique(data[key]['vis2sta'], axis=0).shape[0]
         ntria = np.unique(data[key]['t3sta'], axis=0).shape[0]
-        nobs1 = data[key]['vis2'].shape[0]//nbase
-        nobs2 = data[key]['t3'].shape[0]//ntria
-        if (nobs1 == nobs2):
-            nobs = nobs1
+        if (klflag == True):
+            nobs = 1
         else:
-            raise UserWarning('Number of squared visibility amplitudes does not match number of closure phases')
+            nobs1 = data[key]['vis2'].shape[0]//nbase
+            nobs2 = data[key]['t3'].shape[0]//ntria
+            if (nobs1 == nobs2):
+                nobs = nobs1
+            else:
+                raise UserWarning('Number of squared visibility amplitudes does not match number of closure phases')
         inst_list += [key]
         data_list += [[]]
         for j in range(nobs):
-            data_list[i] += [{}]
-            data_list[i][j]['wave'] = data[key]['wave'].copy()
-            data_list[i][j]['dwave'] = data[key]['dwave'].copy()
-            data_list[i][j]['pa'] = 0.
-            data_list[i][j]['vis2'] = data[key]['vis2'][j*nbase:(j+1)*nbase].copy()
-            data_list[i][j]['dvis2'] = data[key]['dvis2'][j*nbase:(j+1)*nbase].copy()
-            data_list[i][j]['vis2u'] = data[key]['vis2u'][j*nbase:(j+1)*nbase].copy()
-            data_list[i][j]['vis2v'] = data[key]['vis2v'][j*nbase:(j+1)*nbase].copy()
-            data_list[i][j]['base'] = data[key]['base'][j*nbase:(j+1)*nbase].copy()
-            data_list[i][j]['uu'] = data[key]['uu'][j*nbase:(j+1)*nbase].copy()
-            data_list[i][j]['vv'] = data[key]['vv'][j*nbase:(j+1)*nbase].copy()
-            data_list[i][j]['vis2sta'] = data[key]['vis2sta'][j*nbase:(j+1)*nbase].copy()
-            data_list[i][j]['t3'] = data[key]['t3'][j*ntria:(j+1)*ntria].copy()
-            data_list[i][j]['dt3'] = data[key]['dt3'][j*ntria:(j+1)*ntria].copy()
-            data_list[i][j]['t3sta'] = data[key]['t3sta'][j*ntria:(j+1)*ntria].copy()
-            
+            if (klflag == True):
+                data_list[i] += [{}]
+                data_list[i][j]['wave'] = data[key]['wave'].copy()
+                data_list[i][j]['dwave'] = data[key]['dwave'].copy()
+                data_list[i][j]['pa'] = 0.
+                data_list[i][j]['vis2'] = data[key]['vis2'].copy()
+                data_list[i][j]['dvis2'] = data[key]['dvis2'].copy()
+                data_list[i][j]['vis2u'] = data[key]['vis2u'].copy()
+                data_list[i][j]['vis2v'] = data[key]['vis2v'].copy()
+                data_list[i][j]['base'] = data[key]['base'].copy()
+                data_list[i][j]['uu'] = data[key]['uu'].copy()
+                data_list[i][j]['vv'] = data[key]['vv'].copy()
+                data_list[i][j]['vis2sta'] = data[key]['vis2sta'].copy()
+                data_list[i][j]['t3'] = data[key]['t3'].copy()
+                data_list[i][j]['dt3'] = data[key]['dt3'].copy()
+                data_list[i][j]['t3sta'] = data[key]['t3sta'].copy()
+            else:
+                data_list[i] += [{}]
+                data_list[i][j]['wave'] = data[key]['wave'].copy()
+                data_list[i][j]['dwave'] = data[key]['dwave'].copy()
+                data_list[i][j]['pa'] = 0.
+                data_list[i][j]['vis2'] = data[key]['vis2'][j*nbase:(j+1)*nbase].copy()
+                data_list[i][j]['dvis2'] = data[key]['dvis2'][j*nbase:(j+1)*nbase].copy()
+                data_list[i][j]['vis2u'] = data[key]['vis2u'][j*nbase:(j+1)*nbase].copy()
+                data_list[i][j]['vis2v'] = data[key]['vis2v'][j*nbase:(j+1)*nbase].copy()
+                data_list[i][j]['base'] = data[key]['base'][j*nbase:(j+1)*nbase].copy()
+                data_list[i][j]['uu'] = data[key]['uu'][j*nbase:(j+1)*nbase].copy()
+                data_list[i][j]['vv'] = data[key]['vv'][j*nbase:(j+1)*nbase].copy()
+                data_list[i][j]['vis2sta'] = data[key]['vis2sta'][j*nbase:(j+1)*nbase].copy()
+                data_list[i][j]['t3'] = data[key]['t3'][j*ntria:(j+1)*ntria].copy()
+                data_list[i][j]['dt3'] = data[key]['dt3'][j*ntria:(j+1)*ntria].copy()
+                data_list[i][j]['t3sta'] = data[key]['t3sta'][j*ntria:(j+1)*ntria].copy()
             covs = []
             try:
                 covs += [data[key]['vis2cov'][j]]
@@ -226,7 +265,7 @@ def open_oifile(hdul):
                 data_list[i][j]['covflag'] = True
             else:
                 data_list[i][j]['covflag'] = False
-            t3mat = np.zeros((data_list[i][j]['t3'].shape[0], data_list[i][j]['vis2'].shape[0]))
+            t3mat = np.zeros((data_list[i][j]['t3sta'].shape[0], data_list[i][j]['vis2sta'].shape[0]))
             for k in range(t3mat.shape[0]):
                 base1 = data_list[i][j]['t3sta'][k][[0, 1]]
                 base2 = data_list[i][j]['t3sta'][k][[1, 2]]
@@ -257,6 +296,12 @@ def open_oifile(hdul):
                         flag3 = True
                     l += 1
             data_list[i][j]['t3mat'] = t3mat
+            if (klflag == True):
+                data_list[i][j]['vis2mat'] = hdul['VIS2PROJ'].data
+                data_list[i][j]['t3mat'] = np.dot(hdul['T3PROJ'].data, data_list[i][j]['t3mat'])
+                data_list[i][j]['klflag'] = True
+            else:
+                data_list[i][j]['klflag'] = False
             try:
                 if (hdul[0].header['TELESCOP'] == 'ESO-VLTI-U1234'):
                     data_list[i][j]['diam'] = 8.2
@@ -323,6 +368,7 @@ def open_kpfile_old(hdul):
             data_list[0][0]['covflag'] = True
         except:
             data_list[0][0]['covflag'] = False
+        data_list[0][0]['klflag'] = False # only relevant for OIFITS files
         data_list[0][0]['kpmat'] = hdul['KER-MAT'].data    
         if ('ESO-VLT' in hdul[0].header['TELESCOP']):
             data_list[0][0]['diam'] = 8.2
@@ -361,6 +407,7 @@ def open_kpfile_old(hdul):
                 temp['covflag'] = True
             except:
                 temp['covflag'] = False
+            temp['klflag'] = False # only relevant for OIFITS files
             temp['kpmat'] = hdul['KER-MAT'].data.copy()
             if ('ESO-VLT' in hdul[0].header['TELESCOP']):
                 temp['diam'] = 8.2
@@ -407,12 +454,13 @@ def open_kpfile_new(hdul):
         temp['uu'] = np.divide(temp['kpu'][:, np.newaxis], temp['wave'][np.newaxis, :])
         temp['vv'] = np.divide(temp['kpv'][:, np.newaxis], temp['wave'][np.newaxis, :])
         try:
-            # temp['cov'] = hdul['KP-COV'].data.copy()[i, 0] # FIXME
-            temp['cov'] = hdul['EKP-COV'].data.copy()[i, 0] # FIXME
+            # temp['cov'] = hdul['KP-COV'].data.copy()[i, 0]
+            temp['cov'] = hdul['EKP-COV'].data.copy()[i, 0]
             temp['icv'] = invert(temp['cov'])
             temp['covflag'] = True
         except:
             temp['covflag'] = False
+        temp['klflag'] = False # only relevant for OIFITS files
         temp['kpmat'] = hdul['KER-MAT'].data.copy()
         temp['diam'] = hdul[0].header['DIAM']
         data_list += [temp]

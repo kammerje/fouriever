@@ -9,12 +9,13 @@ import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
 import numpy as np
 
+import glob
 import os
 import sys
 
 from . import inst
 
-observables_known = ['vis', 'vis2', 't3', 'kp']
+observables_known = ['vis2', 't3', 'kp']
 
 
 # =============================================================================
@@ -31,12 +32,19 @@ class data():
         ----------
         idir: str
             Input directory where fits files are located.
-        fitsfiles: list of str
-            List of fits files which shall be opened.
+        fitsfiles: list of str, None
+            List of fits files which shall be opened. All fits files from
+            ``idir`` are opened with ``fitsfiles=None``.
         """
         
         self.idir = idir
         self.fitsfiles = fitsfiles
+        
+        if (self.fitsfiles is None):
+            self.fitsfiles = glob.glob(self.idir+'*fits')
+            for i, item in enumerate(self.fitsfiles):
+                head, tail = os.path.split(item)
+                self.fitsfiles[i] = tail
         
         self.inst_list = []
         self.data_list = []
@@ -120,6 +128,24 @@ class data():
         print('   Use self.set_observables(observables) to change the selected observables')
         
         return None
+    
+    def clear_cov(self):
+        """
+        """
+        
+        for i in range(len(self.fitsfiles)):
+            hdul = pyfits.open(self.idir+self.fitsfiles[i])
+            try:
+                hdul.pop('VIS2COV')
+            except:
+                pass
+            try:
+                hdul.pop('T3COV')
+            except:
+                pass
+            hdul.writeto(self.idir+self.fitsfiles[i], output_verify='fix', overwrite=True)
+        
+        pass
     
     def add_vis2cov(self,
                     odir):
