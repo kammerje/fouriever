@@ -250,21 +250,14 @@ def open_oifile(hdul):
                 data_list[i][j]['t3'] = data[key]['t3'][j*ntria:(j+1)*ntria].copy()
                 data_list[i][j]['dt3'] = data[key]['dt3'][j*ntria:(j+1)*ntria].copy()
                 data_list[i][j]['t3sta'] = data[key]['t3sta'][j*ntria:(j+1)*ntria].copy()
-            covs = []
             try:
-                covs += [data[key]['vis2cov'][j]]
+                data_list[i][j]['vis2cov'] = data[key]['vis2cov'][j]
             except:
                 pass
             try:
-                covs += [data[key]['t3cov'][j]]
+                data_list[i][j]['t3cov'] = data[key]['t3cov'][j]
             except:
                 pass
-            if (len(covs) > 0):
-                data_list[i][j]['cov'] = block_diag(*covs)
-                data_list[i][j]['icv'] = invert(data_list[i][j]['cov'])
-                data_list[i][j]['covflag'] = True
-            else:
-                data_list[i][j]['covflag'] = False
             t3mat = np.zeros((data_list[i][j]['t3sta'].shape[0], data_list[i][j]['vis2sta'].shape[0]))
             for k in range(t3mat.shape[0]):
                 base1 = data_list[i][j]['t3sta'][k][[0, 1]]
@@ -363,11 +356,9 @@ def open_kpfile_old(hdul):
         data_list[0][0]['uu'] = np.divide(data_list[0][0]['kpu'][:, np.newaxis], data_list[0][0]['wave'][np.newaxis, :])
         data_list[0][0]['vv'] = np.divide(data_list[0][0]['kpv'][:, np.newaxis], data_list[0][0]['wave'][np.newaxis, :])
         try:
-            data_list[0][0]['cov'] = hdul['KP-SIGM'].data
-            data_list[0][0]['icv'] = invert(data_list[0][0]['cov'])
-            data_list[0][0]['covflag'] = True
+            data_list[0][0]['kpcov'] = hdul['KP-SIGM'].data
         except:
-            data_list[0][0]['covflag'] = False
+            pass
         data_list[0][0]['klflag'] = False # only relevant for OIFITS files
         data_list[0][0]['kpmat'] = hdul['KER-MAT'].data    
         if ('ESO-VLT' in hdul[0].header['TELESCOP']):
@@ -402,11 +393,9 @@ def open_kpfile_old(hdul):
             temp['uu'] = np.divide(temp['kpu'][:, np.newaxis], temp['wave'][np.newaxis, :])
             temp['vv'] = np.divide(temp['kpv'][:, np.newaxis], temp['wave'][np.newaxis, :])
             try:
-                temp['cov'] = hdul['KP-SIGM'].data.copy()[i]
-                temp['icv'] = invert(temp['cov'])
-                temp['covflag'] = True
+                temp['kpcov'] = hdul['KP-SIGM'].data.copy()[i]
             except:
-                temp['covflag'] = False
+                pass
             temp['klflag'] = False # only relevant for OIFITS files
             temp['kpmat'] = hdul['KER-MAT'].data.copy()
             if ('ESO-VLT' in hdul[0].header['TELESCOP']):
@@ -454,12 +443,10 @@ def open_kpfile_new(hdul):
         temp['uu'] = np.divide(temp['kpu'][:, np.newaxis], temp['wave'][np.newaxis, :])
         temp['vv'] = np.divide(temp['kpv'][:, np.newaxis], temp['wave'][np.newaxis, :])
         try:
-            # temp['cov'] = hdul['KP-COV'].data.copy()[i, 0]
-            temp['cov'] = hdul['EKP-COV'].data.copy()[i, 0]
-            temp['icv'] = invert(temp['cov'])
-            temp['covflag'] = True
+            # temp['kpcov'] = hdul['KP-COV'].data.copy()[i, 0]
+            temp['kpcov'] = hdul['EKP-COV'].data.copy()[i, 0]
         except:
-            temp['covflag'] = False
+            pass
         temp['klflag'] = False # only relevant for OIFITS files
         temp['kpmat'] = hdul['KER-MAT'].data.copy()
         temp['diam'] = hdul[0].header['DIAM']

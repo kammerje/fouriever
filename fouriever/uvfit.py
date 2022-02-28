@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import emcee
+from scipy.linalg import block_diag
 from scipy.optimize import minimize
 
 import glob
@@ -134,6 +135,27 @@ class data():
         
         return None
     
+    def invert(self,
+               M):
+        """
+        Parameters
+        ----------
+        M: array
+            Matrix which shall be inverted.
+        
+        Returns
+        -------
+        M_inv: array
+            Inverse matrix of M.
+        """
+        
+        sx, sy = M.shape
+        if (sx != sy):
+            raise UserWarning('Can only invert square matrices')
+        M_inv = np.linalg.pinv(M)
+        
+        return M_inv
+    
     def lincmap(self,
                 cov=False,
                 sep_range=None,
@@ -219,31 +241,56 @@ class data():
         
         if (cov == False):
             print('   Using data covariance = False')
+            for i in range(len(data_list)):
+                data_list[i]['covflag'] = False
         else:
             print('   Using data covariance = True')
-        errflag = False
-        for i in range(len(data_list)):
-            if (errflag == False):
-                try:
-                    rk = np.linalg.matrix_rank(data_list[0]['cov'])
-                    sz = data_list[0]['cov'].shape[0]
-                    if (rk < sz):
-                        errflag = True
-                        print('   WARNING: covariance matrix does not have full rank')
-                except:
-                    continue
-            else:
-                break
-        allcov = True
+            allcov = True
+            errflag = False
+            for i in range(len(data_list)):
+                covs = []
+                for j in range(len(self.observables)):
+                    if (self.observables[j] == 'vis2'):
+                        try:
+                            covs += [data_list[i]['vis2cov']]
+                        except:
+                            covs += [np.diag(data_list[i]['dvis2'].flatten()**2)]
+                            allcov = False
+                            covs += []
+                    if (self.observables[j] == 't3'):
+                        try:
+                            covs += [data_list[i]['t3cov']]
+                        except:
+                            covs += [np.diag(data_list[i]['dt3'].flatten()**2)]
+                            allcov = False
+                            covs += []
+                    if (self.observables[j] == 'kp'):
+                        try:
+                            covs += [data_list[i]['kpcov']]
+                        except:
+                            covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
+                            allcov = False
+                            covs += []
+                data_list[i]['cov'] = block_diag(*covs)
+                data_list[i]['icv'] = self.invert(data_list[i]['cov'])
+                data_list[i]['covflag'] = True
+                if (errflag == False):
+                    try:
+                        rk = np.linalg.matrix_rank(data_list[i]['cov'])
+                        sz = data_list[i]['cov'].shape[0]
+                        if (rk < sz):
+                            errflag = True
+                            print('   WARNING: covariance matrix does not have full rank')
+                    except:
+                        continue
+            if (allcov == False):
+                print('   WARNING: not all data sets have covariances')
+        
         ndof = []
         for i in range(len(data_list)):
-            if (data_list[i]['covflag'] == False):
-                allcov = False
             for j in range(len(self.observables)):
                 ndof += [np.prod(data_list[i][self.observables[j]].shape)]
         ndof = np.sum(ndof)
-        if (cov == True and allcov == False):
-            print('   WARNING: not all data sets have covariances')
         
         thetap = {}
         thetap['fun'] = util.chi2_bin(p0=np.array([0., 0., 0.]),
@@ -441,34 +488,59 @@ class data():
         
         if (cov == False):
             print('   Using data covariance = False')
+            for i in range(len(data_list)):
+                data_list[i]['covflag'] = False
         else:
             print('   Using data covariance = True')
-        errflag = False
-        for i in range(len(data_list)):
-            if (errflag == False):
-                try:
-                    rk = np.linalg.matrix_rank(data_list[0]['cov'])
-                    sz = data_list[0]['cov'].shape[0]
-                    if (rk < sz):
-                        errflag = True
-                        print('   WARNING: covariance matrix does not have full rank')
-                except:
-                    continue
-            else:
-                break
-        allcov = True
+            allcov = True
+            errflag = False
+            for i in range(len(data_list)):
+                covs = []
+                for j in range(len(self.observables)):
+                    if (self.observables[j] == 'vis2'):
+                        try:
+                            covs += [data_list[i]['vis2cov']]
+                        except:
+                            covs += [np.diag(data_list[i]['dvis2'].flatten()**2)]
+                            allcov = False
+                            covs += []
+                    if (self.observables[j] == 't3'):
+                        try:
+                            covs += [data_list[i]['t3cov']]
+                        except:
+                            covs += [np.diag(data_list[i]['dt3'].flatten()**2)]
+                            allcov = False
+                            covs += []
+                    if (self.observables[j] == 'kp'):
+                        try:
+                            covs += [data_list[i]['kpcov']]
+                        except:
+                            covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
+                            allcov = False
+                            covs += []
+                data_list[i]['cov'] = block_diag(*covs)
+                data_list[i]['icv'] = self.invert(data_list[i]['cov'])
+                data_list[i]['covflag'] = True
+                if (errflag == False):
+                    try:
+                        rk = np.linalg.matrix_rank(data_list[i]['cov'])
+                        sz = data_list[i]['cov'].shape[0]
+                        if (rk < sz):
+                            errflag = True
+                            print('   WARNING: covariance matrix does not have full rank')
+                    except:
+                        continue
+            if (allcov == False):
+                print('   WARNING: not all data sets have covariances')
+        
         klflag = False
         ndof = []
         for i in range(len(data_list)):
-            if (data_list[i]['covflag'] == False):
-                allcov = False
             if (data_list[i]['klflag'] == True):
                 klflag = True
             for j in range(len(self.observables)):
                 ndof += [np.prod(data_list[i][self.observables[j]].shape)]
         ndof = np.sum(ndof)
-        if (cov == True and allcov == False):
-            print('   WARNING: not all data sets have covariances')
         
         if ((model == 'ud') or (model == 'ud_bin')):
             if ('vis2' not in self.observables):
@@ -700,17 +772,15 @@ class data():
         
         if (fit_sub['model'] == 'ud'):
             print('   No companion data found!')
-        elif (fit_sub['model'] == 'bin'):
-            p0 = fit_sub['p']
-        else:
-            p0 = fit_sub['p'][:3]
         
-        data_before = []
-        data_after = []
+        klflag = False
+        flag = False
         ww = np.where(np.array(self.inst_list) == self.inst)[0]
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
-                
+                if (self.data_list[ww[i]][j]['klflag'] == True):
+                    klflag = True
+                p0 = fit_sub['p']
                 dra = p0[1].copy()
                 ddec = p0[2].copy()
                 rho = np.sqrt(dra**2+ddec**2)
@@ -724,36 +794,29 @@ class data():
                 phi = ((phi+180.) % 360.)-180.
                 dra_temp = rho*np.sin(np.deg2rad(phi))
                 ddec_temp = rho*np.cos(np.deg2rad(phi))
-                p0_temp = np.array([p0[0].copy(), dra_temp, ddec_temp])
-                
-                vis_sub = util.vis_bin(p0=p0_temp,
-                                       data=self.data_list[ww[i]][j],
-                                       smear=fit_sub['smear'])
+                if (fit_sub['model'] == 'bin'):
+                    p0_temp = np.array([p0[0].copy(), dra_temp, ddec_temp])
+                    vis_sub = util.vis_bin(p0=p0_temp,
+                                           data=self.data_list[ww[i]][j],
+                                           smear=fit_sub['smear'])
+                else:
+                    p0_temp = np.array([p0[0].copy(), dra_temp, ddec_temp, p0[3].copy()])
+                    vis_sub = util.vis_ud_bin(p0=p0_temp,
+                                              data=self.data_list[ww[i]][j],
+                                              smear=fit_sub['smear'])
                 
                 if ('vis2' in self.observables):
+                    flag = True
                     self.data_list[ww[i]][j]['vis2'] /= util.vis2vis2(vis_sub,
                                                                       data=self.data_list[ww[i]][j]) # divide vis2
                 if ('t3' in self.observables):
-                    data_before += [self.data_list[ww[i]][j]['t3'].copy()]
                     self.data_list[ww[i]][j]['t3'] -= util.vis2t3(vis_sub,
                                                                   data=self.data_list[ww[i]][j]) # subtract t3
-                    data_after += [self.data_list[ww[i]][j]['t3'].copy()]
                 if ('kp' in self.observables):
-                    data_before += [self.data_list[ww[i]][j]['kp'].copy()]
                     self.data_list[ww[i]][j]['kp'] -= util.vis2kp(vis_sub,
                                                                   data=self.data_list[ww[i]][j]) # subtract kp
-                    data_after += [self.data_list[ww[i]][j]['kp'].copy()]
-        
-        # data_before = np.array(data_before)
-        # data_after = np.array(data_after)
-        # plt.plot(np.mean(data_before, axis=0), label='before')
-        # plt.plot(np.mean(data_after, axis=0), label='after')
-        # plt.xlabel('Index')
-        # plt.ylabel('Closure/kernel phase')
-        # plt.title('Binary model subtraction')
-        # plt.legend()
-        # plt.show()
-        # plt.close()
+        if (klflag == True and flag == True):
+            raise UserWarning('Please subtract companion from unprojected data')
         
         fit = self.chi2map(model=model,
                            cov=cov,
@@ -830,28 +893,56 @@ class data():
         
         if (cov == False):
             print('   Using data covariance = False')
+            for i in range(len(data_list)):
+                data_list[i]['covflag'] = False
         else:
             print('   Using data covariance = True')
-        errflag = False
+            allcov = True
+            errflag = False
+            for i in range(len(data_list)):
+                covs = []
+                for j in range(len(self.observables)):
+                    if (self.observables[j] == 'vis2'):
+                        try:
+                            covs += [data_list[i]['vis2cov']]
+                        except:
+                            covs += [np.diag(data_list[i]['dvis2'].flatten()**2)]
+                            allcov = False
+                            covs += []
+                    if (self.observables[j] == 't3'):
+                        try:
+                            covs += [data_list[i]['t3cov']]
+                        except:
+                            covs += [np.diag(data_list[i]['dt3'].flatten()**2)]
+                            allcov = False
+                            covs += []
+                    if (self.observables[j] == 'kp'):
+                        try:
+                            covs += [data_list[i]['kpcov']]
+                        except:
+                            covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
+                            allcov = False
+                            covs += []
+                data_list[i]['cov'] = block_diag(*covs)
+                data_list[i]['icv'] = self.invert(data_list[i]['cov'])
+                data_list[i]['covflag'] = True
+                if (errflag == False):
+                    try:
+                        rk = np.linalg.matrix_rank(data_list[i]['cov'])
+                        sz = data_list[i]['cov'].shape[0]
+                        if (rk < sz):
+                            errflag = True
+                            print('   WARNING: covariance matrix does not have full rank')
+                    except:
+                        continue
+            if (allcov == False):
+                print('   WARNING: not all data sets have covariances')
+        
+        ndof = []
         for i in range(len(data_list)):
-            if (errflag == False):
-                try:
-                    rk = np.linalg.matrix_rank(data_list[0]['cov'])
-                    sz = data_list[0]['cov'].shape[0]
-                    if (rk < sz):
-                        errflag = True
-                        print('   WARNING: covariance matrix does not have full rank')
-                except:
-                    continue
-            else:
-                break
-        allcov = True
-        ndof = fit['ndof'].copy()
-        for i in range(len(data_list)):
-            if (data_list[i]['covflag'] == False):
-                allcov = False
-        if (cov == True and allcov == False):
-            print('   WARNING: not all data sets have covariances')
+            for j in range(len(self.observables)):
+                ndof += [np.prod(data_list[i][self.observables[j]].shape)]
+        ndof = np.sum(ndof)
         
         if (temp is None):
             temp = fit['chi2_red']
