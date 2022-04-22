@@ -356,7 +356,11 @@ class data():
                         except:
                             pass
                 
-                hdul.writeto(odir+self.scifiles[i][:-5]+'_klcal.fits', overwrite=True, output_verify='fix')
+                ww = self.scifiles[i].rfind('/')
+                if (ww == -1):
+                    hdul.writeto(odir+self.scifiles[i][:-5]+'_klcal.fits', overwrite=True, output_verify='fix')
+                else:
+                    hdul.writeto(odir+self.scifiles[i][ww+1:-5]+'_klcal.fits', overwrite=True, output_verify='fix')
                 hdul.close()
             
             elif (('OI_VIS2' in hdul) and ('OI_T3' in hdul)):
@@ -398,7 +402,11 @@ class data():
                             raise UserWarning('Only 1D is implemented for T3PHI')
                         hdul += [hdu0, hdu1, hdu2]
                 
-                hdul.writeto(odir+self.scifiles[i][:-7]+'_klcal.oifits', overwrite=True, output_verify='fix')
+                ww = self.scifiles[i].rfind('/')
+                if (ww == -1):
+                    hdul.writeto(odir+self.scifiles[i][:-7]+'_klcal.oifits', overwrite=True, output_verify='fix')
+                else:
+                    hdul.writeto(odir+self.scifiles[i][ww+1:-7]+'_klcal.oifits', overwrite=True, output_verify='fix')
                 hdul.close()
             
             else:

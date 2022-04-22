@@ -429,22 +429,30 @@ def open_kpfile_new(hdul):
     nobs = hdul['KP-DATA'].data.shape[0]
     inst_list = [hdul[0].header['INSTRUME']]
     data_list = []
+    ekp = True
     for i in range(nobs):
         temp = {}
         temp['wave'] = hdul['CWAVEL'].data['CWAVEL']
         temp['dwave'] = hdul['CWAVEL'].data['DWAVEL']
         temp['pa'] = hdul['DETPA'].data[i]
         temp['kp'] = np.swapaxes(hdul['KP-DATA'].data.copy()[i], 0, 1)
-        # temp['dkp'] = np.swapaxes(hdul['KP-SIGM'].data.copy()[i], 0, 1)
-        temp['dkp'] = np.swapaxes(hdul['EKP-SIGM'].data.copy()[i], 0, 1)
+        if (ekp == True):
+            try:
+                temp['dkp'] = np.swapaxes(hdul['EKP-SIGM'].data.copy()[i], 0, 1)
+            except:
+                ekp = False
+        if (ekp == False):
+            temp['dkp'] = np.swapaxes(hdul['KP-SIGM'].data.copy()[i], 0, 1)
         temp['kpu'] = -hdul['UV-PLANE'].data['UUC'].copy()
         temp['kpv'] = hdul['UV-PLANE'].data['VVC'].copy()
         temp['base'] = np.sqrt(temp['kpu']**2+temp['kpv']**2)
         temp['uu'] = np.divide(temp['kpu'][:, np.newaxis], temp['wave'][np.newaxis, :])
         temp['vv'] = np.divide(temp['kpv'][:, np.newaxis], temp['wave'][np.newaxis, :])
         try:
-            # temp['kpcov'] = hdul['KP-COV'].data.copy()[i, 0]
-            temp['kpcov'] = hdul['EKP-COV'].data.copy()[i, 0]
+            if (ekp == True):
+                temp['kpcov'] = hdul['EKP-COV'].data.copy()[i, 0]
+            else:
+                temp['kpcov'] = hdul['KP-COV'].data.copy()[i, 0]
         except:
             pass
         temp['klflag'] = False # only relevant for OIFITS files

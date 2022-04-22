@@ -33,7 +33,7 @@ data = klcal.data(scidir=scidir,
 
 # Perform Karhunen-Loeve calibration.
 data.calibrate(odir=odir,
-                K_klip=50) # order of Karhunen-Loeve calibration.
+               K_klip=50) # order of Karhunen-Loeve calibration.
 
 # Kernel phase test data.
 idir = 'data/HIP50156_kpfiles/'
