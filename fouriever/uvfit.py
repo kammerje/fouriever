@@ -161,6 +161,8 @@ class data():
                 sep_range=None,
                 step_size=None,
                 smear=None,
+                vmin=None,
+                vmax=None,
                 ofile=None,
                 save_as_fits=False):
         """
@@ -174,6 +176,10 @@ class data():
             Step size of grid (mas).
         smear: int
             Numerical bandwidth smearing which shall be used.
+        vmin : float
+            Log10 of contrast map vmin.
+        vmax : float
+            Log10 of contrast map vmax.
         ofile: str
             Path under which figures shall be saved.
         save_as_fits: bool
@@ -214,10 +220,10 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'NIRISS']):
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'NIRCAM', 'NIRISS']):
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
-            diffFOV = lmin/bmin*rad2mas # diffraction field-of-view (mas)
+            diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
             smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)
@@ -351,7 +357,7 @@ class data():
         nsigma = util.nsigma(chi2r_test=thetap['fun']/ndof,
                              chi2r_true=chi2/ndof,
                              ndof=ndof)
-        print('   Best fit companion flux = %.3e +/- %.3e' % (pp[0], pe[0]))
+        print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0]*100., pe[0]*100.))
         print('   Best fit companion right ascension = %.1f mas' % pp[1])
         print('   Best fit companion declination = %.1f mas' % pp[2])
         print('   Best fit companion separation = %.1f mas' % sep)
@@ -381,6 +387,8 @@ class data():
                      fit=fit,
                      sep_range=sep_range,
                      step_size=step_size,
+                     vmin=vmin,
+                     vmax=vmax,
                      ofile=ofile)
         
         if (save_as_fits == True):
@@ -461,10 +469,10 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'NIRISS']):
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'NIRCAM', 'NIRISS']):
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
-            diffFOV = lmin/bmin*rad2mas # diffraction field-of-view (mas)
+            diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
             smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)

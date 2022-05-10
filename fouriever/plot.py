@@ -456,6 +456,8 @@ def lincmap(pps,
             fit,
             sep_range,
             step_size,
+            vmin=None,
+            vmax=None,
             ofile=None):
     """
     Parameters
@@ -475,6 +477,10 @@ def lincmap(pps,
         Min. and max. angular separation of grid (mas).
     step_size: float
         Step size of grid (mas).
+    vmin : float
+        Log10 of contrast map vmin.
+    vmax : float
+        Log10 of contrast map vmax.
     ofile: str
         Path under which figures shall be saved.
     """
@@ -493,7 +499,11 @@ def lincmap(pps,
     fig, ax = plt.subplots(1, 3, figsize=(19.2, 4.8))
     temp = pps[0]
     temp[temp <= 0.] = np.min(temp[temp > 0.])
-    p0 = ax[0].imshow(np.log10(temp), cmap='hot', vmin=-4, vmax=-1, origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
+    if (vmin is None):
+        vmin = -4
+    if (vmax is None):
+        vmax = -1
+    p0 = ax[0].imshow(np.log10(temp), cmap='hot', vmin=vmin, vmax=vmax, origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
     c0 = plt.colorbar(p0, ax=ax[0])
     c0.set_label(r'$\mathrm{log_{10}}$(relative flux)', rotation=270, labelpad=20)
     ax[0].plot(0., 0., marker='*', color='black', markersize=10)
