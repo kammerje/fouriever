@@ -164,7 +164,8 @@ class data():
                 vmin=None,
                 vmax=None,
                 ofile=None,
-                save_as_fits=False):
+                save_as_fits=False,
+                searchbox=None):
         """
         Parameters
         ----------
@@ -184,6 +185,11 @@ class data():
             Path under which figures shall be saved.
         save_as_fits: bool
             True if result shall be saved as fits file.
+        searchbox: dict
+            Search box inside of which the companion is expected to be.
+            Accepted formats are {'RA': [RA_min, RA_max], 'DEC': [DEC_min,
+            DEC_max], 'rho': [rho_min, rho_max], 'phi': [phi_min, phi_max]}.
+            Note that -180 <= phi < 180.
         
         Returns
         -------
@@ -320,8 +326,9 @@ class data():
         for i in range(grid_ra_dec[0].shape[0]):
             for j in range(grid_ra_dec[0].shape[1]):
                 ctr += 1
-                sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
-                sys.stdout.flush()
+                if (ctr % 100 == 0):
+                    sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
+                    sys.stdout.flush()
                 if ((np.isnan(grid_ra_dec[0][i, j]) == False) and (np.isnan(grid_ra_dec[1][i, j]) == False)):
                     p0 = np.array([f0, grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]])
                     ff, fe = util.clin(p0,
@@ -342,21 +349,52 @@ class data():
                     pps += [np.array([np.nan, np.nan, np.nan])]
                     pes += [np.array([np.nan, np.nan, np.nan])]
                     chi2s += [np.nan]
+        sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
+        sys.stdout.flush()
         print('')
         p0s = np.array(p0s)
         pps = np.array(pps)
         pes = np.array(pes)
         chi2s = np.array(chi2s)
         
-        chi2s[pps[:, 0] < 0.] = np.nan
-        chi2 = np.nanmin(chi2s)
-        pp = pps[np.nanargmin(chi2s)]
-        pe = pes[np.nanargmin(chi2s)]
-        sep = np.sqrt(pp[1]**2+pp[2]**2)
-        pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
-        nsigma = util.nsigma(chi2r_test=thetap['fun']/ndof,
-                             chi2r_true=chi2/ndof,
-                             ndof=ndof)
+        if (searchbox is None):
+            chi2s[pps[:, 0] < 0.] = np.nan
+            chi2 = np.nanmin(chi2s)
+            pp = pps[np.nanargmin(chi2s)]
+            pe = pes[np.nanargmin(chi2s)]
+            sep = np.sqrt(pp[1]**2+pp[2]**2)
+            pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
+            nsigma = util.nsigma(chi2r_test=thetap['fun']/ndof,
+                                 chi2r_true=chi2/ndof,
+                                 ndof=ndof)
+        else:
+            chi2s[pps[:, 0] < 0.] = np.nan
+            chi2s_copy = chi2s.copy()
+            if ('RA' in searchbox.keys()):
+                RA = pps[:, 1]
+                chi2s_copy[RA < searchbox['RA'][0]] = np.nan
+                chi2s_copy[RA > searchbox['RA'][1]] = np.nan
+            if ('DEC' in searchbox.keys()):
+                DEC = pps[:, 2]
+                chi2s_copy[DEC < searchbox['DEC'][0]] = np.nan
+                chi2s_copy[DEC > searchbox['DEC'][1]] = np.nan
+            if ('rho' in searchbox.keys()):
+                rho = np.sqrt(pps[:, 1]**2+pps[:, 2]**2)
+                chi2s_copy[rho < searchbox['rho'][0]] = np.nan
+                chi2s_copy[rho > searchbox['rho'][1]] = np.nan
+            if ('phi' in searchbox.keys()):
+                phi = np.rad2deg(np.arctan2(pps[:, 1], pps[:, 2]))
+                chi2s_copy[phi < searchbox['phi'][0]] = np.nan
+                chi2s_copy[phi > searchbox['phi'][1]] = np.nan
+            chi2 = np.nanmin(chi2s_copy)
+            pp = pps[np.nanargmin(chi2s_copy)]
+            pe = pes[np.nanargmin(chi2s_copy)]
+            sep = np.sqrt(pp[1]**2+pp[2]**2)
+            pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
+            nsigma = util.nsigma(chi2r_test=thetap['fun']/ndof,
+                                 chi2r_true=chi2/ndof,
+                                 ndof=ndof)
+        
         print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0]*100., pe[0]*100.))
         print('   Best fit companion right ascension = %.1f mas' % pp[1])
         print('   Best fit companion declination = %.1f mas' % pp[2])
@@ -389,7 +427,8 @@ class data():
                      step_size=step_size,
                      vmin=vmin,
                      vmax=vmax,
-                     ofile=ofile)
+                     ofile=ofile,
+                     searchbox=searchbox)
         
         if (save_as_fits == True):
             hdu0 = pyfits.PrimaryHDU(pps)
@@ -419,7 +458,8 @@ class data():
                 sep_range=None,
                 step_size=None,
                 smear=None,
-                ofile=None):
+                ofile=None,
+                searchbox=None):
         """
         Parameters
         ----------
@@ -436,6 +476,11 @@ class data():
             Numerical bandwidth smearing which shall be used.
         ofile: str
             Path under which figures shall be saved.
+        searchbox: dict
+            Search box inside of which the companion is expected to be.
+            Accepted formats are {'RA': [RA_min, RA_max], 'DEC': [DEC_min,
+            DEC_max], 'rho': [rho_min, rho_max], 'phi': [phi_min, phi_max]}.
+            Note that -180 <= phi < 180.
         
         Returns
         -------
@@ -602,6 +647,7 @@ class data():
             print('Computing chi-squared map (DO NOT TRUST UNCERTAINTIES)')
             f0 = 1e-4
             p0s = []
+            p0s_all = []
             pps = []
             pes = []
             chi2s = []
@@ -610,8 +656,9 @@ class data():
             for i in range(grid_ra_dec[0].shape[0]):
                 for j in range(grid_ra_dec[0].shape[1]):
                     ctr += 1
-                    sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
-                    sys.stdout.flush()
+                    if (ctr % 10 == 0):
+                        sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
+                        sys.stdout.flush()
                     if ((np.isnan(grid_ra_dec[0][i, j]) == False) and (np.isnan(grid_ra_dec[1][i, j]) == False)):
                         if (model == 'bin'):
                             p0 = np.array([f0, grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]])
@@ -636,8 +683,13 @@ class data():
                         pe = np.sqrt(max(1., abs(pp['fun']))*ftol*np.diag(pp['hess_inv'].todense()))
                         pes += [pe]
                         chi2s += [pp['fun']]
+                    p0 = np.array([f0, grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]])
+                    p0s_all += [p0]
+            sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
+            sys.stdout.flush()
             print('')
             p0s = np.array(p0s)
+            p0s_all = np.array(p0s_all)
             pps = np.array(pps)
             pes = np.array(pes)
             chi2s = np.array(chi2s)
@@ -670,12 +722,30 @@ class data():
                 pp = pps[ww[i]].copy()
                 sep = np.sqrt(pp[1]**2+pp[2]**2)
                 if (sep_range[0] <= sep and sep <= sep_range[1]):
+                    if (searchbox is not None):
+                        if ('RA' in searchbox.keys()):
+                            RA = pp[1]
+                            if ((RA < searchbox['RA'][0]) or (RA > searchbox['RA'][1])):
+                                continue
+                        if ('DEC' in searchbox.keys()):
+                            DEC = pp[2]
+                            if ((DEC < searchbox['DEC'][0]) or (DEC > searchbox['DEC'][1])):
+                                continue
+                        if ('rho' in searchbox.keys()):
+                            rho = np.sqrt(pp[1]**2+pp[2]**2)
+                            if ((rho < searchbox['rho'][0]) or (rho > searchbox['rho'][1])):
+                                continue
+                        if ('rho' in searchbox.keys()):
+                            phi = np.rad2deg(np.arctan2(pp[1], pp[2]))
+                            if ((phi < searchbox['phi'][0]) or (phi > searchbox['phi'][1])):
+                                continue
                     pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
                     pe = pes[ww[i]].copy()
                     dsep = np.sqrt((pp[1]/sep*pe[1])**2+(pp[2]/sep*pe[2])**2)
                     dpa = np.rad2deg(np.sqrt((pp[2]/sep**2*pe[1])**2+(-pp[1]/sep**2*pe[2])**2))
                     chi2 = chi2s_sorted[i]
                     break
+            
             try:
                 nsigma = util.nsigma(chi2r_test=thetap['fun']/ndof,
                                      chi2r_true=chi2/ndof,
@@ -737,7 +807,8 @@ class data():
                          fit=fit,
                          sep_range=sep_range,
                          step_size=step_size,
-                         ofile=ofile)
+                         ofile=ofile,
+                         searchbox=searchbox)
         
         return fit
     
@@ -748,7 +819,8 @@ class data():
                     sep_range=None,
                     step_size=None,
                     smear=None,
-                    ofile=None):
+                    ofile=None,
+                    searchbox=None):
         """
         Parameters
         ----------
@@ -767,6 +839,11 @@ class data():
             Numerical bandwidth smearing which shall be used.
         ofile: str
             Path under which figures shall be saved.
+        searchbox: dict
+            Search box inside of which the companion is expected to be.
+            Accepted formats are {'RA': [RA_min, RA_max], 'DEC': [DEC_min,
+            DEC_max], 'rho': [rho_min, rho_max], 'phi': [phi_min, phi_max]}.
+            Note that -180 <= phi < 180.
         
         Returns
         -------
@@ -831,7 +908,8 @@ class data():
                            sep_range=sep_range,
                            step_size=step_size,
                            smear=smear,
-                           ofile=ofile)
+                           ofile=ofile,
+                           searchbox=searchbox)
         
         self.data_list = buffer
         

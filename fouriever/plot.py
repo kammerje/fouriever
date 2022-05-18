@@ -458,7 +458,8 @@ def lincmap(pps,
             step_size,
             vmin=None,
             vmax=None,
-            ofile=None):
+            ofile=None,
+            searchbox=None):
     """
     Parameters
     ----------
@@ -469,7 +470,7 @@ def lincmap(pps,
         Array of shape (model parameters x RA steps x DEC steps) containing
         uncertainties of best fit model parameters for grid.
     chi2s: array
-        Array of shape (1 x RA steps x DEC steps) containing best fit
+        Array of shape (RA steps x DEC steps) containing best fit
         chi-squared for the grid.
     fit: dict
         Model fit whose chi-squared map shall be plotted.
@@ -483,6 +484,11 @@ def lincmap(pps,
         Log10 of contrast map vmax.
     ofile: str
         Path under which figures shall be saved.
+    searchbox: dict
+        Search box inside of which the companion is expected to be. Accepted
+        formats are {'RA': [RA_min, RA_max], 'DEC': [DEC_min, DEC_max], 'rho':
+        [rho_min, rho_max], 'phi': [phi_min, phi_max]}. Note that -180 <= phi
+        < 180.
     """
     
     grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
@@ -494,6 +500,26 @@ def lincmap(pps,
     rad, avg = ot.azimuthalAverage(np.abs(pps[0]), returnradii=True, binsize=3.)
     std = ot.azimuthalAverage(np.abs(pps[0]), binsize=3., stddev=True)
     rad *= step_size
+    if (searchbox is not None):
+        searchmap = np.ones_like(grid_ra_dec[0].flatten())
+        if ('RA' in searchbox.keys()):
+            RA = grid_ra_dec[0].flatten()
+            searchmap[RA < searchbox['RA'][0]] = 0.
+            searchmap[RA > searchbox['RA'][1]] = 0.
+        if ('DEC' in searchbox.keys()):
+            DEC = grid_ra_dec[1].flatten()
+            searchmap[DEC < searchbox['DEC'][0]] = 0.
+            searchmap[DEC > searchbox['DEC'][1]] = 0.
+        if ('rho' in searchbox.keys()):
+            rho = np.sqrt(grid_ra_dec[0].flatten()**2+grid_ra_dec[1].flatten()**2)
+            searchmap[rho < searchbox['rho'][0]] = 0.
+            searchmap[rho > searchbox['rho'][1]] = 0.
+        if ('phi' in searchbox.keys()):
+            phi = np.rad2deg(np.arctan2(grid_ra_dec[0].flatten(), grid_ra_dec[1].flatten()))
+            searchmap[phi < searchbox['phi'][0]] = 0.
+            searchmap[phi > searchbox['phi'][1]] = 0.
+        searchmap = searchmap.reshape(grid_ra_dec[0].shape)
+        searchmap[np.isnan(grid_ra_dec[0])] = 0.
     
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     fig, ax = plt.subplots(1, 3, figsize=(19.2, 4.8))
@@ -517,6 +543,8 @@ def lincmap(pps,
     p1 = ax[1].imshow(chi2s/fit['ndof'], cmap='cubehelix', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
     c1 = plt.colorbar(p1, ax=ax[1])
     c1.set_label('$\chi^2$', rotation=270, labelpad=20)
+    if (searchbox is not None):
+        ax[1].imshow(searchmap, cmap='Reds', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.), alpha=0.5)
     ax[1].plot(0., 0., marker='*', color='black', markersize=10)
     cc = plt.Circle((fit['p'][1], fit['p'][2]), emax/10., color='white', lw=5, fill=False)
     ax[1].add_artist(cc)
@@ -534,7 +562,10 @@ def lincmap(pps,
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ax[1].set_xlabel('$\Delta$RA [mas]')
     ax[1].set_ylabel('$\Delta$DEC [mas]')
-    ax[1].set_title('Chi-squared map')
+    if (searchbox is None):
+        ax[1].set_title('Chi-squared map')
+    else:
+        ax[1].set_title('Chi-squared map (search region shaded red)')
     ax[2].plot(rad, avg, color=colors[0], label='avg')
     ax[2].fill_between(rad, avg-std, avg+std, ec='None', fc=colors[0], alpha=1./3.)
     ax[2].grid(axis='y')
@@ -562,7 +593,8 @@ def chi2map(pps_unique,
             fit,
             sep_range,
             step_size,
-            ofile=None):
+            ofile=None,
+            searchbox=None):
     """
     Parameters
     ----------
@@ -580,6 +612,11 @@ def chi2map(pps_unique,
         Step size of grid (mas).
     ofile: str
         Path under which figures shall be saved.
+    searchbox: dict
+        Search box inside of which the companion is expected to be. Accepted
+        formats are {'RA': [RA_min, RA_max], 'DEC': [DEC_min, DEC_max], 'rho':
+        [rho_min, rho_max], 'phi': [phi_min, phi_max]}. Note that -180 <= phi
+        < 180.
     """
     
     grid_ra_dec_fine, grid_sep_pa_fine = util.get_grid(sep_range=sep_range,
@@ -592,12 +629,34 @@ def chi2map(pps_unique,
     pa = np.rad2deg(np.arctan2(fit['p'][1], fit['p'][2]))
     dsep = np.sqrt((fit['p'][1]/sep*fit['dp'][1])**2+(fit['p'][2]/sep*fit['dp'][2])**2)
     dpa = np.rad2deg(np.sqrt((fit['p'][2]/sep**2*fit['dp'][1])**2+(-fit['p'][1]/sep**2*fit['dp'][2])**2))
+    if (searchbox is not None):
+        searchmap = np.ones_like(grid_ra_dec_fine[0].flatten())
+        if ('RA' in searchbox.keys()):
+            RA = grid_ra_dec_fine[0].flatten()
+            searchmap[RA < searchbox['RA'][0]] = 0.
+            searchmap[RA > searchbox['RA'][1]] = 0.
+        if ('DEC' in searchbox.keys()):
+            DEC = grid_ra_dec_fine[1].flatten()
+            searchmap[DEC < searchbox['DEC'][0]] = 0.
+            searchmap[DEC > searchbox['DEC'][1]] = 0.
+        if ('rho' in searchbox.keys()):
+            rho = np.sqrt(grid_ra_dec_fine[0].flatten()**2+grid_ra_dec_fine[1].flatten()**2)
+            searchmap[rho < searchbox['rho'][0]] = 0.
+            searchmap[rho > searchbox['rho'][1]] = 0.
+        if ('phi' in searchbox.keys()):
+            phi = np.rad2deg(np.arctan2(grid_ra_dec_fine[0].flatten(), grid_ra_dec_fine[1].flatten()))
+            searchmap[phi < searchbox['phi'][0]] = 0.
+            searchmap[phi > searchbox['phi'][1]] = 0.
+        searchmap = searchmap.reshape(grid_ra_dec_fine[0].shape)
+        searchmap[np.isnan(grid_ra_dec_fine[0])] = 0.
     
     fig = plt.figure(figsize=(6.4, 4.8))
     ax = plt.gca()
     p0 = ax.imshow(chi2s_rbf/fit['ndof'], cmap='cubehelix', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
     c0 = plt.colorbar(p0, ax=ax)
     c0.set_label('$\chi^2$', rotation=270, labelpad=20)
+    if (searchbox is not None):
+        ax.imshow(searchmap, cmap='Reds', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.), alpha=0.5)
     ax.plot(0., 0., marker='*', color='black', markersize=10)
     cc = plt.Circle((fit['p'][1], fit['p'][2]), emax/10., color='white', lw=5, fill=False)
     ax.add_artist(cc)
@@ -615,7 +674,10 @@ def chi2map(pps_unique,
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ax.set_xlabel('$\Delta$RA [mas]')
     ax.set_ylabel('$\Delta$DEC [mas]')
-    plt.suptitle('Chi-squared map')
+    if (searchbox is None):
+        plt.suptitle('Chi-squared map')
+    else:
+        plt.suptitle('Chi-squared map (search region shaded red)')
     if (ofile is not None):
         index = ofile.rfind('/')
         if index != -1:
