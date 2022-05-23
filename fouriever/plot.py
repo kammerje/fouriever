@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import corner as cp
+import matplotlib.gridspec as gridspec
 import matplotlib.patheffects as PathEffects
 import os
 import sys
@@ -572,7 +573,7 @@ def lincmap(pps,
     ax[2].set_yscale('log')
     ax[2].set_xlabel('Separation [mas]')
     ax[2].set_ylabel('Contrast')
-    ax[2].set_title('Detection limits')
+    ax[2].set_title('Detection limits (1-$\sigma$)')
     ax[2].legend(loc='upper right')
     # ax = ax[2].twinx()
     # ax.plot(rad, max/avg, color='black', ls=':')
@@ -860,3 +861,65 @@ def corner(fit,
             plt.savefig(ofile+'_mcmc_corner.pdf')
         # plt.show()
         plt.close()
+
+def detlim(ffs_absil,
+           ffs_injection,
+           sigma,
+           sep_range,
+           step_size,
+           ofile=None):
+    """
+    Parameters
+    ----------
+    ffs_absil: array
+        
+    ffs_injection: array
+        
+    sigma: int
+        Confidence level for which the detection limits shall be computed.
+    sep_range: tuple of float
+        Min. and max. angular separation of grid (mas).
+    step_size: float
+        Step size of grid (mas).
+    ofile: str
+        Path under which figures shall be saved.
+    """
+    
+    grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
+                                             step_size=step_size,
+                                             verbose=False)
+    emax = np.nanmax(grid_ra_dec[0])
+    
+    gs = gridspec.GridSpec(2, 2)
+    fig = plt.figure(figsize=(2*6.4, 2*4.8))
+    ax = plt.subplot(gs[0, 0])
+    # p0 = ax.imshow(-2.5*np.log10(ffs_absil), origin='lower', cmap='cubehelix', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.), vmin=3.8, vmax=5.1)
+    p0 = ax.imshow(-2.5*np.log10(ffs_absil), origin='lower', cmap='cubehelix', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
+    c0 = plt.colorbar(p0, ax=ax)
+    c0.set_label('Contrast [mag]', rotation=270, labelpad=20)
+    ax.plot(0., 0., marker='*', color='black', markersize=10)
+    ax.set_xlabel('$\Delta$RA [mas]')
+    ax.set_ylabel('$\Delta$DEC [mas]')
+    ax.set_title('Method Absil')
+    ax = plt.subplot(gs[0, 1])
+    # p1 = ax.imshow(-2.5*np.log10(ffs_injection), origin='lower', cmap='cubehelix', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.), vmin=3.5, vmax=5.7)
+    p1 = ax.imshow(-2.5*np.log10(ffs_injection), origin='lower', cmap='cubehelix', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
+    c1 = plt.colorbar(p1, ax=ax)
+    c1.set_label('Contrast [mag]', rotation=270, labelpad=20)
+    ax.plot(0., 0., marker='*', color='black', markersize=10)
+    ax.set_xlabel('$\Delta$RA [mas]')
+    ax.set_ylabel('$\Delta$DEC [mas]')
+    ax.set_title('Method injection')
+    ax = plt.subplot(gs[1, :])
+    rad, avg = ot.azimuthalAverage(ffs_absil, returnradii=True, binsize=1)
+    ax.plot(rad*step_size, -2.5*np.log10(avg), lw=3, alpha=2./3., label='Method Absil')
+    ax.grid(axis='both')
+    ax.invert_yaxis()
+    ax.set_xlabel('Separation [mas]')
+    ax.set_ylabel('Contrast [mag]')
+    ax.legend(loc='upper right')
+    plt.suptitle('Detection limits ('+str(sigma)+'-$\sigma$)')
+    plt.tight_layout()
+    plt.savefig(ofile+'_detlim.pdf')
+    # plt.show()
+    plt.close()

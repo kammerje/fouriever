@@ -19,8 +19,8 @@ from fouriever import intercorr, uvfit
 # =============================================================================
 
 # PIONIER test data.
-idir = 'data/AXCir/'
-odir = 'data/AXCir_cov/'
+idir = '../data/AXCir/'
+odir = '../data/AXCir_cov/'
 fitsfiles = ['axcir.oifits'] # real data of AX Cir
 
 # Load data.
@@ -57,3 +57,12 @@ fit_sub = data.chi2map_sub(fit_sub=fit, # best fit from MCMC
                            step_size=None, # use default step size
                            smear=3, # use bandwidth smearing of 3
                            ofile='figures/axcir_smear_cov_sub') # save figures
+
+# Estimate detection limits.
+data.detlim(sigma=3., # confidence level of detection limits
+            fit_sub=fit, # best fit from MCMC
+            cov=True, # this data set has covariance
+            sep_range=None, # use default separation range
+            step_size=None, # use default step size
+            smear=3, # use bandwidth smearing of 3
+            ofile='figures/axcir_smear_cov_sub') # save figures
