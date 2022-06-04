@@ -15,7 +15,7 @@ import sys
 
 from . import inst
 
-observables_known = ['vis2', 't3', 'kp']
+observables_known = ['v2', 'cp', 'kp']
 
 
 # =============================================================================
@@ -368,10 +368,10 @@ class data():
                 sys.stdout.flush()
                 
                 for j in range(len(self.observables)):
-                    if (self.observables[j] == 'vis2'):
+                    if (self.observables[j] == 'v2'):
                         
                         hdu0 = pyfits.ImageHDU(self.P[self.observables[j]])
-                        hdu0.header['EXTNAME'] = 'VIS2PROJ'
+                        hdu0.header['EXTNAME'] = 'V2PROJ'
                         if (hdul['OI_VIS2'].data['VIS2DATA'].ndim == 1):
                             hdu1 = pyfits.ImageHDU(self.P[self.observables[j]].dot(hdul['OI_VIS2'].data['VIS2DATA']))
                             hdu1.header['EXTNAME'] = 'VIS2DATA'
@@ -379,16 +379,16 @@ class data():
                             cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
                             hdu2 = pyfits.ImageHDU(np.sqrt(np.diag(cov)))
                             hdu2.header['EXTNAME'] = 'VIS2ERR'
-                            if ('VIS2COV' in hdul):
-                                hdul['VIS2COV'].data = self.P[self.observables[j]].dot(hdul['VIS2COV'].data[0]).dot(self.P[self.observables[j]].T)[np.newaxis, :]
+                            if ('V2COV' in hdul):
+                                hdul['V2COV'].data = self.P[self.observables[j]].dot(hdul['V2COV'].data[0]).dot(self.P[self.observables[j]].T)[np.newaxis, :]
                         else:
                             raise UserWarning('Only 1D is implemented for VIS2DATA')
                         hdul += [hdu0, hdu1, hdu2]
                     
-                    elif (self.observables[j] == 't3'):
+                    elif (self.observables[j] == 'cp'):
                         
                         hdu0 = pyfits.ImageHDU(self.P[self.observables[j]])
-                        hdu0.header['EXTNAME'] = 'T3PROJ'
+                        hdu0.header['EXTNAME'] = 'CPPROJ'
                         if (hdul['OI_T3'].data['T3PHI'].ndim == 1):
                             hdu1 = pyfits.ImageHDU(self.P[self.observables[j]].dot(hdul['OI_T3'].data['T3PHI']))
                             hdu1.header['EXTNAME'] = 'T3PHI'
@@ -396,8 +396,8 @@ class data():
                             cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
                             hdu2 = pyfits.ImageHDU(np.rad2deg(np.sqrt(np.diag(cov))))
                             hdu2.header['EXTNAME'] = 'T3PHIERR'
-                            if ('T3COV' in hdul):
-                                hdul['T3COV'].data = self.P[self.observables[j]].dot(hdul['T3COV'].data[0]).dot(self.P[self.observables[j]].T)[np.newaxis, :]
+                            if ('CPCOV' in hdul):
+                                hdul['CPCOV'].data = self.P[self.observables[j]].dot(hdul['CPCOV'].data[0]).dot(self.P[self.observables[j]].T)[np.newaxis, :]
                         else:
                             raise UserWarning('Only 1D is implemented for T3PHI')
                         hdul += [hdu0, hdu1, hdu2]

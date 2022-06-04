@@ -40,14 +40,14 @@ fit = data.chi2map(model='ud_bin', # fit uniform disk with unresolved companion
                    sep_range=None, # use default separation range
                    step_size=None, # use default step size
                    smear=3, # use bandwidth smearing of 3
-                   ofile='figures/axcir_smear_cov') # save figures
+                   ofile='../figures/axcir_smear_cov') # save figures
 
 # Run MCMC around best fit position.
 fit = data.mcmc(fit=fit, # best fit from gridsearch
                 temp=None, # use default temperature (reduced chi-squared of best fit)
                 cov=True, # this data set has covariance
                 smear=3, # use bandwidth smearing of 3
-                ofile='figures/axcir_smear_cov') # save figures
+                ofile='../figures/axcir_smear_cov') # save figures
 
 # Compute chi-squared map after subtracting best fit companion.
 fit_sub = data.chi2map_sub(fit_sub=fit, # best fit from MCMC
@@ -56,7 +56,7 @@ fit_sub = data.chi2map_sub(fit_sub=fit, # best fit from MCMC
                            sep_range=None, # use default separation range
                            step_size=None, # use default step size
                            smear=3, # use bandwidth smearing of 3
-                           ofile='figures/axcir_smear_cov_sub') # save figures
+                           ofile='../figures/axcir_smear_cov_sub') # save figures
 
 # Estimate detection limits.
 data.detlim(sigma=3., # confidence level of detection limits
@@ -65,4 +65,4 @@ data.detlim(sigma=3., # confidence level of detection limits
             sep_range=None, # use default separation range
             step_size=None, # use default step size
             smear=3, # use bandwidth smearing of 3
-            ofile='figures/axcir_smear_cov_sub') # save figures
+            ofile='../figures/axcir_smear_cov_sub') # save figures

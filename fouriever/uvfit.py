@@ -26,7 +26,7 @@ rad2mas = 180./np.pi*3600.*1000. # convert rad to mas
 mas2rad = np.pi/180./3600./1000. # convert mas to rad
 pa_mtoc = '-' # model to chip conversion for position angle
 ftol = 1e-5
-observables_known = ['vis2', 't3', 'kp']
+observables_known = ['v2', 'cp', 'kp']
 
 
 # =============================================================================
@@ -198,7 +198,7 @@ class data():
             Best fit model parameters.
         """
         
-        if ((len(self.observables) != 1) or ((self.observables[0] != 't3') and (self.observables[0] != 'kp'))):
+        if ((len(self.observables) != 1) or ((self.observables[0] != 'cp') and (self.observables[0] != 'kp'))):
             raise UserWarning('Can only compute linear contrast map with closure or kernel phases')
         
         data_list = []
@@ -220,8 +220,8 @@ class data():
                     wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
                         wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+data_list[-1]['dwave'][k], smear)
-                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['vis2u'][:, np.newaxis], wave[np.newaxis, :])
-                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['vis2v'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         bmax = np.max(bmax)
         bmin = np.max(bmin)
         dmax = np.max(dmax)
@@ -236,8 +236,8 @@ class data():
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Largest spatial scale = %.1f mas' % smax)
         else:
-            smin = lmin/bmax*rad2mas # smallest spatial scale (mas)
-            waveFOV = lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
+            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
+            waveFOV = 0.5*lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = 1.2*lmin/dmax*rad2mas # diffraction field-of-view (mas)
             smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
             print('Data properties')
@@ -263,18 +263,18 @@ class data():
             for i in range(len(data_list)):
                 covs = []
                 for j in range(len(self.observables)):
-                    if (self.observables[j] == 'vis2'):
+                    if (self.observables[j] == 'v2'):
                         try:
-                            covs += [data_list[i]['vis2cov']]
+                            covs += [data_list[i]['v2cov']]
                         except:
-                            covs += [np.diag(data_list[i]['dvis2'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 't3'):
+                    if (self.observables[j] == 'cp'):
                         try:
-                            covs += [data_list[i]['t3cov']]
+                            covs += [data_list[i]['cpcov']]
                         except:
-                            covs += [np.diag(data_list[i]['dt3'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'kp'):
@@ -508,8 +508,8 @@ class data():
                     wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
                         wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+data_list[-1]['dwave'][k], smear)
-                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['vis2u'][:, np.newaxis], wave[np.newaxis, :])
-                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['vis2v'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         bmax = np.max(bmax)
         bmin = np.max(bmin)
         dmax = np.max(dmax)
@@ -524,8 +524,8 @@ class data():
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Largest spatial scale = %.1f mas' % smax)
         else:
-            smin = lmin/bmax*rad2mas # smallest spatial scale (mas)
-            waveFOV = lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
+            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
+            waveFOV = 0.5*lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = 1.2*lmin/dmax*rad2mas # diffraction field-of-view (mas)
             smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
             print('Data properties')
@@ -551,18 +551,18 @@ class data():
             for i in range(len(data_list)):
                 covs = []
                 for j in range(len(self.observables)):
-                    if (self.observables[j] == 'vis2'):
+                    if (self.observables[j] == 'v2'):
                         try:
-                            covs += [data_list[i]['vis2cov']]
+                            covs += [data_list[i]['v2cov']]
                         except:
-                            covs += [np.diag(data_list[i]['dvis2'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 't3'):
+                    if (self.observables[j] == 'cp'):
                         try:
-                            covs += [data_list[i]['t3cov']]
+                            covs += [data_list[i]['cpcov']]
                         except:
-                            covs += [np.diag(data_list[i]['dt3'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'kp'):
@@ -597,7 +597,7 @@ class data():
         ndof = np.sum(ndof)
         
         if ((model == 'ud') or (model == 'ud_bin')):
-            if ('vis2' not in self.observables):
+            if ('v2' not in self.observables):
                 raise UserWarning('Can only fit uniform disk with visibility amplitudes')
             print('Computing best fit uniform disk diameter (DO NOT TRUST UNCERTAINTIES)')
             theta0 = np.array([1.])
@@ -620,12 +620,12 @@ class data():
             fit['smear'] = smear
             fit['cov'] = str(cov)
             if (klflag == True):
-                plot.vis2_ud(data_list=data_list,
+                plot.v2_ud(data_list=data_list,
                              fit=fit,
                              smear=smear,
                              ofile=ofile)
             else:
-                plot.vis2_ud_base(data_list=data_list,
+                plot.v2_ud_base(data_list=data_list,
                                   fit=fit,
                                   smear=smear,
                                   ofile=ofile)
@@ -638,7 +638,7 @@ class data():
                                          smear=smear)
         
         if ((model == 'bin') or (model == 'ud_bin')):
-            if (('t3' not in self.observables) and ('kp' not in self.observables)):
+            if (('cp' not in self.observables) and ('kp' not in self.observables)):
                 raise UserWarning('Can only fit companion with closure or kernel phases')
             
             grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
@@ -770,8 +770,8 @@ class data():
                 fit['nsigma'] = nsigma
                 fit['smear'] = smear
                 fit['cov'] = str(cov)
-                if ('t3' in self.observables):
-                    plot.t3_bin(data_list=data_list,
+                if ('cp' in self.observables):
+                    plot.cp_bin(data_list=data_list,
                                 fit=fit,
                                 smear=smear,
                                 ofile=ofile)
@@ -798,8 +798,8 @@ class data():
                 fit['nsigma'] = nsigma
                 fit['smear'] = smear
                 fit['cov'] = str(cov)
-                if ('t3' in self.observables):
-                    plot.vis2_t3_ud_bin(data_list=data_list,
+                if ('cp' in self.observables):
+                    plot.v2_cp_ud_bin(data_list=data_list,
                                         fit=fit,
                                         ofile=ofile)
             
@@ -898,12 +898,12 @@ class data():
                                               data=self.data_list[ww[i]][j],
                                               smear=fit_sub['smear'])
                 
-                if ('vis2' in self.observables):
-                    self.data_list[ww[i]][j]['vis2'] += np.sign(p0[0])*(util.vis2vis2(vis_bin, data=self.data_list[ww[i]][j])-util.vis2vis2(vis_ref, data=self.data_list[ww[i]][j]))
-                if ('t3' in self.observables):
-                    self.data_list[ww[i]][j]['t3'] += np.sign(p0[0])*(util.vis2t3(vis_bin, data=self.data_list[ww[i]][j])-util.vis2t3(vis_ref, data=self.data_list[ww[i]][j]))
+                if ('v2' in self.observables):
+                    self.data_list[ww[i]][j]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=self.data_list[ww[i]][j])-util.v2v2(vis_ref, data=self.data_list[ww[i]][j]))
+                if ('cp' in self.observables):
+                    self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
                 if ('kp' in self.observables):
-                    self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.vis2kp(vis_bin, data=self.data_list[ww[i]][j])-util.vis2kp(vis_ref, data=self.data_list[ww[i]][j]))
+                    self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
         
         fit = self.chi2map(model=model,
                            cov=cov,
@@ -951,17 +951,17 @@ class data():
         """
         
         if (fit['model'] == 'ud'):
-            if ('vis2' not in self.observables):
+            if ('v2' not in self.observables):
                 raise UserWarning('Can only fit uniform disk with visibility amplitudes')
             print('Computing best fit uniform disk diameter (UNCERTAINTIES FROM MCMC)')
         elif (fit['model'] == 'bin'):
-            if (('t3' not in self.observables) and ('kp' not in self.observables)):
+            if (('cp' not in self.observables) and ('kp' not in self.observables)):
                 raise UserWarning('Can only fit companion with closure or kernel phases')
             print('Computing best fit companion parameters (UNCERTAINTIES FROM MCMC)')
         else:
-            if ('vis2' not in self.observables):
+            if ('v2' not in self.observables):
                 raise UserWarning('Can only fit uniform disk with visibility amplitudes')
-            if (('t3' not in self.observables) and ('kp' not in self.observables)):
+            if (('cp' not in self.observables) and ('kp' not in self.observables)):
                 raise UserWarning('Can only fit companion with closure or kernel phases')
             print('Computing best fit uniform disk and companion parameters (UNCERTAINTIES FROM MCMC)')
         
@@ -974,8 +974,8 @@ class data():
                     wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
                         wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+data_list[-1]['dwave'][k], smear)
-                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['vis2u'][:, np.newaxis], wave[np.newaxis, :])
-                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['vis2v'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         if (smear is not None):
             print('   Bandwidth smearing = %.0f' % smear)
         
@@ -990,18 +990,18 @@ class data():
             for i in range(len(data_list)):
                 covs = []
                 for j in range(len(self.observables)):
-                    if (self.observables[j] == 'vis2'):
+                    if (self.observables[j] == 'v2'):
                         try:
-                            covs += [data_list[i]['vis2cov']]
+                            covs += [data_list[i]['v2cov']]
                         except:
-                            covs += [np.diag(data_list[i]['dvis2'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 't3'):
+                    if (self.observables[j] == 'cp'):
                         try:
-                            covs += [data_list[i]['t3cov']]
+                            covs += [data_list[i]['cpcov']]
                         except:
-                            covs += [np.diag(data_list[i]['dt3'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'kp'):
@@ -1238,12 +1238,12 @@ class data():
                                                   data=self.data_list[ww[i]][j],
                                                   smear=fit_sub['smear'])
                     
-                    if ('vis2' in self.observables):
-                        self.data_list[ww[i]][j]['vis2'] += np.sign(p0[0])*(util.vis2vis2(vis_bin, data=self.data_list[ww[i]][j])-util.vis2vis2(vis_ref, data=self.data_list[ww[i]][j]))
-                    if ('t3' in self.observables):
-                        self.data_list[ww[i]][j]['t3'] += np.sign(p0[0])*(util.vis2t3(vis_bin, data=self.data_list[ww[i]][j])-util.vis2t3(vis_ref, data=self.data_list[ww[i]][j]))
+                    if ('v2' in self.observables):
+                        self.data_list[ww[i]][j]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=self.data_list[ww[i]][j])-util.v2v2(vis_ref, data=self.data_list[ww[i]][j]))
+                    if ('cp' in self.observables):
+                        self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
                     if ('kp' in self.observables):
-                        self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.vis2kp(vis_bin, data=self.data_list[ww[i]][j])-util.vis2kp(vis_ref, data=self.data_list[ww[i]][j]))
+                        self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
         
         data_list = []
         bmax = []
@@ -1264,8 +1264,8 @@ class data():
                     wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
                         wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+data_list[-1]['dwave'][k], smear)
-                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['vis2u'][:, np.newaxis], wave[np.newaxis, :])
-                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['vis2v'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         bmax = np.max(bmax)
         bmin = np.max(bmin)
         dmax = np.max(dmax)
@@ -1280,8 +1280,8 @@ class data():
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Largest spatial scale = %.1f mas' % smax)
         else:
-            smin = lmin/bmax*rad2mas # smallest spatial scale (mas)
-            waveFOV = lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
+            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
+            waveFOV = 0.5*lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = 1.2*lmin/dmax*rad2mas # diffraction field-of-view (mas)
             smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
             print('Data properties')
@@ -1307,18 +1307,18 @@ class data():
             for i in range(len(data_list)):
                 covs = []
                 for j in range(len(self.observables)):
-                    if (self.observables[j] == 'vis2'):
+                    if (self.observables[j] == 'v2'):
                         try:
-                            covs += [data_list[i]['vis2cov']]
+                            covs += [data_list[i]['v2cov']]
                         except:
-                            covs += [np.diag(data_list[i]['dvis2'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 't3'):
+                    if (self.observables[j] == 'cp'):
                         try:
-                            covs += [data_list[i]['t3cov']]
+                            covs += [data_list[i]['cpcov']]
                         except:
-                            covs += [np.diag(data_list[i]['dt3'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'kp'):
@@ -1352,7 +1352,7 @@ class data():
                 ndof += [np.prod(data_list[i][self.observables[j]].shape)]
         ndof = np.sum(ndof)
         
-        if ('vis2' in self.observables):
+        if ('v2' in self.observables):
             print('Computing best fit uniform disk diameter (DO NOT TRUST UNCERTAINTIES)')
             theta0 = np.array([1.])
             thetap = minimize(util.chi2_ud,
@@ -1365,14 +1365,6 @@ class data():
             thetae = np.sqrt(max(1., abs(thetap['fun']))*ftol*np.diag(thetap['hess_inv'].todense()))
             print('   Best fit uniform disk diameter = %.5f +/- %.5f mas' % (thetap['x'][0], thetae))
             print('   Best fit red. chi2 = %.3f (ud)' % (thetap['fun']/ndof))
-            fit = {}
-            fit['model'] = 'ud'
-            fit['p'] = thetap['x']
-            fit['dp'] = np.array(thetae)
-            fit['chi2_red'] = thetap['fun']/ndof
-            fit['ndof'] = ndof
-            fit['smear'] = smear
-            fit['cov'] = str(cov)
         else:
             thetap = {}
             thetap['fun'] = util.chi2_ud(p0=np.array([0.]),
@@ -1381,7 +1373,7 @@ class data():
                                          cov=cov,
                                          smear=smear)
         
-        if (('t3' not in self.observables) and ('kp' not in self.observables)):
+        if (('cp' not in self.observables) and ('kp' not in self.observables)):
             raise UserWarning('Can only compute detection limits with closure or kernel phases')
         
         grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
@@ -1404,7 +1396,7 @@ class data():
                 if ((np.isnan(grid_ra_dec[0][i, j]) == False) and (np.isnan(grid_ra_dec[1][i, j]) == False)):
                     
                     # Absil method.
-                    if ('vis2' in self.observables):
+                    if ('v2' in self.observables):
                         p0 = np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j], thetap['x'][0]])
                         temp = [self.lim_absil(f0, util.chi2_ud_bin, p0, data_list, self.observables, cov, smear, thetap['fun'], ndof, sigma) for f0 in f0s]
                         temp = np.array(temp)
@@ -1431,37 +1423,35 @@ class data():
                     ffs_absil += [pp['x'][0].copy()]
                     
                     # Injection method.
-                    # data_list_copy = deepcopy(data_list)
-                    # if ('vis2' in self.observables):
-                    #     fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j], 0.]),
-                    #                'model': 'bin',
-                    #                'smear': smear}
-                    #     temp = [self.lim_injection(f0, fit_inj, data_list_copy, self.observables, cov, smear, ndof, sigma, thetap['x'][0].copy()) for f0 in f0s]
-                    #     temp = np.array(temp)
-                    #     f0 = f0s[np.argmin(temp)]
-                    #     pp = minimize(self.lim_injection,
-                    #                   f0,
-                    #                   args=(fit_inj, data_list_copy, self.observables, cov, smear, ndof, sigma, thetap['x'][0].copy()),
-                    #                   method='L-BFGS-B',
-                    #                   bounds=[(0., 1.)],
-                    #                   tol=ftol,
-                    #                   options={'maxiter': 1000})
-                    # else:
-                    #     fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]]),
-                    #                'model': 'bin',
-                    #                'smear': smear}
-                    #     temp = [self.lim_injection(f0, fit_inj, data_list_copy, self.observables, cov, smear, ndof, sigma) for f0 in f0s]
-                    #     temp = np.array(temp)
-                    #     f0 = f0s[np.argmin(temp)]
-                    #     pp = minimize(self.lim_injection,
-                    #                   f0,
-                    #                   args=(fit_inj, data_list_copy, self.observables, cov, smear, ndof, sigma),
-                    #                   method='L-BFGS-B',
-                    #                   bounds=[(0., 1.)],
-                    #                   tol=ftol,
-                    #                   options={'maxiter': 1000})
-                    # ffs_injection += [pp['x'][0].copy()]
-                    ffs_injection += [np.nan]
+                    if ('v2' in self.observables):
+                        fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j], 0.]),
+                                   'model': 'bin',
+                                   'smear': smear}
+                        temp = [self.lim_injection(f0, fit_inj, data_list, self.observables, cov, smear, ndof, thetap['x'][0], sigma) for f0 in f0s]
+                        temp = np.array(temp)
+                        f0 = f0s[np.argmin(temp)]
+                        pp = minimize(self.lim_injection,
+                                      f0,
+                                      args=(fit_inj, data_list, self.observables, cov, smear, ndof, thetap['x'][0], sigma),
+                                      method='L-BFGS-B',
+                                      bounds=[(0., 1.)],
+                                      tol=ftol,
+                                      options={'maxiter': 1000})
+                    else:
+                        fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]]),
+                                   'model': 'bin',
+                                   'smear': smear}
+                        temp = [self.lim_injection(f0, fit_inj, data_list, self.observables, cov, smear, ndof, sigma) for f0 in f0s]
+                        temp = np.array(temp)
+                        f0 = f0s[np.argmin(temp)]
+                        pp = minimize(self.lim_injection,
+                                      f0,
+                                      args=(fit_inj, data_list, self.observables, cov, smear, ndof, sigma),
+                                      method='L-BFGS-B',
+                                      bounds=[(0., 1.)],
+                                      tol=ftol,
+                                      options={'maxiter': 1000})
+                    ffs_injection += [pp['x'][0].copy()]
                 
                 else:
                     ffs_absil += [np.nan]
@@ -1492,6 +1482,41 @@ class data():
                   ndof,
                   sigma=3):
         """
+        Parameters
+        ----------
+        f0: float
+            Relative flux of companion.
+        func: method
+            Method to compute chi-squared.
+        p0: array
+            p0[0]: float
+                Relative flux of companion.
+            p0[1]: float
+                Right ascension offset of companion.
+            p0[2]: float
+                Declination offset of companion.
+            p0[3]: float
+                Uniform disk diameter (mas).
+        data_list: list of dict
+            List of data whose chi-squared shall be computed. The list
+            contains one data structure for each observation.
+        observables: list of str
+            List of observables which shall be considered.
+        cov: bool
+            True if covariance shall be considered.
+        smear: int
+            Numerical bandwidth smearing which shall be used.
+        chi2r_true: float
+            Reduced chi-squared of true model.
+        ndof: int
+            Number of degrees of freedom.
+        sigma: int
+            Confidence level for which the detection limits shall be computed.
+        
+        Returns
+        -------
+        chi2: float
+            Chi-squared of Absil method.
         """
         
         if (f0 <= 0.):
@@ -1519,9 +1544,35 @@ class data():
                       cov,
                       smear,
                       ndof,
-                      sigma=3,
-                      theta0=None):
+                      thetap=None,
+                      sigma=3):
         """
+        Parameters
+        ----------
+        f0: float
+            Relative flux of companion.
+        fit_inj: dict
+            Model fit to be injected.
+        data_list: list of dict
+            List of data whose chi-squared shall be computed. The list
+            contains one data structure for each observation.
+        observables: list of str
+            List of observables which shall be considered.
+        cov: bool
+            True if covariance shall be considered.
+        smear: int
+            Numerical bandwidth smearing which shall be used.
+        ndof: int
+            Number of degrees of freedom.
+        thetap: float
+            
+        sigma: int
+            Confidence level for which the detection limits shall be computed.
+        
+        Returns
+        -------
+        chi2: float
+            Chi-squared of Injection method.
         """
         
         if (f0 <= 0.):
@@ -1530,31 +1581,33 @@ class data():
         else:
             fit_inj_copy = deepcopy(fit_inj)
             fit_inj_copy['p'][0] = f0
-            data_list = self.inj_companion(data_list=data_list,
-                                           fit_inj=fit_inj_copy)
+            data_list_copy = deepcopy(data_list)
+            data_list_copy = self.inj_companion(data_list=data_list_copy,
+                                                fit_inj=fit_inj_copy)
             
-            if ('vis2' in observables):
-                thetap = minimize(util.chi2_ud,
-                                  theta0,
-                                  args=(data_list, observables, cov, smear),
-                                  method='L-BFGS-B',
-                                  bounds=[(0., np.inf)],
-                                  tol=ftol,
-                                  options={'maxiter': 1000})
-                chi2_ud = thetap['fun']
+            if ('v2' in observables):
+                thetap_ud = minimize(util.chi2_ud,
+                                     np.array([thetap]),
+                                     args=(data_list_copy, observables, cov, smear),
+                                     method='L-BFGS-B',
+                                     bounds=[(0., np.inf)],
+                                     tol=ftol,
+                                     options={'maxiter': 1000})
+                chi2_ud = thetap_ud['fun']
+                fit_inj_copy['p'][3] = thetap
                 chi2_bin = util.chi2_ud_bin(p0=fit_inj_copy['p'],
-                                            data_list=data_list,
+                                            data_list=data_list_copy,
                                             observables=observables,
                                             cov=cov,
                                             smear=smear)
             else:
                 chi2_ud = util.chi2_ud(p0=np.array([0.]),
-                                       data_list=data_list,
+                                       data_list=data_list_copy,
                                        observables=observables,
                                        cov=cov,
                                        smear=smear)
                 chi2_bin = util.chi2_bin(p0=fit_inj_copy['p'],
-                                         data_list=data_list,
+                                         data_list=data_list_copy,
                                          observables=observables,
                                          cov=cov,
                                          smear=smear)
@@ -1614,11 +1667,11 @@ class data():
                                           data=data_list[i],
                                           smear=fit_inj['smear'])
             
-            if ('vis2' in self.observables):
-                data_list[i]['vis2'] += np.sign(p0[0])*(util.vis2vis2(vis_bin, data=data_list[i])-util.vis2vis2(vis_ref, data=data_list[i]))
-            if ('t3' in self.observables):
-                data_list[i]['t3'] += np.sign(p0[0])*(util.vis2t3(vis_bin, data=data_list[i])-util.vis2t3(vis_ref, data=data_list[i]))
+            if ('v2' in self.observables):
+                data_list[i]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=data_list[i])-util.v2v2(vis_ref, data=data_list[i]))
+            if ('cp' in self.observables):
+                data_list[i]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=data_list[i])-util.v2cp(vis_ref, data=data_list[i]))
             if ('kp' in self.observables):
-                data_list[i]['kp'] += np.sign(p0[0])*(util.vis2kp(vis_bin, data=data_list[i])-util.vis2kp(vis_ref, data=data_list[i]))
+                data_list[i]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=data_list[i])-util.v2kp(vis_ref, data=data_list[i]))
         
         return data_list

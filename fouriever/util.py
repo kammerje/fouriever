@@ -72,8 +72,8 @@ def get_grid(sep_range,
     
     return grid_ra_dec, grid_sep_pa
 
-def vis2vis2(vis,
-             data):
+def v2v2(vis,
+         data):
     """
     Parameters
     ----------
@@ -84,17 +84,17 @@ def vis2vis2(vis,
     
     Returns
     -------
-    vis2: array
+    v2: array
         Squared visibility amplitude.
     """
     
     if (data['klflag'] == True):
-        return np.abs(np.dot(data['vis2mat'], vis))**2
+        return np.abs(np.dot(data['v2mat'], vis))**2
     else:
         return np.abs(vis)**2
 
-def vis2t3(vis,
-           data):
+def v2cp(vis,
+         data):
     """
     Parameters
     ----------
@@ -105,14 +105,14 @@ def vis2t3(vis,
     
     Returns
     -------
-    t3: array
+    cp: array
         Closure phase (rad).
     """
     
-    return np.dot(data['t3mat'], np.angle(vis))
+    return np.dot(data['cpmat'], np.angle(vis))
 
-def vis2kp(vis,
-           data):
+def v2kp(vis,
+         data):
     """
     Parameters
     ----------
@@ -156,8 +156,10 @@ def clin(p0,
     
     Returns
     -------
-    vis: array
-        Chi-squared of unresolved companion model.
+    ff: float
+        Best fit relative companion flux.
+    fe: float
+        Error of best fit relative companion flux.
     """
     
     mod_icv_sig = []
@@ -185,15 +187,15 @@ def clin(p0,
         err = []
         mod = []
         for j in range(len(observables)):
-            if (observables[j] == 't3'):
-                sig += [data_list[i]['t3']]
-                err += [data_list[i]['dt3']]
-                mod += [vis2t3(vis_mod,
+            if (observables[j] == 'cp'):
+                sig += [data_list[i]['cp']]
+                err += [data_list[i]['dcp']]
+                mod += [v2cp(vis_mod,
                                data=data_list[i])/p0[0]]
             elif (observables[j] == 'kp'):
                 sig += [data_list[i]['kp']]
                 err += [data_list[i]['dkp']]
-                mod += [vis2kp(vis_mod,
+                mod += [v2kp(vis_mod,
                                data=data_list[i])/p0[0]]
         sig = np.concatenate(sig).flatten()
         mod = np.concatenate(mod).flatten()
@@ -283,20 +285,20 @@ def chi2_ud(p0,
         err = []
         mod = []
         for j in range(len(observables)):
-            if (observables[j] == 'vis2'):
-                sig += [data_list[i]['vis2']]
-                err += [data_list[i]['dvis2']]
-                mod += [vis2vis2(vis_mod,
+            if (observables[j] == 'v2'):
+                sig += [data_list[i]['v2']]
+                err += [data_list[i]['dv2']]
+                mod += [v2v2(vis_mod,
                                  data=data_list[i])]
-            elif (observables[j] == 't3'):
-                sig += [data_list[i]['t3']]
-                err += [data_list[i]['dt3']]
-                mod += [vis2t3(vis_mod,
+            elif (observables[j] == 'cp'):
+                sig += [data_list[i]['cp']]
+                err += [data_list[i]['dcp']]
+                mod += [v2cp(vis_mod,
                                data=data_list[i])]
             elif (observables[j] == 'kp'):
                 sig += [data_list[i]['kp']]
                 err += [data_list[i]['dkp']]
-                mod += [vis2kp(vis_mod,
+                mod += [v2kp(vis_mod,
                                data=data_list[i])]
         sig = np.concatenate(sig).flatten()
         mod = np.concatenate(mod).flatten()
@@ -424,7 +426,7 @@ def chi2_bin(p0,
     
     Returns
     -------
-    vis: array
+    chi2: array
         Chi-squared of unresolved companion model.
     """
     
@@ -452,20 +454,20 @@ def chi2_bin(p0,
         err = []
         mod = []
         for j in range(len(observables)):
-            if (observables[j] == 'vis2'):
-                sig += [data_list[i]['vis2']]
-                err += [data_list[i]['dvis2']]
-                mod += [vis2vis2(vis_mod,
+            if (observables[j] == 'v2'):
+                sig += [data_list[i]['v2']]
+                err += [data_list[i]['dv2']]
+                mod += [v2v2(vis_mod,
                                  data=data_list[i])]
-            elif (observables[j] == 't3'):
-                sig += [data_list[i]['t3']]
-                err += [data_list[i]['dt3']]
-                mod += [vis2t3(vis_mod,
+            elif (observables[j] == 'cp'):
+                sig += [data_list[i]['cp']]
+                err += [data_list[i]['dcp']]
+                mod += [v2cp(vis_mod,
                                data=data_list[i])]
             elif (observables[j] == 'kp'):
                 sig += [data_list[i]['kp']]
                 err += [data_list[i]['dkp']]
-                mod += [vis2kp(vis_mod,
+                mod += [v2kp(vis_mod,
                                data=data_list[i])]
         sig = np.concatenate(sig).flatten()
         mod = np.concatenate(mod).flatten()
@@ -600,7 +602,7 @@ def chi2_ud_bin(p0,
     
     Returns
     -------
-    vis: array
+    chi2: array
         Chi-squared of uniform disk with unresolved companion model.
     """
     
@@ -628,15 +630,15 @@ def chi2_ud_bin(p0,
         err = []
         mod = []
         for j in range(len(observables)):
-            if (observables[j] == 'vis2'):
-                sig += [data_list[i]['vis2']]
-                err += [data_list[i]['dvis2']]
-                mod += [vis2vis2(vis_mod,
+            if (observables[j] == 'v2'):
+                sig += [data_list[i]['v2']]
+                err += [data_list[i]['dv2']]
+                mod += [v2v2(vis_mod,
                                  data=data_list[i])]
-            elif (observables[j] == 't3'):
-                sig += [data_list[i]['t3']]
-                err += [data_list[i]['dt3']]
-                mod += [vis2t3(vis_mod,
+            elif (observables[j] == 'cp'):
+                sig += [data_list[i]['cp']]
+                err += [data_list[i]['dcp']]
+                mod += [v2cp(vis_mod,
                                data=data_list[i])]
             elif (observables[j] == 'kp'):
                 import pdb; pdb.set_trace()
@@ -704,6 +706,95 @@ def lnprob_ud_bin(p0,
                            smear=smear)
         
         return -0.5*np.sum(chi2)/temp
+
+def chi2_ud_bin_fitdiamonly(theta0,
+                            p0,
+                            data_list,
+                            observables,
+                            cov=False,
+                            smear=None):
+    """
+    Parameters
+    ----------
+    theta0: array
+        theta0[0]: float
+            Uniform disk diameter (mas).
+    p0: array
+        p0[0]: float
+            Relative flux of companion.
+        p0[1]: float
+            Right ascension offset of companion.
+        p0[2]: float
+            Declination offset of companion.
+        p0[3]: float
+            Uniform disk diameter (mas).
+    data_list: list of dict
+        List of data whose chi-squared shall be computed. The list contains one
+        data structure for each observation.
+    observables: list of str
+        List of observables which shall be considered.
+    cov: bool
+        True if covariance shall be considered.
+    smear: int
+        Numerical bandwidth smearing which shall be used.
+    
+    Returns
+    -------
+    chi2: array
+        Chi-squared of uniform disk with unresolved companion model.
+    """
+    
+    chi2 = []
+    for i in range(len(data_list)):
+        dra = p0[1].copy()
+        ddec = p0[2].copy()
+        rho = np.sqrt(dra**2+ddec**2)
+        phi = np.rad2deg(np.arctan2(dra, ddec))
+        if (pa_mtoc == '-'):
+            phi -= data_list[i]['pa']
+        elif (pa_mtoc == '+'):
+            phi += data_list[i]['pa']
+        else:
+            raise UserWarning('Model to chip conversion for position angle not known')
+        phi = ((phi+180.) % 360.)-180.
+        dra_temp = rho*np.sin(np.deg2rad(phi))
+        ddec_temp = rho*np.cos(np.deg2rad(phi))
+        p0_temp = np.array([p0[0].copy(), dra_temp, ddec_temp, theta0[0].copy()])
+        
+        vis_mod = vis_ud_bin(p0=p0_temp,
+                             data=data_list[i],
+                             smear=smear)
+        sig = []
+        err = []
+        mod = []
+        for j in range(len(observables)):
+            if (observables[j] == 'v2'):
+                sig += [data_list[i]['v2']]
+                err += [data_list[i]['dv2']]
+                mod += [v2v2(vis_mod,
+                                 data=data_list[i])]
+            elif (observables[j] == 'cp'):
+                sig += [data_list[i]['cp']]
+                err += [data_list[i]['dcp']]
+                mod += [v2cp(vis_mod,
+                               data=data_list[i])]
+            elif (observables[j] == 'kp'):
+                import pdb; pdb.set_trace()
+        sig = np.concatenate(sig).flatten()
+        mod = np.concatenate(mod).flatten()
+        res = sig-mod
+        if (cov == False):
+            var = np.concatenate(err).flatten()**2
+            res_icv = np.divide(res, var)
+        else:
+            if (data_list[i]['covflag'] == False):
+                var = np.concatenate(err).flatten()**2
+                res_icv = np.divide(res, var)
+            else:
+                res_icv = res.dot(data_list[i]['icv'])
+        chi2 += [res_icv.dot(res)]
+    
+    return np.sum(chi2)
 
 def nsigma(chi2r_test,
            chi2r_true,

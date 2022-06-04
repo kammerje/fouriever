@@ -15,7 +15,7 @@ import sys
 
 from . import inst
 
-observables_known = ['vis2', 't3', 'kp']
+observables_known = ['v2', 'cp', 'kp']
 
 
 # =============================================================================
@@ -136,19 +136,19 @@ class data():
         for i in range(len(self.fitsfiles)):
             hdul = pyfits.open(self.idir+self.fitsfiles[i])
             try:
-                hdul.pop('VIS2COV')
+                hdul.pop('V2COV')
             except:
                 pass
             try:
-                hdul.pop('T3COV')
+                hdul.pop('CPCOV')
             except:
                 pass
             hdul.writeto(self.idir+self.fitsfiles[i], output_verify='fix', overwrite=True)
         
         pass
     
-    def add_vis2cov(self,
-                    odir):
+    def add_v2cov(self,
+                  odir):
         """
         Parameters
         ----------
@@ -172,19 +172,19 @@ class data():
         
         for i in range(len(self.fitsfiles)):
             Nwave = data_list[i][0]['wave'].shape[0]
-            Nbase = data_list[i][0]['vis2'].shape[0]
+            Nbase = data_list[i][0]['v2'].shape[0]
             
             cor = np.diag(np.ones(Nwave*Nbase))
             covs = []
             for j in range(len(data_list[i])):
-                dvis2 = data_list[i][j]['dvis2']
-                cov = np.multiply(cor, dvis2.flatten()[:, None]*dvis2.flatten()[None, :])
+                dv2 = data_list[i][j]['dv2']
+                cov = np.multiply(cor, dv2.flatten()[:, None]*dv2.flatten()[None, :])
                 covs += [cov]
             covs = np.array(covs)
             
             hdul = pyfits.open(self.idir+self.fitsfiles[i])
             hdu0 = pyfits.ImageHDU(covs)
-            hdu0.header['EXTNAME'] = 'VIS2COV'
+            hdu0.header['EXTNAME'] = 'V2COV'
             hdu0.header['INSNAME'] = self.inst
             hdul += [hdu0]
             hdul.writeto(odir+self.fitsfiles[i], output_verify='fix', overwrite=True)
@@ -198,7 +198,7 @@ class data():
         
         return None
     
-    def add_t3cov(self,
+    def add_cpcov(self,
                   odir):
         """
         Parameters
@@ -222,27 +222,27 @@ class data():
             raise UserWarning('All input fits files should contain data of the selected instrument')
         
         for i in range(len(self.fitsfiles)):
-            t3mat = data_list[i][0]['t3mat'].copy()
+            cpmat = data_list[i][0]['cpmat'].copy()
             Nwave = data_list[i][0]['wave'].shape[0]
-            Nbase = t3mat.shape[1]
-            Ntria = t3mat.shape[0]
+            Nbase = cpmat.shape[1]
+            Ntria = cpmat.shape[0]
             
             trafo = np.zeros((Nwave*Ntria, Nwave*Nbase))
             for k in range(Ntria):
                 for l in range(Nbase):
-                    trafo[k*Nwave:(k+1)*Nwave, l*Nwave:(l+1)*Nwave] = np.diag(np.ones(Nwave))*t3mat[k, l]
+                    trafo[k*Nwave:(k+1)*Nwave, l*Nwave:(l+1)*Nwave] = np.diag(np.ones(Nwave))*cpmat[k, l]
             
             cor = np.dot(trafo, np.dot(np.diag(np.ones(Nwave*Nbase)), trafo.T))/3.
             covs = []
             for j in range(len(data_list[i])):
-                dt3 = data_list[i][j]['dt3']
-                cov = np.multiply(cor, dt3.flatten()[:, None]*dt3.flatten()[None, :])
+                dcp = data_list[i][j]['dcp']
+                cov = np.multiply(cor, dcp.flatten()[:, None]*dcp.flatten()[None, :])
                 covs += [cov]
             covs = np.array(covs)
             
             hdul = pyfits.open(self.idir+self.fitsfiles[i])
             hdu0 = pyfits.ImageHDU(covs)
-            hdu0.header['EXTNAME'] = 'T3COV'
+            hdu0.header['EXTNAME'] = 'CPCOV'
             hdu0.header['INSNAME'] = self.inst
             hdul += [hdu0]
             hdul.writeto(odir+self.fitsfiles[i], output_verify='fix', overwrite=True)
@@ -272,11 +272,11 @@ class data():
         if (not os.path.exists(odir)):
             os.makedirs(odir)
         
-        self.add_vis2cov(odir=odir)
+        self.add_v2cov(odir=odir)
         
         temp = self.idir
         self.idir = odir
-        self.add_t3cov(odir=odir)
+        self.add_cpcov(odir=odir)
         self.idir = temp
         
         return None
