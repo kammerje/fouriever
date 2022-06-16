@@ -913,9 +913,9 @@ def detlim(ffs_absil,
     ax.set_title('Method Injection')
     ax = plt.subplot(gs[1, :])
     
-    # temp = np.load('/Users/jkammerer/Documents/Code/fouriever/tutorials/figures/axcir_smear_nocov_sub_detlim_absil.npy', allow_pickle=True)
+    # temp = np.load('/Users/jkammerer/Documents/Code/fouriever/test/axcir_smear_nocov_sub_detlim_absil.npy', allow_pickle=True)
     # ax.plot(temp[0], temp[1], color=colors[0], lw=3, label='Method Absil (w/o cov)')
-    # temp = np.load('/Users/jkammerer/Documents/Code/fouriever/tutorials/figures/axcir_smear_nocov_sub_detlim_injection.npy', allow_pickle=True)
+    # temp = np.load('/Users/jkammerer/Documents/Code/fouriever/test/axcir_smear_nocov_sub_detlim_injection.npy', allow_pickle=True)
     # ax.plot(temp[0], temp[1], color=colors[1], lw=3, label='Method Injection (w/o cov)')
     
     rad, avg = ot.azimuthalAverage(ffs_absil, returnradii=True, binsize=1)
@@ -935,17 +935,17 @@ def detlim(ffs_absil,
     temp = np.array(temp)
     np.save(ofile+'_detlim_injection.npy', temp)
     
-    # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/tutorials/figures/Absil_X.npy')
-    # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/tutorials/figures/Absil_Y.npy')
-    # temp_f = np.load('/Users/jkammerer/Documents/Code/fouriever/tutorials/figures/Absil_f.npy')
+    # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_X.npy')
+    # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_Y.npy')
+    # temp_f = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_f.npy')
     # step_size = np.abs(temp_X[0, 0]-temp_X[0, 1])
     # rad, avg = ot.azimuthalAverage(temp_f, returnradii=True, binsize=1)
     # rad = rad*step_size
     # ww = rad <= 40.
     # ax.plot(rad[ww], avg[ww], color=colors[0], lw=3, alpha=1./3., label='Method Absil (CANDID)')
-    # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/tutorials/figures/injection_X.npy')
-    # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/tutorials/figures/injection_Y.npy')
-    # temp_f = np.load('/Users/jkammerer/Documents/Code/fouriever/tutorials/figures/injection_f.npy')
+    # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/test/injection_X.npy')
+    # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/test/injection_Y.npy')
+    # temp_f = np.load('/Users/jkammerer/Documents/Code/fouriever/test/injection_f.npy')
     # step_size = np.abs(temp_X[0, 0]-temp_X[0, 1])
     # rad, avg = ot.azimuthalAverage(temp_f, returnradii=True, binsize=1)
     # rad = rad*step_size

@@ -219,7 +219,7 @@ class data():
                 if (smear is not None):
                     wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+data_list[-1]['dwave'][k], smear)
+                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         bmax = np.max(bmax)
@@ -507,7 +507,7 @@ class data():
                 if (smear is not None):
                     wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+data_list[-1]['dwave'][k], smear)
+                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         bmax = np.max(bmax)
@@ -973,7 +973,7 @@ class data():
                 if (smear is not None):
                     wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+data_list[-1]['dwave'][k], smear)
+                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         if (smear is not None):
@@ -1263,7 +1263,7 @@ class data():
                 if (smear is not None):
                     wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+data_list[-1]['dwave'][k], smear)
+                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         bmax = np.max(bmax)
@@ -1441,12 +1441,12 @@ class data():
                         fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]]),
                                    'model': 'bin',
                                    'smear': smear}
-                        temp = [self.lim_injection(f0, fit_inj, data_list, self.observables, cov, smear, ndof, sigma) for f0 in f0s]
+                        temp = [self.lim_injection(f0, fit_inj, data_list, self.observables, cov, smear, ndof, None, sigma) for f0 in f0s]
                         temp = np.array(temp)
                         f0 = f0s[np.argmin(temp)]
                         pp = minimize(self.lim_injection,
                                       f0,
-                                      args=(fit_inj, data_list, self.observables, cov, smear, ndof, sigma),
+                                      args=(fit_inj, data_list, self.observables, cov, smear, ndof, None, sigma),
                                       method='L-BFGS-B',
                                       bounds=[(0., 1.)],
                                       tol=ftol,

@@ -433,7 +433,10 @@ def open_kpfile_new(hdul):
     for i in range(nobs):
         temp = {}
         temp['wave'] = hdul['CWAVEL'].data['CWAVEL']
-        temp['dwave'] = hdul['CWAVEL'].data['DWAVEL']
+        try:
+            temp['dwave'] = hdul['CWAVEL'].data['DWAVEL']
+        except:
+            temp['dwave'] = hdul['CWAVEL'].data['BWIDTH']
         temp['pa'] = hdul['DETPA'].data[i]
         temp['kp'] = np.swapaxes(hdul['KP-DATA'].data.copy()[i], 0, 1)
         if (ekp == True):

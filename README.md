@@ -59,7 +59,7 @@ Data properties
    Using data covariance = True
    WARNING: covariance matrix does not have full rank
 Computing best fit uniform disk diameter (DO NOT TRUST UNCERTAINTIES)
-   Best fit uniform disk diameter = 0.92875 +/- 0.00048 mas
+   Best fit uniform disk diameter = 0.93084 +/- 0.00048 mas
    Best fit red. chi2 = 0.811 (ud)
 Computing grid
    Min. sep. = 2.0 mas
@@ -67,15 +67,15 @@ Computing grid
    1352 non-empty grid cells
 Computing chi-squared map (DO NOT TRUST UNCERTAINTIES)
    Cell 1849 of 1849
-   1128 unique minima found after 1352 fits
+   1121 unique minima found after 1352 fits
    Optimal step size = 2.0 mas
    Current step size = 2.0 mas
-   Best fit companion flux = 1.097 +/- 0.932 %
-   Best fit companion right ascension = 6.2 +/- 0.3 mas
-   Best fit companion declination = -28.5 +/- 1.4 mas
-   Best fit companion separation = 29.2 +/- 1.4 mas
-   Best fit companion position angle = 167.6 +/- 0.9 deg
-   Best fit uniform disk diameter = 0.79016 +/- 0.38356 mas
+   Best fit companion flux = 0.937 +/- 0.053 %
+   Best fit companion right ascension = 6.3 +/- 0.1 mas
+   Best fit companion declination = -28.5 +/- 0.1 mas
+   Best fit companion separation = 29.2 +/- 0.1 mas
+   Best fit companion position angle = 167.6 +/- 0.1 deg
+   Best fit uniform disk diameter = 0.81562 +/- 0.00776 mas
    Best fit red. chi2 = 0.589 (ud+bin)
    Significance of companion = 8.0 sigma
 ```
@@ -92,13 +92,13 @@ Computing best fit uniform disk and companion parameters (UNCERTAINTIES FROM MCM
    WARNING: covariance matrix does not have full rank
    Covariance inflation factor = 0.589
    This may take a few minutes
-100%|███████████████████████████████████████| 5000/5000 [02:58<00:00, 28.09it/s]
-   Best fit companion flux = 1.095 +/- 0.048 %
+100%|███████████████████████████████████████| 5000/5000 [03:05<00:00, 27.01it/s]
+   Best fit companion flux = 0.934 +/- 0.040 %
    Best fit companion right ascension = 6.2 +/- 0.1 mas
    Best fit companion declination = -28.5 +/- 0.1 mas
    Best fit companion separation = 29.2 +/- 0.1 mas
-   Best fit companion position angle = 167.6 +/- 0.1 deg
-   Best fit uniform disk diameter = 0.79022 +/- 0.00840 mas
+   Best fit companion position angle = 167.7 +/- 0.1 deg
+   Best fit uniform disk diameter = 0.81599 +/- 0.00734 mas
    Best fit red. chi2 = 0.589 (ud+bin)
    Significance of companion = 8.0 sigma
 ```
@@ -119,7 +119,7 @@ Data properties
    Using data covariance = True
    WARNING: covariance matrix does not have full rank
 Computing best fit uniform disk diameter (DO NOT TRUST UNCERTAINTIES)
-   Best fit uniform disk diameter = 0.79050 +/- 0.00047 mas
+   Best fit uniform disk diameter = 0.81601 +/- 0.00046 mas
    Best fit red. chi2 = 0.589 (ud)
 Computing grid
    Min. sep. = 2.0 mas
@@ -127,17 +127,17 @@ Computing grid
    1352 non-empty grid cells
 Computing chi-squared map (DO NOT TRUST UNCERTAINTIES)
    Cell 1849 of 1849
-   1296 unique minima found after 1352 fits
+   1283 unique minima found after 1352 fits
    Optimal step size = 2.0 mas
    Current step size = 2.0 mas
-   Best fit companion flux = 0.432 +/- 0.036 %
-   Best fit companion right ascension = 19.4 +/- 0.0 mas
-   Best fit companion declination = 0.2 +/- 0.1 mas
-   Best fit companion separation = 19.4 +/- 0.0 mas
-   Best fit companion position angle = 89.5 +/- 0.3 deg
-   Best fit uniform disk diameter = 0.72527 +/- 0.00215 mas
-   Best fit red. chi2 = 0.555 (ud+bin)
-   Significance of companion = 2.0 sigma
+   Best fit companion flux = 0.414 +/- 0.013 %
+   Best fit companion right ascension = -20.1 +/- 0.3 mas
+   Best fit companion declination = -20.5 +/- 0.3 mas
+   Best fit companion separation = 28.7 +/- 0.3 mas
+   Best fit companion position angle = -135.4 +/- 0.6 deg
+   Best fit uniform disk diameter = 0.75897 +/- 0.00222 mas
+   Best fit red. chi2 = 0.546 (ud+bin)
+   Significance of companion = 2.4 sigma
 ```
 
 ![Figure 5](figures/axcir_smear_cov_sub_chi2map.png)
@@ -156,7 +156,7 @@ Data properties
    Using data covariance = True
    WARNING: covariance matrix does not have full rank
 Computing best fit uniform disk diameter (DO NOT TRUST UNCERTAINTIES)
-   Best fit uniform disk diameter = 0.79050 +/- 0.00047 mas
+   Best fit uniform disk diameter = 0.81601 +/- 0.00046 mas
    Best fit red. chi2 = 0.589 (ud)
 Computing grid
    Min. sep. = 2.0 mas
