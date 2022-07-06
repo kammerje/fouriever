@@ -141,9 +141,9 @@ def clin(p0,
         p0[0]: float
             Relative flux of companion.
         p0[1]: float
-            Right ascension offset of companion.
+            Right ascension offset of companion (mas).
         p0[2]: float
-            Declination offset of companion.
+            Declination offset of companion (mas).
     data_list: list of dict
         List of data whose chi-squared shall be computed. The list contains one
         data structure for each observation.
@@ -369,9 +369,9 @@ def vis_bin(p0,
         p0[0]: float
             Relative flux of companion.
         p0[1]: float
-            Right ascension offset of companion.
+            Right ascension offset of companion (mas).
         p0[2]: float
-            Declination offset of companion.
+            Declination offset of companion (mas).
     data: dict
         Data structure.
     smear: int
@@ -411,9 +411,9 @@ def chi2_bin(p0,
         p0[0]: float
             Relative flux of companion.
         p0[1]: float
-            Right ascension offset of companion.
+            Right ascension offset of companion (mas).
         p0[2]: float
-            Declination offset of companion.
+            Declination offset of companion (mas).
     data_list: list of dict
         List of data whose chi-squared shall be computed. The list contains one
         data structure for each observation.
@@ -498,9 +498,9 @@ def lnprob_bin(p0,
         p0[0]: float
             Relative flux of companion.
         p0[1]: float
-            Right ascension offset of companion.
+            Right ascension offset of companion (mas).
         p0[2]: float
-            Declination offset of companion.
+            Declination offset of companion (mas).
     data_list: list of dict
         List of data whose chi-squared shall be computed. The list contains one
         data structure for each observation.
@@ -518,6 +518,10 @@ def lnprob_bin(p0,
     lnprob: float
         Log-likelihood of unresolved companion model.
     """
+    
+    if ((p0[0] < 0.) or (np.abs(p0[1]) > 10000.) or (np.abs(p0[2]) > 10000.)):
+        
+        return -np.inf
     
     chi2 = chi2_bin(p0,
                     data_list,
@@ -537,9 +541,9 @@ def vis_ud_bin(p0,
         p0[0]: float
             Relative flux of companion.
         p0[1]: float
-            Right ascension offset of companion.
+            Right ascension offset of companion (mas).
         p0[2]: float
-            Declination offset of companion.
+            Declination offset of companion (mas).
         p0[3]: float
             Uniform disk diameter (mas).
     data: dict
@@ -585,9 +589,9 @@ def chi2_ud_bin(p0,
         p0[0]: float
             Relative flux of companion.
         p0[1]: float
-            Right ascension offset of companion.
+            Right ascension offset of companion (mas).
         p0[2]: float
-            Declination offset of companion.
+            Declination offset of companion (mas).
         p0[3]: float
             Uniform disk diameter (mas).
     data_list: list of dict
@@ -671,9 +675,9 @@ def lnprob_ud_bin(p0,
         p0[0]: float
             Relative flux of companion.
         p0[1]: float
-            Right ascension offset of companion.
+            Right ascension offset of companion (mas).
         p0[2]: float
-            Declination offset of companion.
+            Declination offset of companion (mas).
         p0[3]: float
             Uniform disk diameter (mas).
     data_list: list of dict
@@ -694,7 +698,7 @@ def lnprob_ud_bin(p0,
         Log-likelihood of uniform disk with unresolved companion model.
     """
     
-    if (p0[3] < 0.):
+    if ((p0[0] < 0.) or (np.abs(p0[1]) > 10000.) or (np.abs(p0[2]) > 10000.) or (p0[3] < 0.)):
         
         return -np.inf
     
