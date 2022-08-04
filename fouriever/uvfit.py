@@ -922,9 +922,11 @@ class data():
              temp=1.,
              nburn=250,
              nstep=5000,
+             n_live_points=1000,
              cov=False,
              smear=None,
-             ofile=None):
+             ofile=None,
+             sampler='emcee'):
         """
         Parameters
         ----------
@@ -934,16 +936,24 @@ class data():
             Covariance inflation factor.
         nburn: int
             Number of burn-in steps for MCMC to be excluded from posterior
-            distribution.
+            distribution. This parameter is only used when ``sampler='emcee'``.
         nstep: int
             Number of steps for MCMC to be included in posterior distribution.
+            This parameter is only used when ``sampler='emcee'``.
+        n_live_points: int
+            Number of live points used for the sampling the
+            posterior distribution with ``MultiNest``. This
+            parameter is only used when ``sampler='multinest'``.
         cov: bool
             True if covariance shall be considered.
         smear: int
             Numerical bandwidth smearing which shall be used.
         ofile: str
             Path under which figures shall be saved.
-        
+        sampler: str
+            Sampler that is used for the parameter
+            estimation ('emcee' or 'multinest').
+
         Returns
         -------
         fit: dict
@@ -1043,30 +1053,140 @@ class data():
             else:
                 scale += [0.05*fit['p'][i]]
         scale = np.array(scale)
-        p0 = [np.random.normal(loc=fit['p'], scale=scale) for i in range(nwalkers)]
-        
+
         print('   Covariance inflation factor = %.3f' % temp)
         print('   This may take a few minutes')
-        if (fit['model'] == 'ud'):
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_ud, args=[data_list, self.observables, cov, smear, temp])
-        elif (fit['model'] == 'bin'):
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_bin, args=[data_list, self.observables, cov, smear, temp])
-        else:
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_ud_bin, args=[data_list, self.observables, cov, smear, temp])
-        pos, prob, state = sampler.run_mcmc(p0, nburn)
-        sampler.reset()
-        sampler.run_mcmc(pos, nstep, progress=True)
-        
-        plot.chains(fit=fit,
-                    sampler=sampler,
-                    ofile=ofile)
+
+        if sampler == 'emcee':
+            p0 = [np.random.normal(loc=fit['p'], scale=scale) for i in range(nwalkers)]
+
+            if (fit['model'] == 'ud'):
+                emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_ud, args=[data_list, self.observables, cov, smear, temp])
+            elif (fit['model'] == 'bin'):
+                emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_bin, args=[data_list, self.observables, cov, smear, temp])
+            else:
+                emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_ud_bin, args=[data_list, self.observables, cov, smear, temp])
+
+            pos, prob, state = emcee_sampler.run_mcmc(p0, nburn)
+            emcee_sampler.reset()
+            emcee_sampler.run_mcmc(pos, nstep, progress=True)
+            samples = emcee_sampler.flatchain
+            ln_z = None
+
+        elif sampler == 'multinest':
+            # Import here because it will otherwise give a
+            # warning if the compiled MultiNest library is
+            # not found when importing fouriever
+            import pymultinest
+
+            # Get the MPI rank of the process
+
+            try:
+                from mpi4py import MPI
+                mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+            except ModuleNotFoundError:
+                mpi_rank = 0
+
+            # Create the output folder if required
+
+            output_folder = './multinest/'
+
+            if mpi_rank == 0 and not os.path.exists(output_folder):
+                os.mkdir(output_folder)
+
+            # Set uniform prior boundaries to +/- 20% range
+            # with respect to best-fit value from chi2map
+
+            prior_bounds = []
+            for i, item in enumerate(fit['p']):
+                prior_bounds.append((item-0.2*item, item+0.2*item))
+
+            def lnprior_multinest(cube, n_dim, n_param):
+                """
+                Parameters
+                ----------
+                cube : np.ndarray
+                    Unit cube.
+                n_dim : int
+                    Number of dimensions. This parameter is mandatory.
+                n_param : int
+                    Number of parameters. This parameter is mandatory.
+
+                Returns
+                -------
+                np.ndarray
+                    Array with model parameters.
+                """
+
+                for i in range(n_param):
+                    cube[i] = (prior_bounds[i][0] + (prior_bounds[i][1] - prior_bounds[i][0]) * cube[i])
+
+                return cube
+
+            def lnprob_multinest(cube, n_dim, n_param) -> np.float64:
+                """
+                Parameters
+                ----------
+                cube : pymultinest.run.LP_c_double
+                    Cube with physical parameters.
+                n_dim : int
+                    Number of dimensions. This parameter is mandatory.
+                n_param : int
+                    Number of parameters. This parameter is mandatory.
+
+                Returns
+                -------
+                float
+                    Log-likelihood.
+                """
+
+                params = np.zeros(n_param)
+                for i in range(n_param):
+                    params[i] = cube[i]
+
+                if (fit['model'] == 'ud'):
+                    return util.lnprob_ud(params, data_list, self.observables, cov=cov, smear=smear, temp=temp)
+
+                elif (fit['model'] == 'bin'):
+                    return util.lnprob_bin(params, data_list, self.observables, cov=cov, smear=smear, temp=temp)
+
+                else:
+                    return util.lnprob_ud_bin(params, data_list, self.observables, cov=cov, smear=smear, temp=temp)
+
+            pymultinest.run(
+                lnprob_multinest,
+                lnprior_multinest,
+                len(fit['p']),
+                outputfiles_basename=output_folder,
+                resume=False,
+                n_live_points=n_live_points,
+            )
+
+            analyzer = pymultinest.analyse.Analyzer(len(fit['p']), outputfiles_basename=output_folder)
+            sampling_stats = analyzer.get_stats()
+            samples = analyzer.get_equal_weighted_posterior()
+
+            # Nested sampling global log-evidence
+            ln_z = sampling_stats["nested importance sampling global log-evidence"]
+            ln_z_error = sampling_stats["nested importance sampling global log-evidence error"]
+            print(f"Log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
+
+            ln_prob = samples[:, -1]
+            samples = samples[:, :-1]
+
+        if sampler == 'emcee':
+            plot.chains(fit=fit,
+                        samples=samples,
+                        ofile=ofile)
+
         plot.corner(fit=fit,
-                    sampler=sampler,
+                    samples=samples,
                     ofile=ofile)
         
-        pp = np.percentile(sampler.flatchain, 50., axis=0)
-        pu = np.percentile(sampler.flatchain, 84., axis=0)-pp
-        pl = pp-np.percentile(sampler.flatchain, 16., axis=0)
+        pp = np.percentile(samples, 50., axis=0)
+        pu = np.percentile(samples, 84., axis=0)-pp
+        pl = pp-np.percentile(samples, 16., axis=0)
         pe = np.mean(np.vstack((pu, pl)), axis=0)
         if (fit['model'] == 'ud'):
             chi2 = util.chi2_ud(p0=pp,
@@ -1161,7 +1281,12 @@ class data():
             fit['nsigma'] = nsigma
             fit['smear'] = smear
             fit['cov'] = str(cov)
-        
+
+        fit['sampler'] = sampler
+        fit['samples'] = samples
+        if ln_z is not None:
+            fit['ln-evidence'] = (ln_z, ln_z_error)
+
         return fit
     
     def detlim(self,
