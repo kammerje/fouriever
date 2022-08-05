@@ -1063,10 +1063,12 @@ class data():
         plot.corner(fit=fit,
                     sampler=sampler,
                     ofile=ofile)
-        
-        pp = np.percentile(sampler.flatchain, 50., axis=0)
-        pu = np.percentile(sampler.flatchain, 84., axis=0)-pp
-        pl = pp-np.percentile(sampler.flatchain, 16., axis=0)
+
+        flatchain = sampler.get_chain(flat=True)
+
+        pp = np.percentile(flatchain, 50., axis=0)
+        pu = np.percentile(flatchain, 84., axis=0)-pp
+        pl = pp-np.percentile(flatchain, 16., axis=0)
         pe = np.mean(np.vstack((pu, pl)), axis=0)
         if (fit['model'] == 'ud'):
             chi2 = util.chi2_ud(p0=pp,

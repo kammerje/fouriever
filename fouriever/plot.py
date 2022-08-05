@@ -702,11 +702,13 @@ def chains(fit,
     ofile: str
         Path under which figures shall be saved.
     """
-    
+
+    flatchain = sampler.get_chain(flat=True)
+
     if (fit['model'] == 'ud'):
-        fig = plt.figure()
-        plt.plot(sampler.flatchain[:, 0], color=datacol)
-        plt.axhline(np.percentile(sampler.flatchain[:, 0], 50.), color=modelcol, label='MCMC median')
+        nfig = plt.figure()
+        plt.plot(flatchain[:, 0], color=datacol)
+        plt.axhline(np.percentile(flatchain[:, 0], 50.), color=modelcol, label='MCMC median')
         plt.axhline(fit['p'][0], ls='--', color=gridcol, label='Initial guess')
         plt.xlabel('Step')
         plt.ylabel('$\\theta$ [mas]')
@@ -723,13 +725,13 @@ def chains(fit,
         plt.close()
     elif (fit['model'] == 'bin'):
         ylabels = ['$f$ [%]', '$\\rho$ [mas]', '$\\varphi$ [deg]']
-        rho = np.sqrt(sampler.flatchain[:, 1]**2+sampler.flatchain[:, 2]**2)
+        rho = np.sqrt(flatchain[:, 1]**2+flatchain[:, 2]**2)
         rho0 = np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
-        phi = np.rad2deg(np.arctan2(sampler.flatchain[:, 1], sampler.flatchain[:, 2]))
+        phi = np.rad2deg(np.arctan2(flatchain[:, 1], flatchain[:, 2]))
         phi0 = np.rad2deg(np.arctan2(fit['p'][1], fit['p'][2]))
         fig, ax = plt.subplots(len(fit['p']), 1, sharex='col', figsize=(6.4, 1.6*len(fit['p'])))
-        ax[0].plot(sampler.flatchain[:, 0]*100., color=datacol)
-        ax[0].axhline(np.percentile(sampler.flatchain[:, 0], 50.)*100., color=modelcol, label='MCMC median')
+        ax[0].plot(flatchain[:, 0]*100., color=datacol)
+        ax[0].axhline(np.percentile(flatchain[:, 0], 50.)*100., color=modelcol, label='MCMC median')
         ax[0].axhline(fit['p'][0]*100., ls='--', color=gridcol, label='Initial guess')
         ax[1].plot(rho, color=datacol)
         ax[1].axhline(np.percentile(rho, 50.), color=modelcol)
@@ -756,13 +758,13 @@ def chains(fit,
         plt.close()
     else:
         ylabels = ['$f$ [%]', '$\\rho$ [mas]', '$\\varphi$ [deg]', '$\\theta$ [mas]']
-        rho = np.sqrt(sampler.flatchain[:, 1]**2+sampler.flatchain[:, 2]**2)
+        rho = np.sqrt(flatchain[:, 1]**2+flatchain[:, 2]**2)
         rho0 = np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
-        phi = np.rad2deg(np.arctan2(sampler.flatchain[:, 1], sampler.flatchain[:, 2]))
+        phi = np.rad2deg(np.arctan2(flatchain[:, 1], flatchain[:, 2]))
         phi0 = np.rad2deg(np.arctan2(fit['p'][1], fit['p'][2]))
         fig, ax = plt.subplots(len(fit['p']), 1, sharex='col', figsize=(6.4, 1.6*len(fit['p'])))
-        ax[0].plot(sampler.flatchain[:, 0]*100., color=datacol)
-        ax[0].axhline(np.percentile(sampler.flatchain[:, 0], 50.)*100., color=modelcol, label='MCMC median')
+        ax[0].plot(flatchain[:, 0]*100., color=datacol)
+        ax[0].axhline(np.percentile(flatchain[:, 0], 50.)*100., color=modelcol, label='MCMC median')
         ax[0].axhline(fit['p'][0]*100., ls='--', color=gridcol, label='Initial guess')
         ax[1].plot(rho, color=datacol)
         ax[1].axhline(np.percentile(rho, 50.), color=modelcol)
@@ -770,8 +772,8 @@ def chains(fit,
         ax[2].plot(phi, color=datacol)
         ax[2].axhline(np.percentile(phi, 50.), color=modelcol)
         ax[2].axhline(phi0, ls='--', color=gridcol)
-        ax[3].plot(sampler.flatchain[:, 3], color=datacol)
-        ax[3].axhline(np.percentile(sampler.flatchain[:, 3], 50.), color=modelcol)
+        ax[3].plot(flatchain[:, 3], color=datacol)
+        ax[3].axhline(np.percentile(flatchain[:, 3], 50.), color=modelcol)
         ax[3].axhline(fit['p'][3], ls='--', color=gridcol)
         plt.xlabel('Step')
         for i in range(len(fit['p'])):
@@ -804,9 +806,11 @@ def corner(fit,
     ofile: str
         Path under which figures shall be saved.
     """
-    
+
+    flatchain = sampler.get_chain(flat=True)
+
     if (fit['model'] == 'ud'):
-        fig = cp.corner(sampler.flatchain,
+        fig = cp.corner(flatchain,
                         labels=[r'$\theta$ [mas]'],
                         titles=[r'$\theta$'],
                         quantiles=[0.16, 0.5, 0.84],
@@ -822,10 +826,10 @@ def corner(fit,
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
-        temp = sampler.flatchain.copy()
+        temp = flatchain.copy()
         temp[:, 0] *= 100.
-        temp[:, 1] = np.sqrt(sampler.flatchain[:, 1]**2+sampler.flatchain[:, 2]**2)
-        temp[:, 2] = np.rad2deg(np.arctan2(sampler.flatchain[:, 1], sampler.flatchain[:, 2]))
+        temp[:, 1] = np.sqrt(flatchain[:, 1]**2+flatchain[:, 2]**2)
+        temp[:, 2] = np.rad2deg(np.arctan2(flatchain[:, 1], flatchain[:, 2]))
         fig = cp.corner(temp,
                         labels=[r'$f$ [%]', r'$\rho$ [mas]', r'$\varphi$ [deg]'],
                         titles=[r'$f$', r'$\rho$', r'$\varphi$'],
@@ -842,10 +846,10 @@ def corner(fit,
         # plt.show()
         plt.close()
     else:
-        temp = sampler.flatchain.copy()
+        temp = flatchain.copy()
         temp[:, 0] *= 100.
-        temp[:, 1] = np.sqrt(sampler.flatchain[:, 1]**2+sampler.flatchain[:, 2]**2)
-        temp[:, 2] = np.rad2deg(np.arctan2(sampler.flatchain[:, 1], sampler.flatchain[:, 2]))
+        temp[:, 1] = np.sqrt(flatchain[:, 1]**2+flatchain[:, 2]**2)
+        temp[:, 2] = np.rad2deg(np.arctan2(flatchain[:, 1], flatchain[:, 2]))
         fig = cp.corner(temp,
                         labels=[r'$f$ [%]', r'$\rho$ [mas]', r'$\varphi$ [deg]', r'$\theta$ [mas]'],
                         titles=[r'$f$', r'$\rho$', r'$\varphi$', r'$\theta$'],
