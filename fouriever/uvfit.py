@@ -917,6 +917,102 @@ class data():
         
         return fit
     
+    def save_sub(self,
+                 fit_sub,
+                 ofile=None):
+        """
+        Parameters
+        ----------
+        fit_sub: dict
+            Model fit to be subtracted.
+        ofile: str
+            Path under which figures shall be saved.
+        
+        Returns
+        -------
+        fit: dict
+            Best fit model parameters.
+        """
+        
+        print('Subtracting '+fit_sub['model']+' model')
+        
+        buffer = deepcopy(self.data_list)
+        
+        if (fit_sub['model'] == 'ud'):
+            print('   No companion data found!')
+        else:
+            fit_sub_copy = deepcopy(fit_sub)
+            fit_sub_copy['p'][0] = -fit_sub_copy['p'][0]
+        
+        ww = np.where(np.array(self.inst_list) == self.inst)[0]
+        for i in range(len(ww)):
+            for j in range(len(self.data_list[ww[i]])):
+                p0 = fit_sub_copy['p']
+                dra = p0[1].copy()
+                ddec = p0[2].copy()
+                rho = np.sqrt(dra**2+ddec**2)
+                phi = np.rad2deg(np.arctan2(dra, ddec))
+                if (pa_mtoc == '-'):
+                    phi -= self.data_list[ww[i]][j]['pa']
+                elif (pa_mtoc == '+'):
+                    phi += self.data_list[ww[i]][j]['pa']
+                else:
+                    raise UserWarning('Model to chip conversion for position angle not known')
+                phi = ((phi+180.) % 360.)-180.
+                dra_temp = rho*np.sin(np.deg2rad(phi))
+                ddec_temp = rho*np.cos(np.deg2rad(phi))
+                if (fit_sub['model'] == 'bin'):
+                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp]) # w/ companion
+                    vis_bin = util.vis_bin(p0=p0_temp,
+                                           data=self.data_list[ww[i]][j],
+                                           smear=fit_sub['smear'])
+                    p0_temp = np.array([0., dra_temp, ddec_temp]) # w/o companion
+                    vis_ref = util.vis_bin(p0=p0_temp,
+                                           data=self.data_list[ww[i]][j],
+                                           smear=fit_sub['smear'])
+                else:
+                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()]) # w/ companion
+                    vis_bin = util.vis_ud_bin(p0=p0_temp,
+                                              data=self.data_list[ww[i]][j],
+                                              smear=fit_sub['smear'])
+                    p0_temp = np.array([0., dra_temp, ddec_temp, p0[3].copy()]) # w/o companion
+                    vis_ref = util.vis_ud_bin(p0=p0_temp,
+                                              data=self.data_list[ww[i]][j],
+                                              smear=fit_sub['smear'])
+                
+                if ('v2' in self.observables):
+                    self.data_list[ww[i]][j]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=self.data_list[ww[i]][j])-util.v2v2(vis_ref, data=self.data_list[ww[i]][j]))
+                if ('cp' in self.observables):
+                    self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
+                if ('kp' in self.observables):
+                    self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
+        
+        if ('v2' in self.observables):
+            v2_out = []
+            for i in range(len(ww)):
+                for j in range(len(self.data_list[ww[i]])):
+                    v2_out += [self.data_list[ww[i]][j]['v2']]
+            v2_out = np.concatenate(v2_out)
+            np.save(ofile+'_v2', v2_out)
+        if ('cp' in self.observables):
+            cp_out = []
+            for i in range(len(ww)):
+                for j in range(len(self.data_list[ww[i]])):
+                    cp_out += [self.data_list[ww[i]][j]['cp']]
+            cp_out = np.concatenate(cp_out)
+            np.save(ofile+'_cp', cp_out)
+        if ('kp' in self.observables):
+            kp_out = []
+            for i in range(len(ww)):
+                for j in range(len(self.data_list[ww[i]])):
+                    kp_out += [self.data_list[ww[i]][j]['kp']]
+            kp_out = np.concatenate(kp_out)
+            np.save(ofile+'_kp', kp_out)
+        
+        self.data_list = buffer
+        
+        return None
+    
     def mcmc(self,
              fit,
              temp=1.,
@@ -1425,8 +1521,8 @@ class data():
                     # Injection method.
                     if ('v2' in self.observables):
                         fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j], 0.]),
-                                   'model': 'bin',
-                                   'smear': smear}
+                                    'model': 'bin',
+                                    'smear': smear}
                         temp = [self.lim_injection(f0, fit_inj, data_list, self.observables, cov, smear, ndof, thetap['x'][0], sigma) for f0 in f0s]
                         temp = np.array(temp)
                         f0 = f0s[np.argmin(temp)]
@@ -1439,8 +1535,8 @@ class data():
                                       options={'maxiter': 1000})
                     else:
                         fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]]),
-                                   'model': 'bin',
-                                   'smear': smear}
+                                    'model': 'bin',
+                                    'smear': smear}
                         temp = [self.lim_injection(f0, fit_inj, data_list, self.observables, cov, smear, ndof, None, sigma) for f0 in f0s]
                         temp = np.array(temp)
                         f0 = f0s[np.argmin(temp)]
