@@ -210,7 +210,7 @@ class data():
         ww = np.where(np.array(self.inst_list) == self.inst)[0]
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
-                data_list += [self.data_list[ww[i]][j]]
+                data_list += [deepcopy(self.data_list[ww[i]][j])]
                 bmax += [np.max(self.data_list[ww[i]][j]['base'])]
                 bmin += [np.min(self.data_list[ww[i]][j]['base'])]
                 dmax += [self.data_list[ww[i]][j]['diam']]
@@ -498,7 +498,7 @@ class data():
         ww = np.where(np.array(self.inst_list) == self.inst)[0]
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
-                data_list += [self.data_list[ww[i]][j]]
+                data_list += [deepcopy(self.data_list[ww[i]][j])]
                 bmax += [np.max(self.data_list[ww[i]][j]['base'])]
                 bmin += [np.min(self.data_list[ww[i]][j]['base'])]
                 dmax += [self.data_list[ww[i]][j]['diam']]
@@ -856,6 +856,16 @@ class data():
         
         buffer = deepcopy(self.data_list)
         
+        ww = np.where(np.array(self.inst_list) == self.inst)[0]
+        for i in range(len(ww)):
+            for j in range(len(self.data_list[ww[i]])):
+                if (smear is not None):
+                    wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0]*smear))
+                    for k in range(self.data_list[ww[i]][j]['wave'].shape[0]):
+                        wave[k*smear:(k+1)*smear] = np.linspace(self.data_list[ww[i]][j]['wave'][k]-0.5*self.data_list[ww[i]][j]['dwave'][k], self.data_list[ww[i]][j]['wave'][k]+0.5*self.data_list[ww[i]][j]['dwave'][k], smear)
+                    self.data_list[ww[i]][j]['uu_smear'] = np.divide(self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                    self.data_list[ww[i]][j]['vv_smear'] = np.divide(self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+        
         if (fit_sub['model'] == 'ud'):
             print('   No companion data found!')
         else:
@@ -919,12 +929,15 @@ class data():
     
     def save_sub(self,
                  fit_sub,
+                 smear=None,
                  ofile=None):
         """
         Parameters
         ----------
         fit_sub: dict
             Model fit to be subtracted.
+        smear: int
+            Numerical bandwidth smearing which shall be used.
         ofile: str
             Path under which figures shall be saved.
         
@@ -937,6 +950,16 @@ class data():
         print('Subtracting '+fit_sub['model']+' model')
         
         buffer = deepcopy(self.data_list)
+        
+        ww = np.where(np.array(self.inst_list) == self.inst)[0]
+        for i in range(len(ww)):
+            for j in range(len(self.data_list[ww[i]])):
+                if (smear is not None):
+                    wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0]*smear))
+                    for k in range(self.data_list[ww[i]][j]['wave'].shape[0]):
+                        wave[k*smear:(k+1)*smear] = np.linspace(self.data_list[ww[i]][j]['wave'][k]-0.5*self.data_list[ww[i]][j]['dwave'][k], self.data_list[ww[i]][j]['wave'][k]+0.5*self.data_list[ww[i]][j]['dwave'][k], smear)
+                    self.data_list[ww[i]][j]['uu_smear'] = np.divide(self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                    self.data_list[ww[i]][j]['vv_smear'] = np.divide(self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         
         if (fit_sub['model'] == 'ud'):
             print('   No companion data found!')
@@ -1037,9 +1060,9 @@ class data():
             Number of steps for MCMC to be included in posterior distribution.
             This parameter is only used when ``sampler='emcee'``.
         n_live_points: int
-            Number of live points used for the sampling the
-            posterior distribution with ``MultiNest``. This
-            parameter is only used when ``sampler='multinest'``.
+            Number of live points used for the sampling the posterior
+            distribution with ``MultiNest``. This parameter is only used when
+            ``sampler='multinest'``.
         cov: bool
             True if covariance shall be considered.
         smear: int
@@ -1047,8 +1070,8 @@ class data():
         ofile: str
             Path under which figures shall be saved.
         sampler: str
-            Sampler that is used for the parameter
-            estimation ('emcee' or 'multinest').
+            Sampler that is used for the parameter estimation ('emcee' or
+            'multinest').
 
         Returns
         -------
@@ -1075,7 +1098,7 @@ class data():
         ww = np.where(np.array(self.inst_list) == self.inst)[0]
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
-                data_list += [self.data_list[ww[i]][j]]
+                data_list += [deepcopy(self.data_list[ww[i]][j])]
                 if (smear is not None):
                     wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
@@ -1153,7 +1176,7 @@ class data():
         print('   Covariance inflation factor = %.3f' % temp)
         print('   This may take a few minutes')
 
-        if sampler == 'emcee':
+        if (sampler == 'emcee'):
             p0 = [np.random.normal(loc=fit['p'], scale=scale) for i in range(nwalkers)]
 
             if (fit['model'] == 'ud'):
@@ -1166,34 +1189,30 @@ class data():
             pos, prob, state = emcee_sampler.run_mcmc(p0, nburn)
             emcee_sampler.reset()
             emcee_sampler.run_mcmc(pos, nstep, progress=True)
-            samples = emcee_sampler.flatchain
+            samples = emcee_sampler.get_chain(flat=True)
             ln_z = None
 
-        elif sampler == 'multinest':
+        elif (sampler == 'multinest'):
             # Import here because it will otherwise give a
             # warning if the compiled MultiNest library is
             # not found when importing fouriever
             import pymultinest
 
             # Get the MPI rank of the process
-
             try:
                 from mpi4py import MPI
                 mpi_rank = MPI.COMM_WORLD.Get_rank()
-
             except ModuleNotFoundError:
                 mpi_rank = 0
 
             # Create the output folder if required
-
             output_folder = './multinest/'
 
-            if mpi_rank == 0 and not os.path.exists(output_folder):
+            if (mpi_rank == 0 and not os.path.exists(output_folder)):
                 os.mkdir(output_folder)
 
             # Set uniform prior boundaries to +/- 20% range
             # with respect to best-fit value from chi2map
-
             prior_bounds = []
             for i, item in enumerate(fit['p']):
                 prior_bounds.append((item-0.2*item, item+0.2*item))
@@ -1266,12 +1285,12 @@ class data():
             # Nested sampling global log-evidence
             ln_z = sampling_stats["nested importance sampling global log-evidence"]
             ln_z_error = sampling_stats["nested importance sampling global log-evidence error"]
-            print(f"Log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
+            print(f"   Log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
 
             ln_prob = samples[:, -1]
             samples = samples[:, :-1]
 
-        if sampler == 'emcee':
+        if (sampler == 'emcee'):
             plot.chains(fit=fit,
                         samples=samples,
                         ofile=ofile)
@@ -1417,6 +1436,16 @@ class data():
             
             buffer = deepcopy(self.data_list)
             
+            ww = np.where(np.array(self.inst_list) == self.inst)[0]
+            for i in range(len(ww)):
+                for j in range(len(self.data_list[ww[i]])):
+                    if (smear is not None):
+                        wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0]*smear))
+                        for k in range(self.data_list[ww[i]][j]['wave'].shape[0]):
+                            wave[k*smear:(k+1)*smear] = np.linspace(self.data_list[ww[i]][j]['wave'][k]-0.5*self.data_list[ww[i]][j]['dwave'][k], self.data_list[ww[i]][j]['wave'][k]+0.5*self.data_list[ww[i]][j]['dwave'][k], smear)
+                        self.data_list[ww[i]][j]['uu_smear'] = np.divide(self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                        self.data_list[ww[i]][j]['vv_smear'] = np.divide(self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+            
             if (fit_sub['model'] == 'ud'):
                 print('   No companion data found!')
             else:
@@ -1475,7 +1504,7 @@ class data():
         ww = np.where(np.array(self.inst_list) == self.inst)[0]
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
-                data_list += [self.data_list[ww[i]][j]]
+                data_list += [deepcopy(self.data_list[ww[i]][j])]
                 bmax += [np.max(self.data_list[ww[i]][j]['base'])]
                 bmin += [np.min(self.data_list[ww[i]][j]['base'])]
                 dmax += [self.data_list[ww[i]][j]['diam']]
