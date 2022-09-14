@@ -168,7 +168,7 @@ def v2_ud(data_list,
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ax[0].set_ylim(temp)
     ax[0].set_ylabel('Data $|V|^2$')
-    ax[0].legend(loc='upper right')
+    ax[0].legend(loc='upper left')
     ax[1].plot(v2_mod, v2_res/dv2/np.sqrt(fit['chi2_red']), ls='none', marker='s', ms=2, color=datacol, zorder=1)
     ax[1].axhline(0., ls='--', color=gridcol, zorder=2)
     text = ax[1].text(0.99, 0.96, '$\chi^2$ = %.3f' % fit['chi2_red'], ha='right', va='top', transform=ax[1].transAxes, zorder=3)
@@ -337,7 +337,7 @@ def v2_cp_ud_bin(data_list,
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ax[0, 0].set_ylim(temp)
     ax[0, 0].set_ylabel('Data $|V|^2$')
-    ax[0, 0].legend(loc='upper right')
+    ax[0, 0].legend(loc='upper left')
     ax[1, 0].plot(v2_mod, v2_res/dv2/np.sqrt(fit['chi2_red']), ls='none', marker='s', ms=2, color=datacol, zorder=1)
     ax[1, 0].axhline(0., ls='--', color=gridcol, zorder=2)
     text = ax[1, 0].text(0.99, 0.96, '$\chi^2$ = %.3f' % fit['chi2_red'], ha='right', va='top', transform=ax[1, 0].transAxes, zorder=3)
@@ -822,25 +822,47 @@ def corner(fit,
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
-        temp = samples.copy()
-        temp[:, 0] *= 100.
-        temp[:, 1] = np.sqrt(samples[:, 1]**2+samples[:, 2]**2)
-        temp[:, 2] = np.rad2deg(np.arctan2(samples[:, 1], samples[:, 2]))
-        fig = cp.corner(temp,
-                        labels=[r'$f$ [%]', r'$\rho$ [mas]', r'$\varphi$ [deg]'],
-                        titles=[r'$f$', r'$\rho$', r'$\varphi$'],
-                        quantiles=[0.16, 0.5, 0.84],
-                        show_titles=True,
-                        title_fmt='.3f')
-        if (ofile is not None):
-            index = ofile.rfind('/')
-            if index != -1:
-                temp = ofile[:index]
-                if (not os.path.exists(temp)):
-                    os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_corner.pdf')
-        # plt.show()
-        plt.close()
+        
+        if (samples.shape[1] > 3):
+            temp = samples.copy()
+            temp[:, :-2] *= 100.
+            temp[:, -2] = np.sqrt(samples[:, -2]**2+samples[:, -1]**2)
+            temp[:, -1] = np.rad2deg(np.arctan2(samples[:, -2], samples[:, -1]))
+            fig = cp.corner(temp,
+                            labels=[r'$f$ [%]']*(temp.shape[1]-2)+[r'$\rho$ [mas]', r'$\varphi$ [deg]'],
+                            titles=[r'$f$']*(temp.shape[1]-2)+[r'$\rho$', r'$\varphi$'],
+                            quantiles=[0.16, 0.5, 0.84],
+                            show_titles=True,
+                            title_fmt='.3f')
+            if (ofile is not None):
+                index = ofile.rfind('/')
+                if index != -1:
+                    temp = ofile[:index]
+                    if (not os.path.exists(temp)):
+                        os.makedirs(temp)
+                plt.savefig(ofile+'_mcmc_corner.pdf')
+            # plt.show()
+            plt.close()
+        else:
+            temp = samples.copy()
+            temp[:, 0] *= 100.
+            temp[:, 1] = np.sqrt(samples[:, 1]**2+samples[:, 2]**2)
+            temp[:, 2] = np.rad2deg(np.arctan2(samples[:, 1], samples[:, 2]))
+            fig = cp.corner(temp,
+                            labels=[r'$f$ [%]', r'$\rho$ [mas]', r'$\varphi$ [deg]'],
+                            titles=[r'$f$', r'$\rho$', r'$\varphi$'],
+                            quantiles=[0.16, 0.5, 0.84],
+                            show_titles=True,
+                            title_fmt='.3f')
+            if (ofile is not None):
+                index = ofile.rfind('/')
+                if index != -1:
+                    temp = ofile[:index]
+                    if (not os.path.exists(temp)):
+                        os.makedirs(temp)
+                plt.savefig(ofile+'_mcmc_corner.pdf')
+            # plt.show()
+            plt.close()
     else:
         temp = samples.copy()
         temp[:, 0] *= 100.

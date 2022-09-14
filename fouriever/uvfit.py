@@ -227,7 +227,7 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'NIRCAM', 'NIRISS']):
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS']):
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
@@ -515,7 +515,7 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'NIRCAM', 'NIRISS']):
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS']):
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
@@ -1333,13 +1333,13 @@ class data():
             nsigma = util.nsigma(chi2r_test=chi2_test/ndof,
                                  chi2r_true=chi2/ndof,
                                  ndof=ndof)
-            sep = np.sqrt(pp[1]**2+pp[2]**2)
-            pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
-            dsep = np.sqrt((pp[1]/sep*pe[1])**2+(pp[2]/sep*pe[2])**2)
-            dpa = np.rad2deg(np.sqrt((pp[2]/sep**2*pe[1])**2+(-pp[1]/sep**2*pe[2])**2))
-            print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0]*100., pe[0]*100.))
-            print('   Best fit companion right ascension = %.1f +/- %.1f mas' % (pp[1], pe[1]))
-            print('   Best fit companion declination = %.1f +/- %.1f mas' % (pp[2], pe[2]))
+            sep = np.sqrt(pp[-2]**2+pp[-1]**2)
+            pa = np.rad2deg(np.arctan2(pp[-2], pp[-1]))
+            dsep = np.sqrt((pp[-2]/sep*pe[-2])**2+(pp[-1]/sep*pe[-1])**2)
+            dpa = np.rad2deg(np.sqrt((pp[-1]/sep**2*pe[-2])**2+(-pp[-2]/sep**2*pe[-1])**2))
+            print('   Best fit companion flux = %.3f +/- %.3f %%' % (np.mean(pp[:-2])*100., np.mean(pe[:-2])*100.))
+            print('   Best fit companion right ascension = %.1f +/- %.1f mas' % (pp[-2], pe[-2]))
+            print('   Best fit companion declination = %.1f +/- %.1f mas' % (pp[-1], pe[-1]))
             print('   Best fit companion separation = %.1f +/- %.1f mas' % (sep, dsep))
             print('   Best fit companion position angle = %.1f +/- %.1f deg' % (pa, dpa))
             print('   Best fit red. chi2 = %.3f (bin)' % (chi2/ndof))
@@ -1521,7 +1521,7 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'NIRCAM', 'NIRISS']):
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS']):
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
