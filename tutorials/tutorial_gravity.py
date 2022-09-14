@@ -43,9 +43,10 @@ fit = data.mcmc(fit=fit, # best fit from gridsearch
                 temp=None, # use default temperature (reduced chi-squared of best fit)
                 cov=False, # this data set has no covariance
                 smear=3, # use bandwidth smearing of 3
-                ofile='../figures/betaPic_00deg') # save figures
-                # ofile='../figures/betaPic_90deg') # save figures
-                # ofile='../figures/HIP78183') # save figures
+                ofile='../figures/betaPic_00deg', # save figures
+                # ofile='../figures/betaPic_90deg', # save figures
+                # ofile='../figures/HIP78183', # save figures
+                sampler='emcee') # sampling algorithm
 
 # Compute chi-squared map after subtracting best fit companion.
 fit_sub = data.chi2map_sub(fit_sub=fit, # best fit from MCMC
