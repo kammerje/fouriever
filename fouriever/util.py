@@ -430,7 +430,8 @@ def chi2_bin(p0,
         Chi-squared of unresolved companion model.
     """
     
-    if (len(p0) == len(data_list)+2):
+    if (len(p0) > 3):
+        N = len(data_list)//(len(p0)-2)
         
         chi2 = []
         for i in range(len(data_list)):
@@ -447,7 +448,7 @@ def chi2_bin(p0,
             phi = ((phi+180.) % 360.)-180.
             dra_temp = rho*np.sin(np.deg2rad(phi))
             ddec_temp = rho*np.cos(np.deg2rad(phi))
-            p0_temp = np.array([p0[i].copy(), dra_temp, ddec_temp])
+            p0_temp = np.array([p0[i//N].copy(), dra_temp, ddec_temp])
             
             vis_mod = vis_bin(p0=p0_temp,
                               data=data_list[i],
