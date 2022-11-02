@@ -311,6 +311,10 @@ def open_oifile(hdul):
                     data_list[i][j]['diam'] = 1.8
                 elif ('SPHERE' in inst_list[i]):
                     data_list[i][j]['diam'] = 8.2
+                elif ('ERIS' in inst_list[i]):
+                    data_list[i][j]['diam'] = 8.2
+                elif ('NIRISS' in inst_list[i]):
+                    data_list[i][j]['diam'] = 6.5
                 else:
                     raise UserWarning('Telescope not known')
     
