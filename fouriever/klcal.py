@@ -364,7 +364,7 @@ class data():
                 hdul.close()
             
             elif (('OI_VIS2' in hdul) and ('OI_T3' in hdul)):
-                sys.stdout.write('\r   File %.0f of %.0f: OIFITS file' % (i+1, Nscifiles))
+                sys.stdout.write('\r   File %.0f of %.0f: OIFITS file -- !!! KL calibration for V2 is experimental !!!' % (i+1, Nscifiles))
                 sys.stdout.flush()
                 
                 for j in range(len(self.observables)):
@@ -411,6 +411,113 @@ class data():
             
             else:
                 raise UserWarning('Support for this data format is not implemented')
+        print('')
+        
+        return None
+    
+    def calibrate_classical(self,
+                            odir):
+        """
+        Parameters
+        ----------
+        odir: str
+            Output directory where calibrated science fits files shall be saved to.
+        """
+        
+        print('Performing classical calibration')
+        
+        if (odir == self.scidir):
+            raise UserWarning('Using odir = scidir would overwrite the science data')
+        if (not os.path.exists(odir)):
+            os.makedirs(odir)
+        
+        print('   Collecting calibrator data')
+        Ncalfiles = len(self.calfiles)
+        oi_v2_cal = []
+        oi_dv2_cal = []
+        oi_cp_cal = []
+        oi_dcp_cal = []
+        for i in range(Ncalfiles):
+            hdul = pyfits.open(self.caldir+self.calfiles[i], memmap=False)
+            
+            if ('KP-DATA' in hdul):
+                sys.stdout.write('\r   File %.0f of %.0f: kernel phase FITS file' % (i+1, Ncalfiles))
+                sys.stdout.flush()
+                
+                raise UserWarning('Support for this data format is not implemented')
+            
+            elif (('OI_VIS2' in hdul) and ('OI_T3' in hdul)):
+                sys.stdout.write('\r   File %.0f of %.0f: OIFITS file' % (i+1, Ncalfiles))
+                sys.stdout.flush()
+                
+                for j in range(len(self.observables)):
+                    if (self.observables[j] == 'v2'):
+                        
+                        oi_v2_cal += [hdul['OI_VIS2'].data['VIS2DATA']]
+                        oi_dv2_cal += [hdul['OI_VIS2'].data['VIS2ERR']]
+                    
+                    elif (self.observables[j] == 'cp'):
+                        
+                        oi_cp_cal += [hdul['OI_T3'].data['T3PHI']]
+                        oi_dcp_cal += [hdul['OI_T3'].data['T3PHIERR']]
+                
+                hdul.close()
+            
+            else:
+                raise UserWarning('Support for this data format is not implemented')
+        oi_v2_cal = np.array(oi_v2_cal)
+        oi_dv2_cal = np.array(oi_dv2_cal)
+        oi_cp_cal = np.array(oi_cp_cal)
+        oi_dcp_cal = np.array(oi_dcp_cal)
+        print('')
+        
+        print('   Calibrating science data')
+        Nscifiles = len(self.scifiles)
+        oi_v2_sci = []
+        oi_dv2_sci = []
+        oi_cp_sci = []
+        oi_dcp_sci = []
+        for i in range(Nscifiles):
+            hdul = pyfits.open(self.scidir+self.scifiles[i], memmap=False)
+            
+            if ('KP-DATA' in hdul):
+                sys.stdout.write('\r   File %.0f of %.0f: kernel phase FITS file' % (i+1, Nscifiles))
+                sys.stdout.flush()
+                
+                raise UserWarning('Support for this data format is not implemented')
+            
+            elif (('OI_VIS2' in hdul) and ('OI_T3' in hdul)):
+                sys.stdout.write('\r   File %.0f of %.0f: OIFITS file' % (i+1, Nscifiles))
+                sys.stdout.flush()
+                
+                for j in range(len(self.observables)):
+                    if (self.observables[j] == 'v2'):
+                        
+                        oi_v2_sci += [hdul['OI_VIS2'].data['VIS2DATA']]
+                        oi_dv2_sci += [hdul['OI_VIS2'].data['VIS2ERR']]
+                        hdul['OI_VIS2'].data['VIS2DATA'] = np.true_divide(hdul['OI_VIS2'].data['VIS2DATA'].copy(), np.mean(oi_v2_cal, axis=0))
+                        hdul['OI_VIS2'].data['VIS2ERR'] = np.sqrt(hdul['OI_VIS2'].data['VIS2ERR'].copy()**2+(np.mean(oi_dv2_cal, axis=0)/np.sqrt(oi_dv2_cal.shape[0]))**2)
+                    
+                    elif (self.observables[j] == 'cp'):
+                        
+                        oi_cp_sci += [hdul['OI_T3'].data['T3PHI']]
+                        oi_dcp_sci += [hdul['OI_T3'].data['T3PHIERR']]
+                        hdul['OI_T3'].data['T3PHI'] = hdul['OI_T3'].data['T3PHI'].copy()-np.mean(oi_cp_cal, axis=0)
+                        hdul['OI_T3'].data['T3PHIERR'] = np.sqrt(hdul['OI_T3'].data['T3PHIERR'].copy()**2+(np.mean(oi_dcp_cal, axis=0)/np.sqrt(oi_dcp_cal.shape[0]))**2)
+                
+                ww = self.scifiles[i].rfind('/')
+                if (ww == -1):
+                    hdul.writeto(odir+self.scifiles[i][:-7]+'_cal.oifits', overwrite=True, output_verify='fix')
+                else:
+                    hdul.writeto(odir+self.scifiles[i][ww+1:-7]+'_cal.oifits', overwrite=True, output_verify='fix')
+                hdul.close()
+            
+            else:
+                raise UserWarning('Support for this data format is not implemented')
+        oi_v2_sci = np.array(oi_v2_sci)
+        oi_dv2_sci = np.array(oi_dv2_sci)
+        oi_cp_sci = np.array(oi_cp_sci)
+        oi_dcp_sci = np.array(oi_dcp_sci)
         print('')
         
         return None
