@@ -1042,10 +1042,10 @@ class data():
              nburn=250,
              nstep=5000,
              n_live_points=1000,
+             sampler='emcee',
              cov=False,
              smear=None,
-             ofile=None,
-             sampler='emcee'):
+             ofile=None):
         """
         Parameters
         ----------
@@ -1063,15 +1063,15 @@ class data():
             Number of live points used for the sampling the posterior
             distribution with ``MultiNest``. This parameter is only used when
             ``sampler='multinest'``.
+        sampler: str
+            Sampler that is used for the parameter estimation ('emcee' or
+            'multinest').
         cov: bool
             True if covariance shall be considered.
         smear: int
             Numerical bandwidth smearing which shall be used.
         ofile: str
             Path under which figures shall be saved.
-        sampler: str
-            Sampler that is used for the parameter estimation ('emcee' or
-            'multinest').
 
         Returns
         -------
