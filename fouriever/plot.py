@@ -21,6 +21,7 @@ from . import util
 from .opticstools import opticstools as ot
 
 pa_mtoc = '-' # model to chip conversion for position angle
+formats_known = ['.pdf', '.png', '.jpg']
 
 datacol = 'mediumaquamarine'
 modelcol = 'teal'
@@ -117,11 +118,14 @@ def v2_ud_base(data_list,
     plt.suptitle('Uniform disk fit')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_v2_ud.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_v2_ud'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_v2_ud.pdf')
     # plt.show()
     plt.close()
 
@@ -182,11 +186,14 @@ def v2_ud(data_list,
     plt.suptitle('Uniform disk fit')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_v2_ud.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_v2_ud'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_v2_ud.pdf')
     # plt.show()
     plt.close()
 
@@ -259,11 +266,14 @@ def cp_bin(data_list,
     plt.suptitle('Point-source companion fit')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_cp_bin.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_cp_bin'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_cp_bin.pdf')
     # plt.show()
     plt.close()
 
@@ -366,11 +376,14 @@ def v2_cp_ud_bin(data_list,
     plt.suptitle('Uniform disk with point-source companion fit')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_v2_cp_ud_bin.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_v2_cp_ud_bin'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_v2_cp_ud_bin.pdf')
     # plt.show()
     plt.close()
 
@@ -443,11 +456,14 @@ def kp_bin(data_list,
     plt.suptitle('Point-source companion fit')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_kp_bin.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_kp_bin'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_kp_bin.pdf')
     # plt.show()
     plt.close()
 
@@ -581,11 +597,14 @@ def lincmap(pps,
     plt.tight_layout()
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_lincmap.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_lincmap'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_lincmap.pdf')
     # plt.show()
     plt.close()
 
@@ -681,11 +700,14 @@ def chi2map(pps_unique,
         plt.suptitle('Chi-squared map (search region shaded red)')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_chi2map.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_chi2map'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_chi2map.pdf')
     # plt.show()
     plt.close()
 
@@ -714,11 +736,14 @@ def chains(fit,
         plt.suptitle('MCMC chains')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_chains.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_chains'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_chains.pdf')
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
@@ -747,11 +772,14 @@ def chains(fit,
         plt.suptitle('MCMC chains')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_chains.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_chains'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_chains.pdf')
         # plt.show()
         plt.close()
     else:
@@ -783,11 +811,14 @@ def chains(fit,
         plt.suptitle('MCMC chains')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_chains.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_chains'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_chains.pdf')
         # plt.show()
         plt.close()
 
@@ -814,11 +845,14 @@ def corner(fit,
                         title_fmt='.3f')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_corner.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_corner'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_corner.pdf')
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
@@ -834,11 +868,14 @@ def corner(fit,
                         title_fmt='.3f')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_corner.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_corner'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_corner.pdf')
         # plt.show()
         plt.close()
     else:
@@ -854,11 +891,14 @@ def corner(fit,
                         title_fmt='.3f')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_corner.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_corner'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_corner.pdf')
         # plt.show()
         plt.close()
 
@@ -925,7 +965,16 @@ def detlim(ffs_absil,
     temp += [rad*step_size] # mas
     temp += [-2.5*np.log10(avg)] # mag
     temp = np.array(temp)
-    np.save(ofile+'_detlim_absil.npy', temp)
+    if (ofile is not None):
+        index = ofile.rfind('/')
+        if (index != -1):
+            temp = ofile[:index]
+            if (not os.path.exists(temp)):
+                os.makedirs(temp)
+        if (ofile[-4:] in formats_known):
+            np.save(ofile[:-4]+'_detlim_absil.npy', temp)
+        else:
+            np.save(ofile+'_detlim_absil.npy', temp)
     rad, avg = ot.azimuthalAverage(ffs_injection, returnradii=True, binsize=1)
     ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[1], lw=3, label='Method Injection')
     # ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[1], lw=3, ls='--', label='Method Injection (w/ cov)')
@@ -933,7 +982,16 @@ def detlim(ffs_absil,
     temp += [rad*step_size] # mas
     temp += [-2.5*np.log10(avg)] # mag
     temp = np.array(temp)
-    np.save(ofile+'_detlim_injection.npy', temp)
+    if (ofile is not None):
+        index = ofile.rfind('/')
+        if (index != -1):
+            temp = ofile[:index]
+            if (not os.path.exists(temp)):
+                os.makedirs(temp)
+        if (ofile[-4:] in formats_known):
+            np.save(ofile[:-4]+'_detlim_injection.npy', temp)
+        else:
+            np.save(ofile+'_detlim_injection.npy', temp)
     
     # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_X.npy')
     # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_Y.npy')
@@ -960,6 +1018,15 @@ def detlim(ffs_absil,
     ax.legend(loc='upper right')
     plt.suptitle('Detection limits ('+str(sigma)+'-$\sigma$)')
     plt.tight_layout()
-    plt.savefig(ofile+'_detlim.pdf')
+    if (ofile is not None):
+        index = ofile.rfind('/')
+        if (index != -1):
+            temp = ofile[:index]
+            if (not os.path.exists(temp)):
+                os.makedirs(temp)
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_detlim'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_detlim.pdf')
     # plt.show()
     plt.close()
