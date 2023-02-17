@@ -961,10 +961,10 @@ def detlim(ffs_absil,
     rad, avg = ot.azimuthalAverage(ffs_absil, returnradii=True, binsize=1)
     ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[0], lw=3, label='Method Absil')
     # ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[0], lw=3, ls='--', label='Method Absil (w/ cov)')
-    temp = []
-    temp += [rad*step_size] # mas
-    temp += [-2.5*np.log10(avg)] # mag
-    temp = np.array(temp)
+    data = []
+    data += [rad*step_size] # mas
+    data += [-2.5*np.log10(avg)] # mag
+    data = np.array(data)
     if (ofile is not None):
         index = ofile.rfind('/')
         if (index != -1):
@@ -972,16 +972,16 @@ def detlim(ffs_absil,
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
         if (ofile[-4:] in formats_known):
-            np.save(ofile[:-4]+'_detlim_absil.npy', temp)
+            np.save(ofile[:-4]+'_detlim_absil.npy', data)
         else:
-            np.save(ofile+'_detlim_absil.npy', temp)
+            np.save(ofile+'_detlim_absil.npy', data)
     rad, avg = ot.azimuthalAverage(ffs_injection, returnradii=True, binsize=1)
     ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[1], lw=3, label='Method Injection')
     # ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[1], lw=3, ls='--', label='Method Injection (w/ cov)')
-    temp = []
-    temp += [rad*step_size] # mas
-    temp += [-2.5*np.log10(avg)] # mag
-    temp = np.array(temp)
+    data = []
+    data += [rad*step_size] # mas
+    data += [-2.5*np.log10(avg)] # mag
+    data = np.array(data)
     if (ofile is not None):
         index = ofile.rfind('/')
         if (index != -1):
@@ -989,9 +989,9 @@ def detlim(ffs_absil,
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
         if (ofile[-4:] in formats_known):
-            np.save(ofile[:-4]+'_detlim_injection.npy', temp)
+            np.save(ofile[:-4]+'_detlim_injection.npy', data)
         else:
-            np.save(ofile+'_detlim_injection.npy', temp)
+            np.save(ofile+'_detlim_injection.npy', data)
     
     # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_X.npy')
     # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_Y.npy')
