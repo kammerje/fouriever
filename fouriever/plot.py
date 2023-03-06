@@ -470,13 +470,15 @@ def kp_bin(data_list,
 def lincmap(pps,
             pes,
             chi2s,
+            nsigmas,
             fit,
             sep_range,
             step_size,
             vmin=None,
             vmax=None,
             ofile=None,
-            searchbox=None):
+            searchbox=None,
+            plot_nsigma=False):
     """
     Parameters
     ----------
@@ -489,6 +491,9 @@ def lincmap(pps,
     chi2s: array
         Array of shape (RA steps x DEC steps) containing best fit
         chi-squared for the grid.
+    nsigmas: array
+        Array of shape (RA steps x DEC steps) containing best fit detection
+        significance for the grid.
     fit: dict
         Model fit whose chi-squared map shall be plotted.
     sep_range: tuple of float
@@ -506,6 +511,8 @@ def lincmap(pps,
         formats are {'RA': [RA_min, RA_max], 'DEC': [DEC_min, DEC_max], 'rho':
         [rho_min, rho_max], 'phi': [phi_min, phi_max]}. Note that -180 <= phi
         < 180.
+    plot_nsigma: bool
+            Plot detection significance instead of chi-squared map.
     """
     
     grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
@@ -557,9 +564,15 @@ def lincmap(pps,
     ax[0].set_xlabel('$\Delta$RA [mas]')
     ax[0].set_ylabel('$\Delta$DEC [mas]')
     ax[0].set_title('Linear contrast map')
-    p1 = ax[1].imshow(chi2s/fit['ndof'], cmap='cubehelix', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
+    if (plot_nsigma == False):
+        p1 = ax[1].imshow(chi2s/fit['ndof'], cmap='cubehelix', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
+    else:
+        p1 = ax[1].imshow(nsigmas, cmap='cubehelix_r', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
     c1 = plt.colorbar(p1, ax=ax[1])
-    c1.set_label('$\chi^2$', rotation=270, labelpad=20)
+    if (plot_nsigma == False):
+        c1.set_label('$\chi^2$', rotation=270, labelpad=20)
+    else:
+        c1.set_label('$N_{\sigma}$', rotation=270, labelpad=20)
     if (searchbox is not None):
         ax[1].imshow(searchmap, cmap='Reds', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.), alpha=0.5)
     ax[1].plot(0., 0., marker='*', color='black', markersize=10)
@@ -579,10 +592,16 @@ def lincmap(pps,
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ax[1].set_xlabel('$\Delta$RA [mas]')
     ax[1].set_ylabel('$\Delta$DEC [mas]')
-    if (searchbox is None):
-        ax[1].set_title('Chi-squared map')
+    if (plot_nsigma == False):
+        if (searchbox is None):
+            ax[1].set_title('Chi-squared map')
+        else:
+            ax[1].set_title('Chi-squared map (search region shaded red)')
     else:
-        ax[1].set_title('Chi-squared map (search region shaded red)')
+        if (searchbox is None):
+            ax[1].set_title('Detection significance')
+        else:
+            ax[1].set_title('Detection significance (search region shaded red)')
     ax[2].plot(rad, avg, color=colors[0], label='avg')
     ax[2].fill_between(rad, avg-std, avg+std, ec='None', fc=colors[0], alpha=1./3.)
     ax[2].grid(axis='y')

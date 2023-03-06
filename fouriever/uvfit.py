@@ -166,7 +166,8 @@ class data():
                 vmax=None,
                 ofile=None,
                 save_as_fits=False,
-                searchbox=None):
+                searchbox=None,
+                plot_nsigma=False):
         """
         Parameters
         ----------
@@ -191,6 +192,8 @@ class data():
             Accepted formats are {'RA': [RA_min, RA_max], 'DEC': [DEC_min,
             DEC_max], 'rho': [rho_min, rho_max], 'phi': [phi_min, phi_max]}.
             Note that -180 <= phi < 180.
+        plot_nsigma: bool
+            Plot detection significance instead of chi-squared map.
         
         Returns
         -------
@@ -322,6 +325,7 @@ class data():
         pps = []
         pes = []
         chi2s = []
+        nsigmas = []
         nc = np.prod(grid_ra_dec[0].shape)
         ctr = 0
         for i in range(grid_ra_dec[0].shape[0]):
@@ -345,11 +349,15 @@ class data():
                                             self.observables,
                                             cov,
                                             smear)]
+                    nsigmas += [util.nsigma(chi2r_test=thetap['fun']/ndof,
+                                            chi2r_true=chi2s[-1]/ndof,
+                                            ndof=ndof)]
                 else:
                     p0s += [np.array([np.nan, np.nan, np.nan])]
                     pps += [np.array([np.nan, np.nan, np.nan])]
                     pes += [np.array([np.nan, np.nan, np.nan])]
                     chi2s += [np.nan]
+                    nsigmas += [np.nan]
         sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
         sys.stdout.flush()
         print('')
@@ -357,17 +365,13 @@ class data():
         pps = np.array(pps)
         pes = np.array(pes)
         chi2s = np.array(chi2s)
+        nsigmas = np.array(nsigmas)
         
         if (searchbox is None):
             chi2s[pps[:, 0] < 0.] = np.nan
             chi2 = np.nanmin(chi2s)
             pp = pps[np.nanargmin(chi2s)]
             pe = pes[np.nanargmin(chi2s)]
-            sep = np.sqrt(pp[1]**2+pp[2]**2)
-            pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
-            nsigma = util.nsigma(chi2r_test=thetap['fun']/ndof,
-                                 chi2r_true=chi2/ndof,
-                                 ndof=ndof)
         else:
             chi2s[pps[:, 0] < 0.] = np.nan
             chi2s_copy = chi2s.copy()
@@ -390,11 +394,11 @@ class data():
             chi2 = np.nanmin(chi2s_copy)
             pp = pps[np.nanargmin(chi2s_copy)]
             pe = pes[np.nanargmin(chi2s_copy)]
-            sep = np.sqrt(pp[1]**2+pp[2]**2)
-            pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
-            nsigma = util.nsigma(chi2r_test=thetap['fun']/ndof,
-                                 chi2r_true=chi2/ndof,
-                                 ndof=ndof)
+        sep = np.sqrt(pp[1]**2+pp[2]**2)
+        pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
+        nsigma = util.nsigma(chi2r_test=thetap['fun']/ndof,
+                             chi2r_true=chi2/ndof,
+                             ndof=ndof)
         
         print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0]*100., pe[0]*100.))
         print('   Best fit companion right ascension = %.1f mas' % pp[1])
@@ -406,6 +410,7 @@ class data():
         pps = np.swapaxes(np.swapaxes(pps.reshape((grid_ra_dec[0].shape[0], grid_ra_dec[0].shape[1], pps.shape[1])), 0, 2), 1, 2)
         pes = np.swapaxes(np.swapaxes(pes.reshape((grid_ra_dec[0].shape[0], grid_ra_dec[0].shape[1], pes.shape[1])), 0, 2), 1, 2)
         chi2s = chi2s.reshape(grid_ra_dec[0].shape)
+        nsigmas = nsigmas.reshape(grid_ra_dec[0].shape)
         
         fit = {}
         fit['model'] = 'bin'
@@ -419,17 +424,20 @@ class data():
         fit['pps'] = pps[0]
         fit['pes'] = pes[0]
         fit['chi2s'] = chi2s
+        fit['nsigmas'] = nsigmas
         
         plot.lincmap(pps=pps,
                      pes=pes,
                      chi2s=chi2s,
+                     nsigmas=nsigmas,
                      fit=fit,
                      sep_range=sep_range,
                      step_size=step_size,
                      vmin=vmin,
                      vmax=vmax,
                      ofile=ofile,
-                     searchbox=searchbox)
+                     searchbox=searchbox,
+                     plot_nsigma=plot_nsigma)
         
         if (save_as_fits == True):
             hdu0 = pyfits.PrimaryHDU(pps)
@@ -447,7 +455,9 @@ class data():
             hdu1.header['EXTNAME'] = 'DLINCMAP'
             hdu2 = pyfits.ImageHDU(chi2s)
             hdu2.header['EXTNAME'] = 'CHI2MAP'
-            hdul = pyfits.HDUList([hdu0, hdu1, hdu2])
+            hdu3 = pyfits.ImageHDU(nsigmas)
+            hdu3.header['EXTNAME'] = 'NSIGMAS'
+            hdul = pyfits.HDUList([hdu0, hdu1, hdu2, hdu3])
             hdul.writeto(ofile+'.fits', output_verify='fix', overwrite=True)
             hdul.close()
         

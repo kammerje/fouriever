@@ -243,7 +243,7 @@ class data():
         
         Nscifiles = len(self.scifiles)
         for i in range(Nscifiles):
-            hdul = pyfits.open(self.scidir+self.scifiles[i], memmap=False)
+            hdul = pyfits.open(os.path.join(self.scidir, self.scifiles[i]), memmap=False)
             
             if ('KP-DATA' in hdul):
                 sys.stdout.write('\r   File %.0f of %.0f: kernel phase FITS file' % (i+1, Nscifiles))
@@ -358,9 +358,9 @@ class data():
                 
                 ww = self.scifiles[i].rfind('/')
                 if (ww == -1):
-                    hdul.writeto(odir+self.scifiles[i][:-5]+'_klcal.fits', overwrite=True, output_verify='fix')
+                    hdul.writeto(os.path.join(odir, self.scifiles[i][:-5]+'_klcal.fits'), overwrite=True, output_verify='fix')
                 else:
-                    hdul.writeto(odir+self.scifiles[i][ww+1:-5]+'_klcal.fits', overwrite=True, output_verify='fix')
+                    hdul.writeto(os.path.join(odir, self.scifiles[i][ww+1:-5]+'_klcal.fits'), overwrite=True, output_verify='fix')
                 hdul.close()
             
             elif (('OI_VIS2' in hdul) and ('OI_T3' in hdul)):
@@ -404,9 +404,9 @@ class data():
                 
                 ww = self.scifiles[i].rfind('/')
                 if (ww == -1):
-                    hdul.writeto(odir+self.scifiles[i][:-7]+'_klcal.oifits', overwrite=True, output_verify='fix')
+                    hdul.writeto(os.path.join(odir, self.scifiles[i][:-7]+'_klcal.oifits'), overwrite=True, output_verify='fix')
                 else:
-                    hdul.writeto(odir+self.scifiles[i][ww+1:-7]+'_klcal.oifits', overwrite=True, output_verify='fix')
+                    hdul.writeto(os.path.join(odir, self.scifiles[i][ww+1:-7]+'_klcal.oifits'), overwrite=True, output_verify='fix')
                 hdul.close()
             
             else:
@@ -416,7 +416,8 @@ class data():
         return None
     
     def calibrate_classical(self,
-                            odir):
+                            odir,
+                            mean=False):
         """
         Parameters
         ----------
@@ -441,7 +442,7 @@ class data():
         kp_dkp_cal = []
         kp_kpcov_cal = []
         for i in range(Ncalfiles):
-            hdul = pyfits.open(self.caldir+self.calfiles[i], memmap=False)
+            hdul = pyfits.open(os.path.join(self.caldir, self.calfiles[i]), memmap=False)
             
             if ('KP-DATA' in hdul):
                 sys.stdout.write('\r   File %.0f of %.0f: kernel phase FITS file' % (i+1, Ncalfiles))
@@ -492,7 +493,7 @@ class data():
         kp_dkp_sci = []
         kp_kpcov_sci = []
         for i in range(Nscifiles):
-            hdul = pyfits.open(self.scidir+self.scifiles[i], memmap=False)
+            hdul = pyfits.open(os.path.join(self.scidir, self.scifiles[i]), memmap=False)
             
             if ('KP-DATA' in hdul):
                 sys.stdout.write('\r   File %.0f of %.0f: kernel phase FITS file' % (i+1, Nscifiles))
@@ -519,26 +520,103 @@ class data():
                 sys.stdout.write('\r   File %.0f of %.0f: OIFITS file' % (i+1, Nscifiles))
                 sys.stdout.flush()
                 
+                if (mean == True):
+                    iwl = hdul['OI_WAVELENGTH'].data['EFF_BAND'].shape[0]
+                    owl = 1
+                    hdu_wl = pyfits.BinTableHDU.from_columns(
+                        pyfits.ColDefs([
+                            pyfits.Column(name='EFF_WAVE', format='1E', unit='METERS', array=np.array([np.mean(hdul['OI_WAVELENGTH'].data['EFF_WAVE'])])),
+                            pyfits.Column(name='EFF_BAND', format='1E', unit='METERS', array=np.array([np.mean(hdul['OI_WAVELENGTH'].data['EFF_BAND'])])),
+                            ])
+                        )
+                    hdu_wl.header['EXTNAME'] = 'OI_WAVELENGTH'
+                    hdu_wl.header['INSNAME'] = hdul['OI_WAVELENGTH'].header['INSNAME']
+                    hdul.pop('OI_WAVELENGTH')
+                    hdul += [hdu_wl]
+                # owl = hdul['OI_WAVELENGTH'].data['EFF_BAND'].shape[0]
+                
                 for j in range(len(self.observables)):
                     if (self.observables[j] == 'v2'):
                         
                         oi_v2_sci += [hdul['OI_VIS2'].data['VIS2DATA']]
                         oi_dv2_sci += [hdul['OI_VIS2'].data['VIS2ERR']]
-                        hdul['OI_VIS2'].data['VIS2DATA'] = np.true_divide(hdul['OI_VIS2'].data['VIS2DATA'].copy(), np.mean(oi_v2_cal, axis=0))
-                        hdul['OI_VIS2'].data['VIS2ERR'] = np.sqrt(hdul['OI_VIS2'].data['VIS2ERR'].copy()**2+(np.mean(oi_dv2_cal, axis=0)/np.sqrt(oi_dv2_cal.shape[0]))**2)
+                        if (mean == False):
+                            hdul['OI_VIS2'].data['VIS2DATA'] = np.true_divide(hdul['OI_VIS2'].data['VIS2DATA'].copy(), np.mean(oi_v2_cal, axis=0))
+                            hdul['OI_VIS2'].data['VIS2ERR'] = np.sqrt(hdul['OI_VIS2'].data['VIS2ERR'].copy()**2+(np.mean(oi_dv2_cal, axis=0)/np.sqrt(oi_dv2_cal.shape[0]))**2)
+                        else:
+                            # v2d = np.true_divide(np.mean(hdul['OI_VIS2'].data['VIS2DATA'], axis=1), np.mean(oi_v2_cal, axis=(0, 2)))
+                            # v2e = np.sqrt(np.mean(hdul['OI_VIS2'].data['VIS2ERR'], axis=1)**2/iwl+np.mean(oi_dv2_cal, axis=(0, 2))**2/oi_dv2_cal.shape[-1])
+                            # v2d = np.divide(hdul['OI_VIS2'].data['VIS2DATA'].T, np.mean(oi_v2_cal, axis=(0, 2))).T
+                            # v2e = np.sqrt(hdul['OI_VIS2'].data['VIS2ERR']**2+np.mean(np.mean(oi_dv2_cal, axis=0), axis=1, keepdims=True)**2/oi_dv2_cal.shape[-1])
+                            v2d = np.true_divide(np.mean(hdul['OI_VIS2'].data['VIS2DATA'], axis=1), np.mean(oi_v2_cal, axis=(0, 2)))
+                            # v2e = np.sqrt(np.mean(hdul['OI_VIS2'].data['VIS2ERR']**2, axis=1)/iwl+np.mean(oi_dv2_cal**2, axis=(0, 2))/oi_dv2_cal.shape[-1])
+                            err_sci = np.std(hdul['OI_VIS2'].data['VIS2DATA'], axis=1)
+                            err_cal = np.std(oi_v2_cal, axis=(0, 2))
+                            v2e = np.sqrt(err_sci**2/iwl+err_cal**2/oi_dv2_cal.shape[-1])
+                            flag = np.isnan(v2d) < 0.5
+                            hdu_v2 = pyfits.BinTableHDU.from_columns(
+                                pyfits.ColDefs([
+                                    pyfits.Column(name='TARGET_ID', format='1I', array=hdul['OI_VIS2'].data['TARGET_ID']),
+                                    pyfits.Column(name='TIME', format='1D', unit='SECONDS', array=hdul['OI_VIS2'].data['TIME']),
+                                    pyfits.Column(name='MJD', format='1D', unit='DAY', array=hdul['OI_VIS2'].data['MJD']),
+                                    pyfits.Column(name='INT_TIME', format='1D', unit='SECONDS', array=hdul['OI_VIS2'].data['INT_TIME']),
+                                    pyfits.Column(name='VIS2DATA', format='%iD' % owl, array=v2d),
+                                    pyfits.Column(name='VIS2ERR', format='%iD' % owl, array=v2e),
+                                    pyfits.Column(name='UCOORD', format='1D', unit='METERS', array=hdul['OI_VIS2'].data['UCOORD']),
+                                    pyfits.Column(name='VCOORD', format='1D', unit='METERS', array=hdul['OI_VIS2'].data['VCOORD']),
+                                    pyfits.Column(name='STA_INDEX', format='2I', array=hdul['OI_VIS2'].data['STA_INDEX']),
+                                    pyfits.Column(name='FLAG', format='%iL' % owl, array=flag),
+                                    ])
+                                )
+                            hdu_v2.header['EXTNAME'] = 'OI_VIS2'
+                            hdu_v2.header['INSNAME'] = hdul['OI_VIS2'].header['INSNAME']
+                            hdul.pop('OI_VIS2')
+                            hdul += [hdu_v2]
                     
                     elif (self.observables[j] == 'cp'):
                         
                         oi_cp_sci += [hdul['OI_T3'].data['T3PHI']]
                         oi_dcp_sci += [hdul['OI_T3'].data['T3PHIERR']]
-                        hdul['OI_T3'].data['T3PHI'] = hdul['OI_T3'].data['T3PHI'].copy()-np.mean(oi_cp_cal, axis=0)
-                        hdul['OI_T3'].data['T3PHIERR'] = np.sqrt(hdul['OI_T3'].data['T3PHIERR'].copy()**2+(np.mean(oi_dcp_cal, axis=0)/np.sqrt(oi_dcp_cal.shape[0]))**2)
+                        if (mean == False):
+                            hdul['OI_T3'].data['T3PHI'] = hdul['OI_T3'].data['T3PHI'].copy()-np.mean(oi_cp_cal, axis=0)
+                            hdul['OI_T3'].data['T3PHIERR'] = np.sqrt(hdul['OI_T3'].data['T3PHIERR'].copy()**2+(np.mean(oi_dcp_cal, axis=0)/np.sqrt(oi_dcp_cal.shape[0]))**2)
+                        else:
+                            # cpd = np.mean(hdul['OI_T3'].data['T3PHI'], axis=1)-np.mean(oi_cp_cal, axis=(0, 2))
+                            # cpe = np.sqrt(np.mean(hdul['OI_T3'].data['T3PHIERR'], axis=1)**2/iwl+np.mean(oi_dcp_cal, axis=(0, 2))**2/oi_dcp_cal.shape[-1])
+                            # cpd = hdul['OI_T3'].data['T3PHI']-np.mean(np.mean(oi_cp_cal, axis=0), axis=1, keepdims=True)
+                            # cpe = np.sqrt(hdul['OI_T3'].data['T3PHIERR']**2+np.mean(np.mean(oi_dcp_cal, axis=0), axis=1, keepdims=True)**2/oi_dcp_cal.shape[-1])
+                            cpd = np.mean(hdul['OI_T3'].data['T3PHI'], axis=1)-np.mean(oi_cp_cal, axis=(0, 2))
+                            # cpe = np.sqrt(np.mean(hdul['OI_T3'].data['T3PHIERR']**2, axis=1)/iwl+np.mean(oi_dcp_cal**2, axis=(0, 2))//oi_dcp_cal.shape[-1])
+                            err_sci = np.std(hdul['OI_T3'].data['T3PHI'], axis=1)
+                            err_cal = np.std(oi_cp_cal, axis=(0, 2))
+                            cpe = np.sqrt(err_sci**2/iwl+err_cal**2/oi_dcp_cal.shape[-1])
+                            flag = np.isnan(cpd) < 0.5
+                            hdu_cp = pyfits.BinTableHDU.from_columns(
+                                pyfits.ColDefs([
+                                    pyfits.Column(name='TARGET_ID', format='1I', array=hdul['OI_T3'].data['TARGET_ID']),
+                                    pyfits.Column(name='TIME', format='1D', unit='SECONDS', array=hdul['OI_T3'].data['TIME']),
+                                    pyfits.Column(name='MJD', format='1D', unit='DAY', array=hdul['OI_T3'].data['MJD']),
+                                    pyfits.Column(name='INT_TIME', format='1D', unit='SECONDS', array=hdul['OI_T3'].data['INT_TIME']),
+                                    pyfits.Column(name='T3PHI', format='%iD' % owl, unit='DEGREES', array=cpd),
+                                    pyfits.Column(name='T3PHIERR', format='%iD' % owl, unit='DEGREES', array=cpe),
+                                    pyfits.Column(name='U1COORD', format='1D', unit='METERS', array=hdul['OI_T3'].data['U1COORD']),
+                                    pyfits.Column(name='V1COORD', format='1D', unit='METERS', array=hdul['OI_T3'].data['V1COORD']),
+                                    pyfits.Column(name='U2COORD', format='1D', unit='METERS', array=hdul['OI_T3'].data['U2COORD']),
+                                    pyfits.Column(name='V2COORD', format='1D', unit='METERS', array=hdul['OI_T3'].data['V2COORD']),
+                                    pyfits.Column(name='STA_INDEX', format='3I', array=hdul['OI_T3'].data['STA_INDEX']),
+                                    pyfits.Column(name='FLAG', format='%iL' % owl, array=flag),
+                                    ])
+                                )
+                            hdu_cp.header['EXTNAME'] = 'OI_T3'
+                            hdu_cp.header['INSNAME'] = hdul['OI_T3'].header['INSNAME']
+                            hdul.pop('OI_T3')
+                            hdul += [hdu_cp]
                 
                 ww = self.scifiles[i].rfind('/')
                 if (ww == -1):
-                    hdul.writeto(odir+self.scifiles[i][:-7]+'_cal.oifits', overwrite=True, output_verify='fix')
+                    hdul.writeto(os.path.join(odir, self.scifiles[i][:-7]+'_cal.oifits'), overwrite=True, output_verify='fix')
                 else:
-                    hdul.writeto(odir+self.scifiles[i][ww+1:-7]+'_cal.oifits', overwrite=True, output_verify='fix')
+                    hdul.writeto(os.path.join(odir, self.scifiles[i][ww+1:-7]+'_cal.oifits'), overwrite=True, output_verify='fix')
                 hdul.close()
             
             else:

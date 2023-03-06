@@ -9,6 +9,8 @@ import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
 import numpy as np
 
+import os
+
 from scipy.linalg import block_diag
 
 
@@ -59,7 +61,7 @@ def open(idir,
         observation.
     """
     
-    hdul = pyfits.open(idir+fitsfile, memmap=False)
+    hdul = pyfits.open(os.path.join(idir, fitsfile), memmap=False)
     if ('OI_TARGET' in hdul):
         inst_list, data_list = open_oifile(hdul)
     elif ('KP-DATA' in hdul):
