@@ -425,6 +425,7 @@ class data():
         fit['pes'] = pes[0]
         fit['chi2s'] = chi2s
         fit['nsigmas'] = nsigmas
+        fit['radec'] = grid_ra_dec
         
         plot.lincmap(pps=pps,
                      pes=pes,
@@ -780,6 +781,7 @@ class data():
                 fit['nsigma'] = nsigma
                 fit['smear'] = smear
                 fit['cov'] = str(cov)
+                fit['radec'] = grid_ra_dec
                 if ('cp' in self.observables):
                     plot.cp_bin(data_list=data_list,
                                 fit=fit,
@@ -808,6 +810,7 @@ class data():
                 fit['nsigma'] = nsigma
                 fit['smear'] = smear
                 fit['cov'] = str(cov)
+                fit['radec'] = grid_ra_dec
                 if ('cp' in self.observables):
                     plot.v2_cp_ud_bin(data_list=data_list,
                                         fit=fit,
