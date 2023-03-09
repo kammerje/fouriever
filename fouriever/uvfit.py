@@ -1424,7 +1424,8 @@ class data():
                sep_range=None,
                step_size=None,
                smear=None,
-               ofile=None):
+               ofile=None,
+               cmin=1e-6):
         """
         Parameters
         ----------
@@ -1442,6 +1443,8 @@ class data():
             Numerical bandwidth smearing which shall be used.
         ofile: str
             Path under which figures shall be saved.
+        cmin: float
+            Minimum contrast for which you want to fit.
         """
         
         if (fit_sub is not None):
@@ -1645,7 +1648,9 @@ class data():
         
         sigma = int(sigma)
         print('Computing detection limits ('+str(sigma)+'-sigma)')
-        f0s = np.logspace(-4, -1, 100)
+        if (cmin >= 1.):
+            raise ValueError('Minimum contrast must be less than 1')
+        f0s = np.logspace(np.log10(cmin), 0, 100)
         ffs_absil = []
         ffs_injection = []
         nc = np.prod(grid_ra_dec[0].shape)
