@@ -580,7 +580,7 @@ def lincmap(pps,
     ax[1].add_artist(cc)
     cc = plt.Circle((fit['p'][1], fit['p'][2]), emax/10., color='black', lw=2.5, fill=False)
     ax[1].add_artist(cc)
-    text = ax[1].text(0.01, 0.99, '$f$ = %.3e +/- %.3e %%' % (fit['p'][0], fit['dp'][0]), ha='left', va='top', color='black', transform=ax[1].transAxes)
+    text = ax[1].text(0.01, 0.99, '$f$ = %.3e +/- %.3e %%' % (fit['p'][0]*100., fit['dp'][0]*100.), ha='left', va='top', color='black', transform=ax[1].transAxes)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     text = ax[1].text(0.01, 0.06, '$\\rho$ = %.1f mas' % sep, ha='left', va='bottom', color='black', transform=ax[1].transAxes)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
