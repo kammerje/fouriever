@@ -521,8 +521,8 @@ def lincmap(pps,
     emax = np.nanmax(grid_ra_dec[0])
     sep = np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
     pa = np.rad2deg(np.arctan2(fit['p'][1], fit['p'][2]))
-    rad, avg = ot.azimuthalAverage(np.abs(pps[0]), returnradii=True, binsize=3.)
-    std = ot.azimuthalAverage(np.abs(pps[0]), binsize=3., stddev=True)
+    rad, avg = ot.azimuthalAverage(np.abs(pps[0]), returnradii=True, binsize=1.)
+    std = ot.azimuthalAverage(np.abs(pps[0]), binsize=1., stddev=True)
     rad *= step_size
     if (searchbox is not None):
         searchmap = np.ones_like(grid_ra_dec[0].flatten())
