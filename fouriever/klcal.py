@@ -220,6 +220,7 @@ class data():
             
             w, v = np.linalg.eigh(P)
             self.P[self.observables[i]] = v[np.where(w > 1e-3)[0]].dot(np.diag(w)).dot(v.T)
+            self.P[self.observables[i]] = np.divide(self.P[self.observables[i]].T, np.linalg.norm(self.P[self.observables[i]], axis=1)).T
             
             print('   '+self.observables[i]+': projection matrix shape = '+str(self.P[self.observables[i]].shape))
         

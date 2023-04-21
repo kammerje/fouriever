@@ -550,7 +550,7 @@ def lincmap(pps,
     temp = pps[0]
     temp[temp <= 0.] = np.min(temp[temp > 0.])
     if (vmin is None):
-        vmin = -4
+        vmin = np.log10(np.nanpercentile(temp, 55.))
     if (vmax is None):
         vmax = -1
     p0 = ax[0].imshow(np.log10(temp), cmap='hot', vmin=vmin, vmax=vmax, origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
