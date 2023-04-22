@@ -2046,17 +2046,19 @@ class data():
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
 
+        # Adopt separation range and step size from chi2map result
+
+        sep_range = (np.nanmin(np.abs(fit['radec'][0][np.nonzero(fit['radec'][0])])),
+                     np.nanmax(np.abs(fit['radec'][0])))
+
+        step_size = np.abs(np.nanmean(np.diff(fit['radec'][0])))
+
         # Remove real companion(s) from the data
 
         fit_comp = deepcopy(fit)
         data_comp = deepcopy(data_list)
 
         if n_remove is not None:
-            sep_range = (np.nanmin(np.abs(fit['radec'][0][np.nonzero(fit['radec'][0])])),
-                         np.nanmax(np.abs(fit['radec'][0])))
-
-            step_size = np.abs(np.nanmean(np.diff(fit['radec'][0])))
-
             for i in range(n_remove):
                 # Inject the negative companion model
 
