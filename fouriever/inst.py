@@ -70,7 +70,7 @@ def open(idir,
         else:
             inst_list, data_list = open_kpfile_old(hdul)
     else:
-        raise UserWarning('Unknown file type')
+        raise UserWarning(f'Unknown file type: {idir+fitsfile}')
     hdul.close()
     
     if (verbose == True):

@@ -17,6 +17,7 @@ import emcee
 import glob
 import os
 import sys
+import warnings
 
 from . import inst
 from . import plot
@@ -471,7 +472,8 @@ class data():
                 step_size=None,
                 smear=None,
                 ofile=None,
-                searchbox=None):
+                searchbox=None,
+                data_list=None):
         """
         Parameters
         ----------
@@ -493,28 +495,47 @@ class data():
             Accepted formats are {'RA': [RA_min, RA_max], 'DEC': [DEC_min,
             DEC_max], 'rho': [rho_min, rho_max], 'phi': [phi_min, phi_max]}.
             Note that -180 <= phi < 180.
+        data_list: list
+            List with the data. Typically the argument can be set to 'None' in
+            which case the data is automatically selected from the
+            ``data_list`` attribute of the ``data`` class. The parameter is
+            internally required by the ``systematics`` method.
         
         Returns
         -------
         fit: dict
             Best fit model parameters.
         """
-        
-        data_list = []
+
         bmax = []
         bmin = []
         dmax = []
         lmin = []
         lerr = []
         ww = np.where(np.array(self.inst_list) == self.inst)[0]
-        for i in range(len(ww)):
-            for j in range(len(self.data_list[ww[i]])):
-                data_list += [deepcopy(self.data_list[ww[i]][j])]
-                bmax += [np.max(self.data_list[ww[i]][j]['base'])]
-                bmin += [np.min(self.data_list[ww[i]][j]['base'])]
-                dmax += [self.data_list[ww[i]][j]['diam']]
-                lmin += [np.min(self.data_list[ww[i]][j]['wave'])]
-                lerr += [np.mean(self.data_list[ww[i]][j]['dwave'])]
+        if data_list is None:
+            data_list = []
+            for i in range(len(ww)):
+                for j in range(len(self.data_list[ww[i]])):
+                    data_list += [deepcopy(self.data_list[ww[i]][j])]
+                    bmax += [np.max(self.data_list[ww[i]][j]['base'])]
+                    bmin += [np.min(self.data_list[ww[i]][j]['base'])]
+                    dmax += [self.data_list[ww[i]][j]['diam']]
+                    lmin += [np.min(self.data_list[ww[i]][j]['wave'])]
+                    lerr += [np.mean(self.data_list[ww[i]][j]['dwave'])]
+                    if (smear is not None):
+                        wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                        for k in range(data_list[-1]['wave'].shape[0]):
+                            wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                        data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                        data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+        else:
+            for j in range(len(data_list)):
+                bmax += [np.max(data_list[j]['base'])]
+                bmin += [np.min(data_list[j]['base'])]
+                dmax += [data_list[j]['diam']]
+                lmin += [np.min(data_list[j]['wave'])]
+                lerr += [np.mean(data_list[j]['dwave'])]
                 if (smear is not None):
                     wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
@@ -1943,3 +1964,147 @@ class data():
                 data_list[i]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=data_list[i])-util.v2kp(vis_ref, data=data_list[i]))
         
         return data_list
+    
+    def systematics(self,
+                    fit,
+                    pa_step=1.,
+                    n_remove=None,
+                    smear=None,
+                    ofile=None):
+        """
+        Method for estimating the systematic uncertainties by retrieving the
+        contrast and position of artificial companions that are step-wise
+        injected at a range of position angles. Only the binary model is
+        supported.
+        
+        Parameters
+        ----------
+        fit: dict
+            Best fit model of which the parameters will be used to subtract
+            a real companion from the data. The returned dictionary from
+            ``chi2map`` should be used as argument for the ``fit`` parameter.
+        pa_step: float
+            Step size (in deg) of the position angle, going from 0 to 360 deg,
+            at which injection-retrieval test will be done. The default
+            argument is set to 1 deg so that a total of 360 samples will be
+            created.
+        n_remove: int, None
+            Number of real companions to remove from the data before
+            estimating the systematic uncertainties. These are assumed to be
+            the brightest point sources in the data. No companions are removed
+            if the argument is set to 'None'.
+        smear: int, None
+            Numerical bandwidth smearing which shall be used. The recommended
+            value is 3. By default the argument is set to 'None' so smearing
+            is not corrected for.
+        ofile: str, None
+            Path under which figures shall be saved. No figures are stored if
+            the argument is set to 'None'.
+        
+        Returns
+        -------
+        offset: np.ndarray
+            Array that contains the offsets between the injected and retrieved
+            parameters at the tested position angles. The shape of the array
+            is (n_samples, 3) with the 3 columns being the flux ratio, delta
+            RA (mas), and delta Dec (mas).
+        """
+        
+        # Check if a binary model was used.
+        fit_model = fit['model']
+        if fit_model != 'bin':
+            raise ValueError(f'The model of the fit dictionary is set to {fit_model} while only a binary model (model=bin) is supported.')
+        
+        # Check if the same smear value is used as with chi2map.
+        fit_smear = fit['smear']
+        if smear != fit_smear:
+            warnings.warn(f'The argument of the smear parameter is set to {smear} while the value of the smear keyword in the fit dictionary is set to {fit_smear}.')
+        
+        # Select the data.
+        data_list = []
+        ww = np.where(np.array(self.inst_list) == self.inst)[0]
+        for i in range(len(ww)):
+            for j in range(len(self.data_list[ww[i]])):
+                data_list += [deepcopy(self.data_list[ww[i]][j])]
+                if (smear is not None):
+                    wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                    for k in range(data_list[-1]['wave'].shape[0]):
+                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+
+        # Adopt separation range and step size from chi2map result.
+        sep_range = (np.nanmin(np.abs(fit['radec'][0][np.nonzero(fit['radec'][0])])),
+                     np.nanmax(np.abs(fit['radec'][0])))
+        step_size = np.abs(np.nanmean(np.diff(fit['radec'][0])))
+        
+        # Remove real companion(s) from the data.
+        fit_comp = deepcopy(fit)
+        data_comp = deepcopy(data_list)
+        if n_remove is not None:
+            for i in range(n_remove):
+                
+                # Inject the negative companion model.
+                fit_copy = deepcopy(fit_comp)
+                fit_copy['p'][0] = -fit_copy['p'][0]
+                data_comp = self.inj_companion(data_list=deepcopy(data_comp),
+                                               fit_inj=fit_copy)
+                
+                # Create plot to check if the companion is removed.
+                if ofile is None:
+                    out_file = None
+                else:
+                    out_file = f'{ofile}_removed_{i}'
+                fit_comp = self.chi2map(model='bin',
+                                        cov=fit['cov'],
+                                        sep_range=sep_range,
+                                        step_size=step_size,
+                                        smear=smear,
+                                        ofile=out_file,
+                                        searchbox=None,
+                                        data_list=data_comp)
+        
+        # Separation and PAs for injection-recovery test.
+        sep_test = np.sqrt(fit['p'][1]**2+fit['p'][2]**2) # mas
+        pa_test = np.arange(0., 360., pa_step) # deg
+        
+        # Create empty array for storing the result.
+        offset = np.zeros((pa_test.size, 3))
+        
+        # Iterate over PAs in steps of step_size deg.
+        for pa_idx, pa_item in enumerate(pa_test):
+            
+            # Convert sep-PA to RA-Dec for artificial source. Use the
+            # separation and contrast of the actual companion that has been
+            # removed from the data.
+            fit_test = deepcopy(fit)
+            fit_test['p'][1] = sep_test*np.sin(np.radians(pa_item))
+            fit_test['p'][2] = sep_test*np.cos(np.radians(pa_item))
+            
+            # Inject artificial source.
+            data_test = self.inj_companion(data_list=deepcopy(data_comp),
+                                           fit_inj=fit_test)
+            
+            # Retrieve the contrast and position.
+            searchbox = {'RA': (fit_test['p'][1]-10., fit_test['p'][1]+10.),
+                         'DEC': (fit_test['p'][2]-10., fit_test['p'][2]+10.)}
+            if ofile is None:
+                out_file = None
+            else:
+                out_file = f'{ofile}_injected_{pa_idx}'
+            fit_chi2 = self.chi2map(model='bin',
+                                    cov=fit['cov'],
+                                    sep_range=(sep_test-20., sep_test+20.),
+                                    step_size=step_size,
+                                    smear=smear,
+                                    ofile=out_file,
+                                    searchbox=searchbox,
+                                    data_list=data_test)
+            
+            # Store the offset between the injected and retrieved values of
+            # the binary parameters.
+            offset[pa_idx, 0] = fit_test['p'][0] - fit_chi2['p'][0]
+            offset[pa_idx, 1] = fit_test['p'][1] - fit_chi2['p'][1]
+            offset[pa_idx, 2] = fit_test['p'][2] - fit_chi2['p'][2]
+        
+        return offset
