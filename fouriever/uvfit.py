@@ -2093,7 +2093,7 @@ class data():
 
         offset = np.zeros((pa_test.size, 3))
 
-        # Iterate of 360 PAs in steps of 1 deg
+        # Iterate over PAs in steps of step_size deg
 
         for pa_idx, pa_item in enumerate(pa_test):
             # Convert sep-PA to RA-Dec for artificial source
