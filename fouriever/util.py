@@ -431,7 +431,8 @@ def chi2_bin(p0,
     """
     
     if (len(p0) > 3):
-        N = len(data_list)//(len(p0)-2)
+        wavel_index = {}
+        wavel_count = 0
         
         chi2 = []
         for i in range(len(data_list)):
@@ -448,7 +449,10 @@ def chi2_bin(p0,
             phi = ((phi+180.) % 360.)-180.
             dra_temp = rho*np.sin(np.deg2rad(phi))
             ddec_temp = rho*np.cos(np.deg2rad(phi))
-            p0_temp = np.array([p0[i//N].copy(), dra_temp, ddec_temp])
+            if data_list[i]['wave'][0] not in wavel_index:
+                wavel_index[data_list[i]['wave'][0]] = wavel_count
+                wavel_count += 1
+            p0_temp = np.array([p0[wavel_index[data_list[i]['wave'][0]]].copy(), dra_temp, ddec_temp])
             
             vis_mod = vis_bin(p0=p0_temp,
                               data=data_list[i],
