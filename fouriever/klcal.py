@@ -193,7 +193,10 @@ class data():
             data_temp = []
             for j in range(len(data_list)):
                 try:
-                    data_temp += [data_list[j][self.observables[i]].flatten()]
+                    if data_list[j][self.observables[i]].shape[1] == 1:
+                        data_temp += [data_list[j][self.observables[i]].flatten()]
+                    else:
+                        data_temp += [np.nanmean(data_list[j][self.observables[i]], axis=1).flatten()]
                 except:
                     pass
             
@@ -383,7 +386,19 @@ class data():
                             if ('V2COV' in hdul):
                                 hdul['V2COV'].data = self.P[self.observables[j]].dot(hdul['V2COV'].data[0]).dot(self.P[self.observables[j]].T)[np.newaxis, :]
                         else:
-                            raise UserWarning('Only 1D is implemented for VIS2DATA')
+                            hdu1 = pyfits.ImageHDU(np.mean(self.P[self.observables[j]].dot(hdul['OI_VIS2'].data['VIS2DATA']), axis=1, keepdims=True))
+                            hdu1.header['EXTNAME'] = 'VIS2DATA'
+                            errs = []
+                            for k in range(hdul['OI_VIS2'].data['VIS2ERR'].shape[1]):
+                                var = np.diag(hdul['OI_VIS2'].data['VIS2ERR'][:, k]**2)
+                                cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
+                                err = np.sqrt(np.diag(cov))
+                                errs += [err]
+                            errs = np.array(errs).T
+                            hdu2 = pyfits.ImageHDU(np.mean(errs, axis=1, keepdims=True))
+                            hdu2.header['EXTNAME'] = 'VIS2ERR'
+                            if ('V2COV' in hdul):
+                                hdul['V2COV'].data = self.P[self.observables[j]].dot(hdul['V2COV'].data[0]).dot(self.P[self.observables[j]].T)[np.newaxis, :]
                         hdul += [hdu0, hdu1, hdu2]
                     
                     elif (self.observables[j] == 'cp'):
@@ -400,7 +415,19 @@ class data():
                             if ('CPCOV' in hdul):
                                 hdul['CPCOV'].data = self.P[self.observables[j]].dot(hdul['CPCOV'].data[0]).dot(self.P[self.observables[j]].T)[np.newaxis, :]
                         else:
-                            raise UserWarning('Only 1D is implemented for T3PHI')
+                            hdu1 = pyfits.ImageHDU(np.mean(self.P[self.observables[j]].dot(hdul['OI_T3'].data['T3PHI']), axis=1, keepdims=True))
+                            hdu1.header['EXTNAME'] = 'T3PHI'
+                            errs = []
+                            for k in range(hdul['OI_T3'].data['T3PHIERR'].shape[1]):
+                                var = np.diag(np.deg2rad(hdul['OI_T3'].data['T3PHIERR'][:, k])**2)
+                                cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
+                                err = np.rad2deg(np.sqrt(np.diag(cov)))
+                                errs += [err]
+                            errs = np.array(errs).T
+                            hdu2 = pyfits.ImageHDU(np.mean(errs, axis=1, keepdims=True))
+                            hdu2.header['EXTNAME'] = 'T3PHIERR'
+                            if ('CPCOV' in hdul):
+                                hdul['CPCOV'].data = self.P[self.observables[j]].dot(hdul['CPCOV'].data[0]).dot(self.P[self.observables[j]].T)[np.newaxis, :]
                         hdul += [hdu0, hdu1, hdu2]
                 
                 ww = self.scifiles[i].rfind('/')
@@ -475,10 +502,16 @@ class data():
                 raise UserWarning('Support for this data format is not implemented')
             
             hdul.close()
-        oi_v2_cal = np.array(oi_v2_cal)
-        oi_dv2_cal = np.array(oi_dv2_cal)
-        oi_cp_cal = np.array(oi_cp_cal)
-        oi_dcp_cal = np.array(oi_dcp_cal)
+        try:
+            oi_v2_cal = np.array(oi_v2_cal)
+            oi_dv2_cal = np.array(oi_dv2_cal)
+            oi_cp_cal = np.array(oi_cp_cal)
+            oi_dcp_cal = np.array(oi_dcp_cal)
+        except ValueError:
+            oi_v2_cal = np.array([np.hstack(oi_v2_cal)])
+            oi_dv2_cal = np.array([np.hstack(oi_dv2_cal)])
+            oi_cp_cal = np.array([np.hstack(oi_cp_cal)])
+            oi_dcp_cal = np.array([np.hstack(oi_dcp_cal)])
         kp_kp_cal = np.array(kp_kp_cal)
         kp_dkp_cal = np.array(kp_dkp_cal)
         kp_kpcov_cal = np.array(kp_kpcov_cal)
