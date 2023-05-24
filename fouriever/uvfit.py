@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from copy import deepcopy
+from matplotlib.ticker import MultipleLocator
 from scipy.linalg import block_diag
 from scipy.optimize import minimize
 
@@ -2108,3 +2109,104 @@ class data():
             offset[pa_idx, 2] = fit_test['p'][2] - fit_chi2['p'][2]
         
         return offset
+
+    def estimate_phase(self,
+                       fit=None,
+                       smear=None):
+        """
+        Method for estimating the phase.
+        
+        Parameters
+        ----------
+        fit: dict, None
+            Best-fit parameters for the binary model. The returned
+            dictionary from ``chi2map`` can be used as argument for
+            the ``fit`` parameter. The binary model is not plotted
+            if the argument is set to 'None'.
+        smear: int, None
+            Numerical bandwidth smearing which shall be used. The recommended
+            value is 3. By default the argument is set to 'None' so smearing
+            is not corrected for.
+        """
+
+        # Select the data.
+        data_list = []
+        ww = np.where(np.array(self.inst_list) == self.inst)[0]
+        for i in range(len(ww)):
+            for j in range(len(self.data_list[ww[i]])):
+                data_list += [deepcopy(self.data_list[ww[i]][j])]
+                if (smear is not None):
+                    wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                    for k in range(data_list[-1]['wave'].shape[0]):
+                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+
+        plt.figure(figsize=(3.7, 3.))
+        ax = plt.gca()
+
+        rad2asec = 180./np.pi*3600.
+
+        for data_idx, data_item in enumerate(data_list):
+            if fit is not None and data_idx == 0:
+                # Calculate phase with the binary model and best-fit parameters
+                # uu and vv are defined as baseline (m) divided by wavelength (um)
+                u = np.linspace(-8., 8., 101)  # (m)
+                v = np.linspace(-8., 8., 101)  # (m)
+                u /= data_item['wave'][0]
+                v /= data_item['wave'][0]
+                uu, vv = np.meshgrid(u, v)
+
+                data = {'uu': uu, 'vv': vv}
+                vis = util.vis_bin(fit['p'], data)
+                model = np.degrees(np.angle(vis))
+
+                u /= rad2asec
+                v /= rad2asec
+
+                plt.imshow(model, extent=[u[0], u[-1], v[0], v[-1]], origin='lower', cmap='PiYG', aspect='auto')
+                cbar = plt.colorbar()
+                cbar.ax.set_ylabel('Phase (deg)', rotation=270., fontsize=10., labelpad=12.)
+
+                u_comp = fit['p'][1]/8.
+                v_comp = fit['p'][2]/8.
+
+            cpmat = np.zeros((data_item['cpmat'].shape[0], data_item['cpmat'].shape[0]))
+            cpmat[:data_item['cpmat'].shape[0], :data_item['cpmat'].shape[1]] = data_item['cpmat']
+
+            cpmat_inv = np.linalg.pinv(cpmat)
+
+            phase = cpmat_inv @ data_item['cp'][:, 0]
+            phase = phase[:data_item['uu'].shape[0]]
+            phase = np.degrees(phase)
+
+            u_coord = data_item['uu'][:, 0]
+            v_coord = data_item['vv'][:, 0]
+
+            u_coord /= rad2asec
+            v_coord /= rad2asec
+
+            # This is just for testing if there is a rotational offset.
+            angle = 0.
+            angle = np.radians(angle)
+
+            u_coord_new = u_coord*np.cos(angle) - v_coord*np.sin(angle)
+            v_coord_new = u_coord*np.sin(angle) + v_coord*np.cos(angle)
+
+            plt.scatter(u_coord_new[phase<0.], v_coord_new[phase<0.], c='none', s=40.*np.abs(phase[phase<0.]), marker='s', edgecolor='silver', lw=0.25, alpha=0.2)
+            plt.scatter(u_coord_new[phase>0.], v_coord_new[phase>0.], c='none', s=40.*phase[phase>0.], marker='s', edgecolor='tab:orange', lw=0.25, alpha=0.2)
+            plt.scatter(-u_coord_new[phase<0.], -v_coord_new[phase<0.], c='none', s=40.*np.abs(phase[phase<0.]), marker='s', edgecolor='silver', lw=0.25, alpha=0.2)
+            plt.scatter(-u_coord_new[phase>0.], -v_coord_new[phase>0.], c='none', s=40.*phase[phase>0.], marker='s', edgecolor='tab:orange', lw=0.25, alpha=0.2)
+
+        plt.arrow(0., 0., u_comp, v_comp, head_width=1., head_length=1., linewidth=0.7, linestyle='-', capstyle='round', facecolor='black')
+        plt.xlim(18., -18.)
+        plt.ylim(-18., 18.)
+        plt.xlabel('$u$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
+        plt.ylabel('$v$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
+        ax.xaxis.set_major_locator(MultipleLocator(10.))
+        ax.xaxis.set_minor_locator(MultipleLocator(2.))
+        ax.yaxis.set_major_locator(MultipleLocator(10.))
+        ax.yaxis.set_minor_locator(MultipleLocator(2.))
+        plt.minorticks_on()
+        plt.tight_layout()
+        plt.savefig('phase.png')
