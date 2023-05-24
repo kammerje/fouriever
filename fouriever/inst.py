@@ -9,6 +9,8 @@ import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
 import numpy as np
 
+import os
+
 from scipy.linalg import block_diag
 
 
@@ -59,7 +61,7 @@ def open(idir,
         observation.
     """
     
-    hdul = pyfits.open(idir+fitsfile, memmap=False)
+    hdul = pyfits.open(os.path.join(idir, fitsfile), memmap=False)
     if ('OI_TARGET' in hdul):
         inst_list, data_list = open_oifile(hdul)
     elif ('KP-DATA' in hdul):
@@ -68,7 +70,7 @@ def open(idir,
         else:
             inst_list, data_list = open_kpfile_old(hdul)
     else:
-        raise UserWarning('Unknown file type')
+        raise UserWarning(f'Unknown file type: {idir+fitsfile}')
     hdul.close()
     
     if (verbose == True):
@@ -192,6 +194,7 @@ def open_oifile(hdul):
     
     inst_list = []
     data_list = []
+    is_sampy = False
     for i, key in enumerate(data.keys()):
         data[key]['base'] = np.sqrt(data[key]['v2u']**2+data[key]['v2v']**2)
         data[key]['uu'] = np.divide(data[key]['v2u'][:, np.newaxis], data[key]['wave'][np.newaxis, :])
@@ -208,13 +211,18 @@ def open_oifile(hdul):
         ntria = np.unique(data[key]['cpsta'], axis=0).shape[0]
         if (klflag == True):
             nobs = 1
+            if len(np.unique(data[key]['cpsta'])) == 1:
+                is_sampy = True
         else:
             nobs1 = data[key]['v2'].shape[0]//nbase
             nobs2 = data[key]['cp'].shape[0]//ntria
             if (nobs1 == nobs2):
                 nobs = nobs1
             else:
-                raise UserWarning('Number of squared visibility amplitudes does not match number of closure phases')
+                is_sampy = True
+                nbase = 21
+                ntria = 35
+                nobs = data[key]['cp'].shape[0]//ntria
         inst_list += [key]
         data_list += [[]]
         for j in range(nobs):
@@ -288,6 +296,42 @@ def open_oifile(hdul):
                         cpmat[k, l] = -1
                         flag3 = True
                     l += 1
+            if (is_sampy == True):
+                cpmat = np.array([[1, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [1, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [1, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [1, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 1, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 1, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                                  [0, 0, 1, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                                  [0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                                  [0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                                  [0, 0, 0, 1, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                                  [0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                                  [0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 1, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0, 0, 1, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 1, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 1],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 1, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 1],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 1]])
             data_list[i][j]['cpmat'] = cpmat
             if (klflag == True):
                 data_list[i][j]['v2mat'] = hdul['V2PROJ'].data
@@ -295,24 +339,32 @@ def open_oifile(hdul):
                 data_list[i][j]['klflag'] = True
             else:
                 data_list[i][j]['klflag'] = False
-            try:
-                if (hdul[0].header['TELESCOP'] == 'ESO-VLTI-U1234'):
-                    data_list[i][j]['diam'] = 8.2
-                elif (hdul[0].header['TELESCOP'] == 'ESO-VLTI-A1234'):
-                    data_list[i][j]['diam'] = 1.8
-                elif (hdul[0].header['TELESCOP'] == 'JWST'):
-                    data_list[i][j]['diam'] = 6.5
-                else:
-                    raise UserWarning('Telescope not known')
-            except:
-                if ('GRAVITY' in inst_list[i]):
-                    data_list[i][j]['diam'] = 8.2
-                elif ('PIONIER' in inst_list[i]):
-                    data_list[i][j]['diam'] = 1.8
-                elif ('SPHERE' in inst_list[i]):
-                    data_list[i][j]['diam'] = 8.2
-                else:
-                    raise UserWarning('Telescope not known')
+            if (is_sampy == True):
+                data_list[i][j]['diam'] = 6.5
+            else:
+                try:
+                    if (hdul[0].header['TELESCOP'] == 'ESO-VLTI-U1234'):
+                        data_list[i][j]['diam'] = 8.2
+                    elif (hdul[0].header['TELESCOP'] == 'ESO-VLTI-A1234'):
+                        data_list[i][j]['diam'] = 1.8
+                    elif (hdul[0].header['TELESCOP'] == 'JWST'):
+                        data_list[i][j]['diam'] = 6.5
+                    else:
+                        raise UserWarning('Telescope not known')
+                except:
+                    if ('GRAVITY' in inst_list[i]):
+                        data_list[i][j]['diam'] = 8.2
+                    elif ('PIONIER' in inst_list[i]):
+                        data_list[i][j]['diam'] = 1.8
+                    elif ('SPHERE' in inst_list[i]):
+                        data_list[i][j]['diam'] = 8.2
+                    elif ('ERIS' in inst_list[i]):
+                        data_list[i][j]['diam'] = 8.2
+                    elif ('NIRISS' in inst_list[i]):
+                        data_list[i][j]['diam'] = 6.5
+                    else:
+                        data_list[i][j]['diam'] = 6.5
+                        # raise UserWarning('Telescope not known')
     
     return inst_list, data_list
 

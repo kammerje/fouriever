@@ -21,6 +21,7 @@ from . import util
 from .opticstools import opticstools as ot
 
 pa_mtoc = '-' # model to chip conversion for position angle
+formats_known = ['.pdf', '.png', '.jpg']
 
 datacol = 'mediumaquamarine'
 modelcol = 'teal'
@@ -117,11 +118,14 @@ def v2_ud_base(data_list,
     plt.suptitle('Uniform disk fit')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_v2_ud.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_v2_ud'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_v2_ud.pdf')
     # plt.show()
     plt.close()
 
@@ -182,11 +186,14 @@ def v2_ud(data_list,
     plt.suptitle('Uniform disk fit')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_v2_ud.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_v2_ud'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_v2_ud.pdf')
     # plt.show()
     plt.close()
 
@@ -259,11 +266,14 @@ def cp_bin(data_list,
     plt.suptitle('Point-source companion fit')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_cp_bin.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_cp_bin'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_cp_bin.pdf')
     # plt.show()
     plt.close()
 
@@ -366,11 +376,14 @@ def v2_cp_ud_bin(data_list,
     plt.suptitle('Uniform disk with point-source companion fit')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_v2_cp_ud_bin.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_v2_cp_ud_bin'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_v2_cp_ud_bin.pdf')
     # plt.show()
     plt.close()
 
@@ -443,24 +456,29 @@ def kp_bin(data_list,
     plt.suptitle('Point-source companion fit')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_kp_bin.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_kp_bin'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_kp_bin.pdf')
     # plt.show()
     plt.close()
 
 def lincmap(pps,
             pes,
             chi2s,
+            nsigmas,
             fit,
             sep_range,
             step_size,
             vmin=None,
             vmax=None,
             ofile=None,
-            searchbox=None):
+            searchbox=None,
+            plot_nsigma=False):
     """
     Parameters
     ----------
@@ -473,6 +491,9 @@ def lincmap(pps,
     chi2s: array
         Array of shape (RA steps x DEC steps) containing best fit
         chi-squared for the grid.
+    nsigmas: array
+        Array of shape (RA steps x DEC steps) containing best fit detection
+        significance for the grid.
     fit: dict
         Model fit whose chi-squared map shall be plotted.
     sep_range: tuple of float
@@ -490,6 +511,8 @@ def lincmap(pps,
         formats are {'RA': [RA_min, RA_max], 'DEC': [DEC_min, DEC_max], 'rho':
         [rho_min, rho_max], 'phi': [phi_min, phi_max]}. Note that -180 <= phi
         < 180.
+    plot_nsigma: bool
+            Plot detection significance instead of chi-squared map.
     """
     
     grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
@@ -498,8 +521,8 @@ def lincmap(pps,
     emax = np.nanmax(grid_ra_dec[0])
     sep = np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
     pa = np.rad2deg(np.arctan2(fit['p'][1], fit['p'][2]))
-    rad, avg = ot.azimuthalAverage(np.abs(pps[0]), returnradii=True, binsize=3.)
-    std = ot.azimuthalAverage(np.abs(pps[0]), binsize=3., stddev=True)
+    rad, avg = ot.azimuthalAverage(np.abs(pps[0]), returnradii=True, binsize=1.)
+    std = ot.azimuthalAverage(np.abs(pps[0]), binsize=1., stddev=True)
     rad *= step_size
     if (searchbox is not None):
         searchmap = np.ones_like(grid_ra_dec[0].flatten())
@@ -527,7 +550,7 @@ def lincmap(pps,
     temp = pps[0]
     temp[temp <= 0.] = np.min(temp[temp > 0.])
     if (vmin is None):
-        vmin = -4
+        vmin = np.log10(np.nanpercentile(temp, 55.))
     if (vmax is None):
         vmax = -1
     p0 = ax[0].imshow(np.log10(temp), cmap='hot', vmin=vmin, vmax=vmax, origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
@@ -541,9 +564,15 @@ def lincmap(pps,
     ax[0].set_xlabel('$\Delta$RA [mas]')
     ax[0].set_ylabel('$\Delta$DEC [mas]')
     ax[0].set_title('Linear contrast map')
-    p1 = ax[1].imshow(chi2s/fit['ndof'], cmap='cubehelix', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
+    if (plot_nsigma == False):
+        p1 = ax[1].imshow(chi2s/fit['ndof'], cmap='cubehelix', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
+    else:
+        p1 = ax[1].imshow(nsigmas, cmap='cubehelix_r', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
     c1 = plt.colorbar(p1, ax=ax[1])
-    c1.set_label('$\chi^2$', rotation=270, labelpad=20)
+    if (plot_nsigma == False):
+        c1.set_label('$\chi^2$', rotation=270, labelpad=20)
+    else:
+        c1.set_label('$N_{\sigma}$', rotation=270, labelpad=20)
     if (searchbox is not None):
         ax[1].imshow(searchmap, cmap='Reds', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.), alpha=0.5)
     ax[1].plot(0., 0., marker='*', color='black', markersize=10)
@@ -551,7 +580,7 @@ def lincmap(pps,
     ax[1].add_artist(cc)
     cc = plt.Circle((fit['p'][1], fit['p'][2]), emax/10., color='black', lw=2.5, fill=False)
     ax[1].add_artist(cc)
-    text = ax[1].text(0.01, 0.99, '$f$ = %.3e +/- %.3e %%' % (fit['p'][0], fit['dp'][0]), ha='left', va='top', color='black', transform=ax[1].transAxes)
+    text = ax[1].text(0.01, 0.99, '$f$ = %.3e +/- %.3e %%' % (fit['p'][0]*100., fit['dp'][0]*100.), ha='left', va='top', color='black', transform=ax[1].transAxes)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     text = ax[1].text(0.01, 0.06, '$\\rho$ = %.1f mas' % sep, ha='left', va='bottom', color='black', transform=ax[1].transAxes)
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
@@ -563,10 +592,16 @@ def lincmap(pps,
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ax[1].set_xlabel('$\Delta$RA [mas]')
     ax[1].set_ylabel('$\Delta$DEC [mas]')
-    if (searchbox is None):
-        ax[1].set_title('Chi-squared map')
+    if (plot_nsigma == False):
+        if (searchbox is None):
+            ax[1].set_title('Chi-squared map')
+        else:
+            ax[1].set_title('Chi-squared map (search region shaded red)')
     else:
-        ax[1].set_title('Chi-squared map (search region shaded red)')
+        if (searchbox is None):
+            ax[1].set_title('Detection significance')
+        else:
+            ax[1].set_title('Detection significance (search region shaded red)')
     ax[2].plot(rad, avg, color=colors[0], label='avg')
     ax[2].fill_between(rad, avg-std, avg+std, ec='None', fc=colors[0], alpha=1./3.)
     ax[2].grid(axis='y')
@@ -581,11 +616,14 @@ def lincmap(pps,
     plt.tight_layout()
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_lincmap.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_lincmap'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_lincmap.pdf')
     # plt.show()
     plt.close()
 
@@ -681,11 +719,14 @@ def chi2map(pps_unique,
         plt.suptitle('Chi-squared map (search region shaded red)')
     if (ofile is not None):
         index = ofile.rfind('/')
-        if index != -1:
+        if (index != -1):
             temp = ofile[:index]
             if (not os.path.exists(temp)):
                 os.makedirs(temp)
-        plt.savefig(ofile+'_chi2map.pdf')
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_chi2map'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_chi2map.pdf')
     # plt.show()
     plt.close()
 
@@ -714,11 +755,14 @@ def chains(fit,
         plt.suptitle('MCMC chains')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_chains.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_chains'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_chains.pdf')
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
@@ -747,11 +791,14 @@ def chains(fit,
         plt.suptitle('MCMC chains')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_chains.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_chains'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_chains.pdf')
         # plt.show()
         plt.close()
     else:
@@ -783,11 +830,14 @@ def chains(fit,
         plt.suptitle('MCMC chains')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_chains.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_chains'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_chains.pdf')
         # plt.show()
         plt.close()
 
@@ -814,15 +864,17 @@ def corner(fit,
                         title_fmt='.3f')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_corner.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_corner'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_corner.pdf')
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
-        
         if (samples.shape[1] > 3):
             temp = samples.copy()
             temp[:, :-2] *= 100.
@@ -876,11 +928,14 @@ def corner(fit,
                         title_fmt='.3f')
         if (ofile is not None):
             index = ofile.rfind('/')
-            if index != -1:
+            if (index != -1):
                 temp = ofile[:index]
                 if (not os.path.exists(temp)):
                     os.makedirs(temp)
-            plt.savefig(ofile+'_mcmc_corner.pdf')
+            if (ofile[-4:] in formats_known):
+                plt.savefig(ofile[:-4]+'_mcmc_corner'+ofile[-4:])
+            else:
+                plt.savefig(ofile+'_mcmc_corner.pdf')
         # plt.show()
         plt.close()
 
@@ -943,19 +998,37 @@ def detlim(ffs_absil,
     rad, avg = ot.azimuthalAverage(ffs_absil, returnradii=True, binsize=1)
     ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[0], lw=3, label='Method Absil')
     # ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[0], lw=3, ls='--', label='Method Absil (w/ cov)')
-    temp = []
-    temp += [rad*step_size] # mas
-    temp += [-2.5*np.log10(avg)] # mag
-    temp = np.array(temp)
-    np.save(ofile+'_detlim_absil.npy', temp)
+    data = []
+    data += [rad*step_size] # mas
+    data += [-2.5*np.log10(avg)] # mag
+    data = np.array(data)
+    if (ofile is not None):
+        index = ofile.rfind('/')
+        if (index != -1):
+            temp = ofile[:index]
+            if (not os.path.exists(temp)):
+                os.makedirs(temp)
+        if (ofile[-4:] in formats_known):
+            np.save(ofile[:-4]+'_detlim_absil.npy', data)
+        else:
+            np.save(ofile+'_detlim_absil.npy', data)
     rad, avg = ot.azimuthalAverage(ffs_injection, returnradii=True, binsize=1)
     ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[1], lw=3, label='Method Injection')
     # ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[1], lw=3, ls='--', label='Method Injection (w/ cov)')
-    temp = []
-    temp += [rad*step_size] # mas
-    temp += [-2.5*np.log10(avg)] # mag
-    temp = np.array(temp)
-    np.save(ofile+'_detlim_injection.npy', temp)
+    data = []
+    data += [rad*step_size] # mas
+    data += [-2.5*np.log10(avg)] # mag
+    data = np.array(data)
+    if (ofile is not None):
+        index = ofile.rfind('/')
+        if (index != -1):
+            temp = ofile[:index]
+            if (not os.path.exists(temp)):
+                os.makedirs(temp)
+        if (ofile[-4:] in formats_known):
+            np.save(ofile[:-4]+'_detlim_injection.npy', data)
+        else:
+            np.save(ofile+'_detlim_injection.npy', data)
     
     # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_X.npy')
     # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_Y.npy')
@@ -982,6 +1055,15 @@ def detlim(ffs_absil,
     ax.legend(loc='upper right')
     plt.suptitle('Detection limits ('+str(sigma)+'-$\sigma$)')
     plt.tight_layout()
-    plt.savefig(ofile+'_detlim.pdf')
+    if (ofile is not None):
+        index = ofile.rfind('/')
+        if (index != -1):
+            temp = ofile[:index]
+            if (not os.path.exists(temp)):
+                os.makedirs(temp)
+        if (ofile[-4:] in formats_known):
+            plt.savefig(ofile[:-4]+'_detlim'+ofile[-4:])
+        else:
+            plt.savefig(ofile+'_detlim.pdf')
     # plt.show()
     plt.close()

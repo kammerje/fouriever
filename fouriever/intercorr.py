@@ -134,7 +134,7 @@ class data():
         """
         
         for i in range(len(self.fitsfiles)):
-            hdul = pyfits.open(self.idir+self.fitsfiles[i])
+            hdul = pyfits.open(os.path.join(self.idir, self.fitsfiles[i]))
             try:
                 hdul.pop('V2COV')
             except:
@@ -143,7 +143,7 @@ class data():
                 hdul.pop('CPCOV')
             except:
                 pass
-            hdul.writeto(self.idir+self.fitsfiles[i], output_verify='fix', overwrite=True)
+            hdul.writeto(os.path.join(self.idir, self.fitsfiles[i]), output_verify='fix', overwrite=True)
         
         pass
     
@@ -182,7 +182,7 @@ class data():
                 covs += [cov]
             covs = np.array(covs)
             
-            hdul = pyfits.open(self.idir+self.fitsfiles[i])
+            hdul = pyfits.open(os.path.join(self.idir, self.fitsfiles[i]))
             hdu0 = pyfits.ImageHDU(covs)
             hdu0.header['EXTNAME'] = 'V2COV'
             hdu0.header['INSNAME'] = self.inst
@@ -240,7 +240,7 @@ class data():
                 covs += [cov]
             covs = np.array(covs)
             
-            hdul = pyfits.open(self.idir+self.fitsfiles[i])
+            hdul = pyfits.open(os.path.join(self.idir, self.fitsfiles[i]))
             hdu0 = pyfits.ImageHDU(covs)
             hdu0.header['EXTNAME'] = 'CPCOV'
             hdu0.header['INSNAME'] = self.inst
