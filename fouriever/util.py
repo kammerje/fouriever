@@ -430,60 +430,124 @@ def chi2_bin(p0,
         Chi-squared of unresolved companion model.
     """
     
-    chi2 = []
-    for i in range(len(data_list)):
-        dra = p0[1].copy()
-        ddec = p0[2].copy()
-        rho = np.sqrt(dra**2+ddec**2)
-        phi = np.rad2deg(np.arctan2(dra, ddec))
-        if (pa_mtoc == '-'):
-            phi -= data_list[i]['pa']
-        elif (pa_mtoc == '+'):
-            phi += data_list[i]['pa']
-        else:
-            raise UserWarning('Model to chip conversion for position angle not known')
-        phi = ((phi+180.) % 360.)-180.
-        dra_temp = rho*np.sin(np.deg2rad(phi))
-        ddec_temp = rho*np.cos(np.deg2rad(phi))
-        p0_temp = np.array([p0[0].copy(), dra_temp, ddec_temp])
+    if (len(p0) > 3):
+        wavel_index = {}
+        wavel_count = 0
         
-        vis_mod = vis_bin(p0=p0_temp,
-                          data=data_list[i],
-                          smear=smear)
-        sig = []
-        err = []
-        mod = []
-        for j in range(len(observables)):
-            if (observables[j] == 'v2'):
-                sig += [data_list[i]['v2']]
-                err += [data_list[i]['dv2']]
-                mod += [v2v2(vis_mod,
-                                 data=data_list[i])]
-            elif (observables[j] == 'cp'):
-                sig += [data_list[i]['cp']]
-                err += [data_list[i]['dcp']]
-                mod += [v2cp(vis_mod,
-                               data=data_list[i])]
-            elif (observables[j] == 'kp'):
-                sig += [data_list[i]['kp']]
-                err += [data_list[i]['dkp']]
-                mod += [v2kp(vis_mod,
-                               data=data_list[i])]
-        sig = np.concatenate(sig).flatten()
-        mod = np.concatenate(mod).flatten()
-        res = sig-mod
-        if (cov == False):
-            var = np.concatenate(err).flatten()**2
-            res_icv = np.divide(res, var)
-        else:
-            if (data_list[i]['covflag'] == False):
+        chi2 = []
+        for i in range(len(data_list)):
+            dra = p0[-2].copy()
+            ddec = p0[-1].copy()
+            rho = np.sqrt(dra**2+ddec**2)
+            phi = np.rad2deg(np.arctan2(dra, ddec))
+            if (pa_mtoc == '-'):
+                phi -= data_list[i]['pa']
+            elif (pa_mtoc == '+'):
+                phi += data_list[i]['pa']
+            else:
+                raise UserWarning('Model to chip conversion for position angle not known')
+            phi = ((phi+180.) % 360.)-180.
+            dra_temp = rho*np.sin(np.deg2rad(phi))
+            ddec_temp = rho*np.cos(np.deg2rad(phi))
+            if data_list[i]['wave'][0] not in wavel_index:
+                wavel_index[data_list[i]['wave'][0]] = wavel_count
+                wavel_count += 1
+            p0_temp = np.array([p0[wavel_index[data_list[i]['wave'][0]]].copy(), dra_temp, ddec_temp])
+            
+            vis_mod = vis_bin(p0=p0_temp,
+                              data=data_list[i],
+                              smear=smear)
+            sig = []
+            err = []
+            mod = []
+            for j in range(len(observables)):
+                if (observables[j] == 'v2'):
+                    sig += [data_list[i]['v2']]
+                    err += [data_list[i]['dv2']]
+                    mod += [v2v2(vis_mod,
+                                     data=data_list[i])]
+                elif (observables[j] == 'cp'):
+                    sig += [data_list[i]['cp']]
+                    err += [data_list[i]['dcp']]
+                    mod += [v2cp(vis_mod,
+                                   data=data_list[i])]
+                elif (observables[j] == 'kp'):
+                    sig += [data_list[i]['kp']]
+                    err += [data_list[i]['dkp']]
+                    mod += [v2kp(vis_mod,
+                                   data=data_list[i])]
+            sig = np.concatenate(sig).flatten()
+            mod = np.concatenate(mod).flatten()
+            res = sig-mod
+            if (cov == False):
                 var = np.concatenate(err).flatten()**2
                 res_icv = np.divide(res, var)
             else:
-                res_icv = res.dot(data_list[i]['icv'])
-        chi2 += [res_icv.dot(res)]
+                if (data_list[i]['covflag'] == False):
+                    var = np.concatenate(err).flatten()**2
+                    res_icv = np.divide(res, var)
+                else:
+                    res_icv = res.dot(data_list[i]['icv'])
+            chi2 += [res_icv.dot(res)]
+        
+        return np.sum(chi2)
     
-    return np.sum(chi2)
+    else:
+        
+        chi2 = []
+        for i in range(len(data_list)):
+            dra = p0[1].copy()
+            ddec = p0[2].copy()
+            rho = np.sqrt(dra**2+ddec**2)
+            phi = np.rad2deg(np.arctan2(dra, ddec))
+            if (pa_mtoc == '-'):
+                phi -= data_list[i]['pa']
+            elif (pa_mtoc == '+'):
+                phi += data_list[i]['pa']
+            else:
+                raise UserWarning('Model to chip conversion for position angle not known')
+            phi = ((phi+180.) % 360.)-180.
+            dra_temp = rho*np.sin(np.deg2rad(phi))
+            ddec_temp = rho*np.cos(np.deg2rad(phi))
+            p0_temp = np.array([p0[0].copy(), dra_temp, ddec_temp])
+            
+            vis_mod = vis_bin(p0=p0_temp,
+                              data=data_list[i],
+                              smear=smear)
+            sig = []
+            err = []
+            mod = []
+            for j in range(len(observables)):
+                if (observables[j] == 'v2'):
+                    sig += [data_list[i]['v2']]
+                    err += [data_list[i]['dv2']]
+                    mod += [v2v2(vis_mod,
+                                     data=data_list[i])]
+                elif (observables[j] == 'cp'):
+                    sig += [data_list[i]['cp']]
+                    err += [data_list[i]['dcp']]
+                    mod += [v2cp(vis_mod,
+                                   data=data_list[i])]
+                elif (observables[j] == 'kp'):
+                    sig += [data_list[i]['kp']]
+                    err += [data_list[i]['dkp']]
+                    mod += [v2kp(vis_mod,
+                                   data=data_list[i])]
+            sig = np.concatenate(sig).flatten()
+            mod = np.concatenate(mod).flatten()
+            res = sig-mod
+            if (cov == False):
+                var = np.concatenate(err).flatten()**2
+                res_icv = np.divide(res, var)
+            else:
+                if (data_list[i]['covflag'] == False):
+                    var = np.concatenate(err).flatten()**2
+                    res_icv = np.divide(res, var)
+                else:
+                    res_icv = res.dot(data_list[i]['icv'])
+            chi2 += [res_icv.dot(res)]
+        
+        return np.sum(chi2)
 
 def lnprob_bin(p0,
                data_list,

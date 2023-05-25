@@ -875,28 +875,46 @@ def corner(fit,
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
-        temp = samples.copy()
-        temp[:, 0] *= 100.
-        temp[:, 1] = np.sqrt(samples[:, 1]**2+samples[:, 2]**2)
-        temp[:, 2] = np.rad2deg(np.arctan2(samples[:, 1], samples[:, 2]))
-        fig = cp.corner(temp,
-                        labels=[r'$f$ [%]', r'$\rho$ [mas]', r'$\varphi$ [deg]'],
-                        titles=[r'$f$', r'$\rho$', r'$\varphi$'],
-                        quantiles=[0.16, 0.5, 0.84],
-                        show_titles=True,
-                        title_fmt='.3f')
-        if (ofile is not None):
-            index = ofile.rfind('/')
-            if (index != -1):
-                temp = ofile[:index]
-                if (not os.path.exists(temp)):
-                    os.makedirs(temp)
-            if (ofile[-4:] in formats_known):
-                plt.savefig(ofile[:-4]+'_mcmc_corner'+ofile[-4:])
-            else:
+        if (samples.shape[1] > 3):
+            temp = samples.copy()
+            temp[:, :-2] *= 100.
+            temp[:, -2] = np.sqrt(samples[:, -2]**2+samples[:, -1]**2)
+            temp[:, -1] = np.rad2deg(np.arctan2(samples[:, -2], samples[:, -1]))
+            fig = cp.corner(temp,
+                            labels=[r'$f$ [%]']*(temp.shape[1]-2)+[r'$\rho$ [mas]', r'$\varphi$ [deg]'],
+                            titles=[r'$f$']*(temp.shape[1]-2)+[r'$\rho$', r'$\varphi$'],
+                            quantiles=[0.16, 0.5, 0.84],
+                            show_titles=True,
+                            title_fmt='.3f')
+            if (ofile is not None):
+                index = ofile.rfind('/')
+                if index != -1:
+                    temp = ofile[:index]
+                    if (not os.path.exists(temp)):
+                        os.makedirs(temp)
                 plt.savefig(ofile+'_mcmc_corner.pdf')
-        # plt.show()
-        plt.close()
+            # plt.show()
+            plt.close()
+        else:
+            temp = samples.copy()
+            temp[:, 0] *= 100.
+            temp[:, 1] = np.sqrt(samples[:, 1]**2+samples[:, 2]**2)
+            temp[:, 2] = np.rad2deg(np.arctan2(samples[:, 1], samples[:, 2]))
+            fig = cp.corner(temp,
+                            labels=[r'$f$ [%]', r'$\rho$ [mas]', r'$\varphi$ [deg]'],
+                            titles=[r'$f$', r'$\rho$', r'$\varphi$'],
+                            quantiles=[0.16, 0.5, 0.84],
+                            show_titles=True,
+                            title_fmt='.3f')
+            if (ofile is not None):
+                index = ofile.rfind('/')
+                if index != -1:
+                    temp = ofile[:index]
+                    if (not os.path.exists(temp)):
+                        os.makedirs(temp)
+                plt.savefig(ofile+'_mcmc_corner.pdf')
+            # plt.show()
+            plt.close()
     else:
         temp = samples.copy()
         temp[:, 0] *= 100.
