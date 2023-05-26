@@ -2253,9 +2253,10 @@ class data():
             v_list.append(v_coord)
 
         if ofile is not None:
-            # Plot the arrow to the provided companion parameters
-            plt.arrow(0., 0., u_comp, v_comp, head_width=1., head_length=1.,
-                      ls='-', lw=0.7, capstyle='round', facecolor='black')
+            if fit is not None:
+                # Plot the arrow to the provided companion parameters
+                plt.arrow(0., 0., u_comp, v_comp, head_width=1., head_length=1.,
+                          ls='-', lw=0.7, capstyle='round', facecolor='black')
 
             # Update the axes labels and ticks
             plt.xlabel('$u$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
