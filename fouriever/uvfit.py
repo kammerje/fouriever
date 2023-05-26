@@ -2108,3 +2108,161 @@ class data():
             offset[pa_idx, 2] = fit_test['p'][2] - fit_chi2['p'][2]
         
         return offset
+
+    def estimate_phase(self,
+                       fit=None,
+                       smear=None,
+                       ofile=None,
+                       scatter_kwargs=None):
+        """
+        Method for estimating the phases from the closure phases.
+        
+        Parameters
+        ----------
+        fit: dict, None
+            Best-fit parameters for the binary model. The returned
+            dictionary from ``chi2map`` can be used as argument for the
+            ``fit`` parameter. The binary model is not plotted if the
+            argument is set to 'None'.
+        smear: int, None
+            Numerical bandwidth smearing which shall be used. The recommended
+            value is 3. By default the argument is set to 'None' so smearing
+            is not corrected for.
+        ofile: str, None
+            Path under which the figure will be stored. No plot is created if
+            the argument is set to 'None'.
+        scatter_kwargs: dict, None
+            Optional dictionary with keyword arguments for the `scatter plot
+            <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html>`_
+            of the phases that are extracted from the data. Default values
+            are used for the plot if the argument is set to 'None'.
+
+        Returns
+        -------
+        phase_list: list(np.ndarray)
+            List with arrays that contain the phases in degrees. The length
+            of the list is equal to the number of data files. The size of
+            each array is equal to the number of baselines.
+        u_list: list(np.ndarray)
+            List with arrays that contain the u coordinates in 1/arcsec.
+            Multiply with 180/pi*3600 to convert to B/lambda.
+        u_list: list(np.ndarray)
+            List with arrays that contain the v coordinates in 1/arcsec.
+            Multiply with 180/pi*3600 to convert to B/lambda.
+        """
+
+        # Radians to arcsec conversion factor
+        rad2asec = 180./np.pi*3600.
+
+        # Set kwargs dictionary with default values for scatter plot
+        if scatter_kwargs is None:
+            scatter_kwargs = {'marker': 's', 'lw': 0.5, 'alpha': 0.5}
+
+        # Select the data
+        data_list = []
+        ww = np.where(np.array(self.inst_list) == self.inst)[0]
+        for i in range(len(ww)):
+            for j in range(len(self.data_list[ww[i]])):
+                data_list += [deepcopy(self.data_list[ww[i]][j])]
+                if (smear is not None):
+                    wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                    for k in range(data_list[-1]['wave'].shape[0]):
+                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                    data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                    data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+
+        # Initiate the figure
+        if ofile is not None:
+            plt.figure(figsize=(3.7, 3.))
+            ax = plt.gca()
+
+        # Initiate the output list that will be returned
+        u_list = []
+        v_list = []
+        phase_list = []
+
+        # Iterate over the data files
+        for data_idx, data_item in enumerate(data_list):
+            if fit is not None and ofile is not None and data_idx == 0:
+                # Calculate phase with the binary model and best-fit parameters
+                # uu and vv are defined as baseline (m) divided by wavelength (m)
+                uv_max = max(np.amax(np.abs(data_item['uu'])), np.amax(np.abs(data_item['vv'])))
+                u = np.linspace(1.2*uv_max, -1.2*uv_max, 101)
+                v = np.linspace(-1.2*uv_max, 1.2*uv_max, 101)
+                uu, vv = np.meshgrid(u, v)
+
+                # Create a data dictionary with the u-v grid
+                data = {'uu': uu, 'vv': vv}
+
+                # Calculate the model visibilities for the best-fit-parameters
+                vis = util.vis_bin(fit['p'], data)
+
+                # Extract the phase from the complex visibilities
+                model_phase = np.degrees(np.angle(vis))
+
+                # Convert from B/lambda to 1/arcsec
+                u /= rad2asec
+                v /= rad2asec
+
+                # Plot the model phase in the background as image
+                plt.imshow(model_phase, extent=[u[0], u[-1], v[0], v[-1]], origin='lower', cmap='PiYG', aspect='auto')
+
+                # Add colorbar to the figure
+                cbar = plt.colorbar()
+                cbar.ax.set_ylabel('Phase (deg)', rotation=270., fontsize=10., labelpad=12.)
+
+                # Set the (arbitrary) extent of the arrow that indicates
+                # the direction to the companion of the provided parameters
+                u_comp = 0.5*(uv_max/rad2asec)*fit['p'][1]/np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
+                v_comp = 0.5*(uv_max/rad2asec)*fit['p'][2]/np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
+
+            # Invert the CP-to-phase matrix
+            cpmat = data_item['cpmat']
+            cpmat_inv = np.linalg.pinv(cpmat)
+
+            # Project the closure phases and convert to degrees
+            phase = cpmat_inv @ data_item['cp'][:, 0]
+            phase = np.degrees(phase)
+
+            # Extract the u and v coordinates
+            u_coord = data_item['uu'][:, 0]
+            v_coord = data_item['vv'][:, 0]
+
+            # Convert from B/lambda to 1/arcsec
+            u_coord /= rad2asec
+            v_coord /= rad2asec
+
+            if ofile is not None:
+                # Create scatter plot of phases in the u-v plane. Positive
+                # phase are plotted in orange and negative phases in gray.
+                plt.scatter(u_coord[phase<0.], v_coord[phase<0.], c='none',
+                            s=40.*np.abs(phase[phase<0.]), edgecolor='silver', **scatter_kwargs)
+                plt.scatter(u_coord[phase>0.], v_coord[phase>0.], c='none',
+                            s=40.*phase[phase>0.], edgecolor='tab:orange', **scatter_kwargs)
+
+                # Due to the anti-symmetry of the phases, the colors are
+                # swapped on the mirrored side
+                plt.scatter(-u_coord[phase<0.], -v_coord[phase<0.], c='none',
+                            s=40.*np.abs(phase[phase<0.]), edgecolor='tab:orange', **scatter_kwargs)
+                plt.scatter(-u_coord[phase>0.], -v_coord[phase>0.], c='none',
+                            s=40.*phase[phase>0.], edgecolor='silver', **scatter_kwargs)
+
+            # Add the phases and coordinates to the output lists
+            phase_list.append(phase)
+            u_list.append(u_coord)
+            v_list.append(v_coord)
+
+        if ofile is not None:
+            if fit is not None:
+                # Plot the arrow to the provided companion parameters
+                plt.arrow(0., 0., u_comp, v_comp, head_width=1., head_length=1.,
+                          ls='-', lw=0.7, capstyle='round', facecolor='black')
+
+            # Update the axes labels and ticks
+            plt.xlabel('$u$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
+            plt.ylabel('$v$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
+            plt.minorticks_on()
+            plt.tight_layout()
+            plt.savefig(ofile+'_phase.pdf')
+
+        return phase_list, u_list, v_list
