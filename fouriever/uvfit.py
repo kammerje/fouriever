@@ -2112,7 +2112,8 @@ class data():
     def estimate_phase(self,
                        fit=None,
                        smear=None,
-                       ofile=None):
+                       ofile=None,
+                       scatter_kwargs=None):
         """
         Method for estimating the phases from the closure phases.
         
@@ -2130,6 +2131,11 @@ class data():
         ofile: str, None
             Path under which the figure will be stored. No plot is created if
             the argument is set to 'None'.
+        scatter_kwargs: dict, None
+            Optional dictionary with keyword arguments for the `scatter plot
+            <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html>`_
+            of the phases that are extracted from the data. Default values
+            are used for the plot if the argument is set to 'None'.
 
         Returns
         -------
@@ -2145,9 +2151,14 @@ class data():
             Multiply with 180/pi*3600 to convert to B/lambda.
         """
 
+        # Radians to arcsec conversion factor
         rad2asec = 180./np.pi*3600.
 
-        # Select the data.
+        # Set kwargs dictionary with default values for scatter plot
+        if scatter_kwargs is None:
+            scatter_kwargs = {'marker': 's', 'lw': 0.5, 'alpha': 0.5}
+
+        # Select the data
         data_list = []
         ww = np.where(np.array(self.inst_list) == self.inst)[0]
         for i in range(len(ww)):
@@ -2173,8 +2184,8 @@ class data():
         # Iterate over the data files
         for data_idx, data_item in enumerate(data_list):
             if fit is not None and ofile is not None and data_idx == 0:
-                # Calculate phase with the binary model and best-fit parameters.
-                # uu and vv are defined as baseline (m) divided by wavelength (m).
+                # Calculate phase with the binary model and best-fit parameters
+                # uu and vv are defined as baseline (m) divided by wavelength (m)
                 uv_max = max(np.amax(np.abs(data_item['uu'])), np.amax(np.abs(data_item['vv'])))
                 u = np.linspace(1.2*uv_max, -1.2*uv_max, 101)
                 v = np.linspace(-1.2*uv_max, 1.2*uv_max, 101)
@@ -2183,7 +2194,7 @@ class data():
                 # Create a data dictionary with the u-v grid
                 data = {'uu': uu, 'vv': vv}
 
-                # Calculate the model visibilities for the best-fit-parameters.
+                # Calculate the model visibilities for the best-fit-parameters
                 vis = util.vis_bin(fit['p'], data)
 
                 # Extract the phase from the complex visibilities
@@ -2224,12 +2235,17 @@ class data():
             if ofile is not None:
                 # Create scatter plot of phases in the u-v plane. Positive
                 # phase are plotted in orange and negative phases in gray.
+                plt.scatter(u_coord[phase<0.], v_coord[phase<0.], c='none',
+                            s=40.*np.abs(phase[phase<0.]), edgecolor='silver', **scatter_kwargs)
+                plt.scatter(u_coord[phase>0.], v_coord[phase>0.], c='none',
+                            s=40.*phase[phase>0.], edgecolor='tab:orange', **scatter_kwargs)
+
                 # Due to the anti-symmetry of the phases, the colors are
                 # swapped on the mirrored side
-                plt.scatter(u_coord[phase<0.], v_coord[phase<0.], c='none', s=40.*np.abs(phase[phase<0.]), marker='s', edgecolor='silver', lw=0.25, alpha=0.2)
-                plt.scatter(u_coord[phase>0.], v_coord[phase>0.], c='none', s=40.*phase[phase>0.], marker='s', edgecolor='tab:orange', lw=0.25, alpha=0.2)
-                plt.scatter(-u_coord[phase<0.], -v_coord[phase<0.], c='none', s=40.*np.abs(phase[phase<0.]), marker='s', edgecolor='tab:orange', lw=0.25, alpha=0.2)
-                plt.scatter(-u_coord[phase>0.], -v_coord[phase>0.], c='none', s=40.*phase[phase>0.], marker='s', edgecolor='silver', lw=0.25, alpha=0.2)
+                plt.scatter(-u_coord[phase<0.], -v_coord[phase<0.], c='none',
+                            s=40.*np.abs(phase[phase<0.]), edgecolor='tab:orange', **scatter_kwargs)
+                plt.scatter(-u_coord[phase>0.], -v_coord[phase>0.], c='none',
+                            s=40.*phase[phase>0.], edgecolor='silver', **scatter_kwargs)
 
             # Add the phases and coordinates to the output lists
             phase_list.append(phase)
@@ -2238,7 +2254,8 @@ class data():
 
         if ofile is not None:
             # Plot the arrow to the provided companion parameters
-            plt.arrow(0., 0., u_comp, v_comp, head_width=1., head_length=1., linewidth=0.7, linestyle='-', capstyle='round', facecolor='black')
+            plt.arrow(0., 0., u_comp, v_comp, head_width=1., head_length=1.,
+                      ls='-', lw=0.7, capstyle='round', facecolor='black')
 
             # Update the axes labels and ticks
             plt.xlabel('$u$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
