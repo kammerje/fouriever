@@ -730,6 +730,8 @@ def chi2map(pps_unique,
     # plt.show()
     plt.close()
 
+    return chi2s_rbf, grid_ra_dec_fine
+
 def chains(fit,
            samples,
            ofile=None):
