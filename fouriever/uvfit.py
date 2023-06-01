@@ -231,7 +231,7 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS']):
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS', 'ERIS']):
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
@@ -239,6 +239,8 @@ class data():
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Largest spatial scale = %.1f mas' % smax)
+            print('   Minimum baseline = %.2f m' % bmin)
+            print('   Maximum baseline = %.2f m' % bmax)
         else:
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 0.5*lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
@@ -249,6 +251,8 @@ class data():
             print('   Bandwidth smearing FOV = %.1f mas' % waveFOV)
             print('   Diffraction FOV = %.1f mas' % diffFOV)
             print('   Largest spatial scale = %.1f mas' % smax)
+            print('   Minimum baseline = %.2f m' % bmin)
+            print('   Maximum baseline = %.2f m' % bmax)
         if (smear is not None):
             print('   Bandwidth smearing = %.0f' % smear)
         if (sep_range is None):
@@ -547,7 +551,7 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS']):
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS', 'ERIS']):
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
@@ -555,6 +559,8 @@ class data():
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Largest spatial scale = %.1f mas' % smax)
+            print('   Minimum baseline = %.2f m' % bmin)
+            print('   Maximum baseline = %.2f m' % bmax)
         else:
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 0.5*lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
@@ -565,6 +571,8 @@ class data():
             print('   Bandwidth smearing FOV = %.1f mas' % waveFOV)
             print('   Diffraction FOV = %.1f mas' % diffFOV)
             print('   Largest spatial scale = %.1f mas' % smax)
+            print('   Minimum baseline = %.2f m' % bmin)
+            print('   Maximum baseline = %.2f m' % bmax)
         if (smear is not None):
             print('   Bandwidth smearing = %.0f' % smear)
         if (sep_range is None):
@@ -837,14 +845,27 @@ class data():
                                         fit=fit,
                                         ofile=ofile)
             
-            plot.chi2map(pps_unique=pps_unique,
+            chi2_map, chi2_grid = plot.chi2map(pps_unique=pps_unique,
                          chi2s_unique=chi2s_unique,
                          fit=fit,
                          sep_range=sep_range,
                          step_size=step_size,
                          ofile=ofile,
                          searchbox=searchbox)
-        
+
+            fit['chi2_map'] = chi2_map
+            fit['chi2_grid'] = chi2_grid
+
+            nsigma_map = np.zeros(chi2_map.shape)
+            for i in range(chi2_map.shape[0]):
+                for j in range(chi2_map.shape[1]):
+                    nsigma_map[i, j] = util.nsigma(
+                        chi2r_test=thetap['fun']/ndof,
+                        chi2r_true=chi2_map[i, j]/ndof,
+                        ndof=ndof)
+
+            fit['nsigma_map'] = nsigma_map
+
         return fit
     
     def chi2map_sub(self,
@@ -1075,6 +1096,7 @@ class data():
              temp=1.,
              nburn=250,
              nstep=5000,
+             nwalkers=None,
              n_live_points=1000,
              sampler='emcee',
              cov=False,
@@ -1092,6 +1114,9 @@ class data():
             distribution. This parameter is only used when ``sampler='emcee'``.
         nstep: int
             Number of steps for MCMC to be included in posterior distribution.
+        nwalkers: int, None
+            Number of walkers. If set to None, the number of walkers
+            is set to the default of (ndim+1)*2.
             This parameter is only used when ``sampler='emcee'``.
         n_live_points: int
             Number of live points used for the sampling the posterior
@@ -1198,7 +1223,8 @@ class data():
         if (temp is None):
             temp = fit['chi2_red']
         ndim = len(fit['p'])
-        nwalkers = (ndim+1)*2
+        if nwalkers is None:
+            nwalkers = (ndim+1)*2
         scale = []
         for i in range(len(fit['p'])):
             if (fit['dp'][i]/fit['p'][i] <= 0.05):
@@ -1245,11 +1271,19 @@ class data():
             if (mpi_rank == 0 and not os.path.exists(output_folder)):
                 os.mkdir(output_folder)
 
-            # Set uniform prior boundaries to +/- 20% range
-            # with respect to best-fit value from chi2map
+            # Set uniform prior boundaries with respect
+            # to best-fit value from the chi2map
             prior_bounds = []
             for i, item in enumerate(fit['p']):
-                prior_bounds.append((item-0.2*item, item+0.2*item))
+                if i == (len(fit['p']) - 2):
+                    # RA range (mas)
+                    prior_bounds.append((item-20., item+20.))
+                elif i == (len(fit['p']) - 1):
+                    # Dec range (mas)
+                    prior_bounds.append((item-20., item+20.))
+                else:
+                    # Contrast range
+                    prior_bounds.append((0., 1.))
 
             def lnprior_multinest(cube, n_dim, n_param):
                 """
@@ -1329,9 +1363,10 @@ class data():
                         samples=samples,
                         ofile=ofile)
 
-        plot.corner(fit=fit,
-                    samples=samples,
-                    ofile=ofile)
+        if ofile is not None:
+            plot.corner(fit=fit,
+                        samples=samples,
+                        ofile=ofile)
         
         pp = np.percentile(samples, 50., axis=0)
         pu = np.percentile(samples, 84., axis=0)-pp
@@ -1558,7 +1593,7 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS']):
+        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS', 'ERIS']):
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
             diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
@@ -1566,6 +1601,8 @@ class data():
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Largest spatial scale = %.1f mas' % smax)
+            print('   Minimum baseline = %.2f m' % bmin)
+            print('   Maximum baseline = %.2f m' % bmax)
         else:
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 0.5*lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
@@ -1576,6 +1613,8 @@ class data():
             print('   Bandwidth smearing FOV = %.1f mas' % waveFOV)
             print('   Diffraction FOV = %.1f mas' % diffFOV)
             print('   Largest spatial scale = %.1f mas' % smax)
+            print('   Minimum baseline = %.2f m' % bmin)
+            print('   Maximum baseline = %.2f m' % bmax)
         if (smear is not None):
             print('   Bandwidth smearing = %.0f' % smear)
         if (sep_range is None):
