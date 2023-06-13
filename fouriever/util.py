@@ -898,8 +898,6 @@ def nsigma(chi2r_test,
         Log-probability of a binary detection.
     """
 
-    num_limit = False
-
     if not use_mpmath:
         bin_prob = stats.chi2.cdf(ndof*chi2r_test/chi2r_true, ndof)
         log_bin_prob = np.log10(bin_prob)
