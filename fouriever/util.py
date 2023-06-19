@@ -5,6 +5,7 @@ from __future__ import division
 # IMPORTS
 # =============================================================================
 
+import warnings
 import mpmath
 import numpy as np
 
@@ -917,6 +918,12 @@ def nsigma(chi2r_test,
     nsigma = np.sqrt(stats.chi2.ppf(bin_prob, 1.))
     if (bin_prob > 1.-1e-15):
         nsigma = np.sqrt(stats.chi2.ppf(1.-1e-15, 1.))
+
+        warnings.warn("Not sufficient numerical precision to "
+                      "accurately calculate the confidence level, "
+                      "therefore it is set to the maximum value "
+                      f"of {nsigma:.2f}sigma while the actual "
+                      "value is higher.")
 
     return nsigma, log_bin_prob
 
