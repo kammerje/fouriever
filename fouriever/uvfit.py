@@ -354,9 +354,10 @@ class data():
                                             self.observables,
                                             cov,
                                             smear)]
-                    nsigmas += [util.nsigma(chi2r_test=thetap['fun']/ndof,
+                    nsigma, _ = util.nsigma(chi2r_test=thetap['fun']/ndof,
                                             chi2r_true=chi2s[-1]/ndof,
-                                            ndof=ndof)]
+                                            ndof=ndof)
+                    nsigmas += [nsigma]
                 else:
                     p0s += [np.array([np.nan, np.nan, np.nan])]
                     pps += [np.array([np.nan, np.nan, np.nan])]
@@ -401,9 +402,9 @@ class data():
             pe = pes[np.nanargmin(chi2s_copy)]
         sep = np.sqrt(pp[1]**2+pp[2]**2)
         pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
-        nsigma = util.nsigma(chi2r_test=thetap['fun']/ndof,
-                             chi2r_true=chi2/ndof,
-                             ndof=ndof)
+        nsigma, _ = util.nsigma(chi2r_test=thetap['fun']/ndof,
+                                chi2r_true=chi2/ndof,
+                                ndof=ndof)
         
         print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0]*100., pe[0]*100.))
         print('   Best fit companion right ascension = %.1f mas' % pp[1])
@@ -477,7 +478,8 @@ class data():
                 smear=None,
                 ofile=None,
                 searchbox=None,
-                data_list=None):
+                data_list=None,
+                use_mpmath=False):
         """
         Parameters
         ----------
@@ -504,7 +506,15 @@ class data():
             which case the data is automatically selected from the
             ``data_list`` attribute of the ``data`` class. The parameter is
             internally required by the ``systematics`` method.
-        
+        use_mpmath: bool
+            Use the ``mpmath`` module for enabling a higher precision
+            (50 decimals) on the calculated value from the CDF of the
+            chi2 distribution. If set to ``False``, the ``chi2``
+            function from ``scipy`` is used. The confidence level is
+            always calculated with ``scipy`` and has a maximum value
+            of approximately 8 sigma. The default argument is set to
+            ``False``.
+
         Returns
         -------
         fit: dict
@@ -635,7 +645,7 @@ class data():
             for j in range(len(self.observables)):
                 ndof += [np.prod(data_list[i][self.observables[j]].shape)]
         ndof = np.sum(ndof)
-        
+
         if ((model == 'ud') or (model == 'ud_bin')):
             if ('v2' not in self.observables):
                 raise UserWarning('Can only fit uniform disk with visibility amplitudes')
@@ -788,9 +798,10 @@ class data():
                     break
             
             try:
-                nsigma = util.nsigma(chi2r_test=thetap['fun']/ndof,
-                                     chi2r_true=chi2/ndof,
-                                     ndof=ndof)
+                nsigma, log_bin_prob = util.nsigma(chi2r_test=thetap['fun']/ndof,
+                                                   chi2r_true=chi2/ndof,
+                                                   ndof=ndof,
+                                                   use_mpmath=use_mpmath)
             except:
                 raise UserWarning('No local minima inside separation range or search box')
             if (model == 'bin'):
@@ -800,6 +811,7 @@ class data():
                 print('   Best fit companion separation = %.1f +/- %.1f mas' % (sep, dsep))
                 print('   Best fit companion position angle = %.1f +/- %.1f deg' % (pa, dpa))
                 print('   Best fit red. chi2 = %.3f (bin)' % (chi2/ndof))
+                print('   Log-probability of companion = %.2e' % log_bin_prob)
                 print('   Significance of companion = %.1f sigma' % nsigma)
                 fit = {}
                 fit['model'] = 'bin'
@@ -807,6 +819,7 @@ class data():
                 fit['dp'] = pe
                 fit['chi2_red'] = chi2/ndof
                 fit['ndof'] = ndof
+                fit['log_bin_prob'] = log_bin_prob
                 fit['nsigma'] = nsigma
                 fit['smear'] = smear
                 fit['cov'] = str(cov)
@@ -857,14 +870,19 @@ class data():
             fit['chi2_grid'] = chi2_grid
 
             nsigma_map = np.zeros(chi2_map.shape)
+            log_prob_map = np.zeros(chi2_map.shape)
+
             for i in range(chi2_map.shape[0]):
                 for j in range(chi2_map.shape[1]):
-                    nsigma_map[i, j] = util.nsigma(
-                        chi2r_test=thetap['fun']/ndof,
-                        chi2r_true=chi2_map[i, j]/ndof,
-                        ndof=ndof)
+                    nsigma_map[i, j], log_prob_map[i, j] = \
+                        util.nsigma(chi2r_test=thetap['fun']/ndof,
+                                    chi2r_true=chi2_map[i, j]/ndof,
+                                    ndof=ndof,
+                                    use_mpmath=use_mpmath)
 
             fit['nsigma_map'] = nsigma_map
+            fit['log_prob_map'] = log_prob_map
+            fit['chi2r_test'] = thetap['fun']/ndof
 
         return fit
     
@@ -1416,9 +1434,9 @@ class data():
                                      observables=self.observables,
                                      cov=cov,
                                      smear=smear)
-            nsigma = util.nsigma(chi2r_test=chi2_test/ndof,
-                                 chi2r_true=chi2/ndof,
-                                 ndof=ndof)
+            nsigma, _ = util.nsigma(chi2r_test=chi2_test/ndof,
+                                    chi2r_true=chi2/ndof,
+                                    ndof=ndof)
             sep = np.sqrt(pp[-2]**2+pp[-1]**2)
             pa = np.rad2deg(np.arctan2(pp[-2], pp[-1]))
             dsep = np.sqrt((pp[-2]/sep*pe[-2])**2+(pp[-1]/sep*pe[-1])**2)
@@ -1458,9 +1476,9 @@ class data():
                                      observables=self.observables,
                                      cov=cov,
                                      smear=smear)
-            nsigma = util.nsigma(chi2r_test=chi2_test/ndof,
-                                 chi2r_true=chi2/ndof,
-                                 ndof=ndof)
+            nsigma, _ = util.nsigma(chi2r_test=chi2_test/ndof,
+                                    chi2r_true=chi2/ndof,
+                                    ndof=ndof)
             sep = np.sqrt(pp[1]**2+pp[2]**2)
             pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
             dsep = np.sqrt((pp[1]/sep*pe[1])**2+(pp[2]/sep*pe[2])**2)
@@ -1875,9 +1893,9 @@ class data():
                              observables=observables,
                              cov=cov,
                              smear=smear)
-            nsigma = util.nsigma(chi2r_test=chi2_test/ndof,
-                                 chi2r_true=chi2_true/ndof,
-                                 ndof=ndof)
+            nsigma, _ = util.nsigma(chi2r_test=chi2_test/ndof,
+                                    chi2r_true=chi2_true/ndof,
+                                    ndof=ndof)
             
             return np.abs(nsigma-sigma)**2
     
@@ -1956,9 +1974,9 @@ class data():
                                          observables=observables,
                                          cov=cov,
                                          smear=smear)
-            nsigma = util.nsigma(chi2r_test=chi2_ud/ndof,
-                                 chi2r_true=chi2_bin/ndof,
-                                 ndof=ndof)
+            nsigma, _ = util.nsigma(chi2r_test=chi2_ud/ndof,
+                                    chi2r_true=chi2_bin/ndof,
+                                    ndof=ndof)
             
             return np.abs(nsigma-sigma)**2
     

@@ -5,12 +5,14 @@ from __future__ import division
 # IMPORTS
 # =============================================================================
 
-import astropy.io.fits as pyfits
-import matplotlib.pyplot as plt
+import warnings
+import mpmath
 import numpy as np
 
+from scipy import stats
+from scipy.interpolate import interp1d
 from scipy.special import j1
-import scipy.stats as stats
+
 
 rad2mas = 180./np.pi*3600.*1000. # convert rad to mas
 mas2rad = np.pi/180./3600./1000. # convert mas to rad
@@ -917,8 +919,12 @@ def chi2_ud_bin_fitdiamonly(theta0,
 
 def nsigma(chi2r_test,
            chi2r_true,
-           ndof):
+           ndof,
+           use_mpmath=False):
     """
+    Function for calculating the confidence level as
+    defined in Eq. 1 of Absil et al. (2011).
+
     Parameters
     ----------
     chi2r_test: float
@@ -927,31 +933,59 @@ def nsigma(chi2r_test,
         Reduced chi-squared of true model.
     ndof: int
         Number of degrees of freedom.
-    
+    use_mpmath: bool
+        Use the ``mpmath`` module for enabling a higher precision
+        (50 decimals) on the calculated value from the CDF of the
+        chi2 distribution. If set to ``False``, the ``chi2``
+        function from ``scipy`` is used. The confidence level is
+        always calculated with ``scipy`` and has a maximum value
+        of approximately 8 sigma. The default argument is set to
+        ``False``.
+
     Returns
     -------
     nsigma: float
         Detection significance.
+    log_bin_prob: float
+        Log-probability of a binary detection.
     """
-    
-    q = stats.chi2.cdf(ndof*chi2r_test/chi2r_true, ndof)
-    p = 1.-q
-    nsigma = np.sqrt(stats.chi2.ppf(1.-p, 1.))
-    if (p < 1e-15):
+
+    if not use_mpmath:
+        bin_prob = stats.chi2.cdf(ndof*chi2r_test/chi2r_true, ndof)
+        log_bin_prob = np.log10(bin_prob)
+
+    else:
+        # Decimal digits of precision
+        mpmath.mp.dps = 50
+
+        def chi2_cdf(x, k): 
+            x, k = mpmath.mpf(x), mpmath.mpf(k) 
+            return mpmath.gammainc(k/2, 0, x/2, regularized=True)
+
+        bin_prob = chi2_cdf(ndof*chi2r_test/chi2r_true, float(ndof))
+        log_bin_prob = float(mpmath.log10(bin_prob))
+        bin_prob = float(bin_prob)
+
+    nsigma = np.sqrt(stats.chi2.ppf(bin_prob, 1.))
+    if (bin_prob > 1.-1e-15):
         nsigma = np.sqrt(stats.chi2.ppf(1.-1e-15, 1.))
-    
-    return nsigma
-    
+
+        warnings.warn("Not sufficient numerical precision to "
+                      "accurately calculate the confidence level, "
+                      "therefore it is set to the maximum value "
+                      f"of {nsigma:.2f}sigma while the actual "
+                      "value is higher.")
+
+    return nsigma, log_bin_prob
+
     # THIS IS WRONG (CF. CANDID)
-    p = stats.chi2.cdf(ndof, ndof*chi2r_test/chi2r_true)
-    log10p = np.log10(max(p, 10**(-155.623))) # 50 sigma max.
-    nsigma = np.sqrt(stats.chi2.ppf(1.-p, 1.))
-    
-#    c = np.array([-0.25028407, 9.66640457]) # old
-    c = np.array([-0.29842513, 3.55829518]) # new
-    if (log10p < -15.):
-        nsigma = np.polyval(c, log10p)    
-    if (np.isnan(nsigma)):
-        nsigma = 50.
-    
-    return nsigma
+    # p = stats.chi2.cdf(ndof, ndof*chi2r_test/chi2r_true)
+    # log10p = np.log10(max(p, 10**(-155.623))) # 50 sigma max.
+    # nsigma = np.sqrt(stats.chi2.ppf(1.-p, 1.))    
+    # c = np.array([-0.25028407, 9.66640457]) # old
+    # c = np.array([-0.29842513, 3.55829518]) # new
+    # if (log10p < -15.):
+    #     nsigma = np.polyval(c, log10p)
+    # if (np.isnan(nsigma)):
+    #     nsigma = 50.
+    # return nsigma
