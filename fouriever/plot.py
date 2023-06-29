@@ -734,7 +734,8 @@ def chi2map(pps_unique,
 
 def chains(fit,
            samples,
-           ofile=None):
+           ofile=None,
+           fixpos=False):
     """
     Parameters
     ----------
@@ -744,6 +745,8 @@ def chains(fit,
         Posterior samples.
     ofile: str
         Path under which figures shall be saved.
+    fixpos: bool
+        Fix position of fit?
     """
     
     if (fit['model'] == 'ud'):
@@ -768,28 +771,38 @@ def chains(fit,
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
-        ylabels = ['$f$ [%]', '$\\rho$ [mas]', '$\\varphi$ [deg]']
-        rho = np.sqrt(samples[:, 1]**2+samples[:, 2]**2)
-        rho0 = np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
-        phi = np.rad2deg(np.arctan2(samples[:, 1], samples[:, 2]))
-        phi0 = np.rad2deg(np.arctan2(fit['p'][1], fit['p'][2]))
-        fig, ax = plt.subplots(len(fit['p']), 1, sharex='col', figsize=(6.4, 1.6*len(fit['p'])))
-        ax[0].plot(samples[:, 0]*100., color=datacol)
-        ax[0].axhline(np.percentile(samples[:, 0], 50.)*100., color=modelcol, label='MCMC median')
-        ax[0].axhline(fit['p'][0]*100., ls='--', color=gridcol, label='Initial guess')
-        ax[1].plot(rho, color=datacol)
-        ax[1].axhline(np.percentile(rho, 50.), color=modelcol)
-        ax[1].axhline(rho0, ls='--', color=gridcol)
-        ax[2].plot(phi, color=datacol)
-        ax[2].axhline(np.percentile(phi, 50.), color=modelcol)
-        ax[2].axhline(phi0, ls='--', color=gridcol)
-        plt.xlabel('Step')
-        for i in range(len(fit['p'])):
-            ax[i].set_ylabel(ylabels[i])
-            if (i == 0):
-                ax[i].legend(loc='upper right')
-        plt.subplots_adjust(wspace=0.25, hspace=0.)
-        fig.align_ylabels()
+        if (fixpos == True):
+            ylabels = ['$f$ [%]']
+            fig = plt.figure(figsize=(6.4, 1.6))
+            plt.plot(samples[:, 0]*100., color=datacol)
+            plt.axhline(np.percentile(samples[:, 0], 50.)*100., color=modelcol, label='MCMC median')
+            plt.axhline(fit['p'][0]*100., ls='--', color=gridcol, label='Initial guess')
+            plt.xlabel('Step')
+            plt.ylabel(ylabels[0])
+            plt.tight_layout()
+        else:
+            ylabels = ['$f$ [%]', '$\\rho$ [mas]', '$\\varphi$ [deg]']
+            rho = np.sqrt(samples[:, 1]**2+samples[:, 2]**2)
+            rho0 = np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
+            phi = np.rad2deg(np.arctan2(samples[:, 1], samples[:, 2]))
+            phi0 = np.rad2deg(np.arctan2(fit['p'][1], fit['p'][2]))
+            fig, ax = plt.subplots(len(fit['p']), 1, sharex='col', figsize=(6.4, 1.6*len(fit['p'])))
+            ax[0].plot(samples[:, 0]*100., color=datacol)
+            ax[0].axhline(np.percentile(samples[:, 0], 50.)*100., color=modelcol, label='MCMC median')
+            ax[0].axhline(fit['p'][0]*100., ls='--', color=gridcol, label='Initial guess')
+            ax[1].plot(rho, color=datacol)
+            ax[1].axhline(np.percentile(rho, 50.), color=modelcol)
+            ax[1].axhline(rho0, ls='--', color=gridcol)
+            ax[2].plot(phi, color=datacol)
+            ax[2].axhline(np.percentile(phi, 50.), color=modelcol)
+            ax[2].axhline(phi0, ls='--', color=gridcol)
+            plt.xlabel('Step')
+            for i in range(len(fit['p'])):
+                ax[i].set_ylabel(ylabels[i])
+                if (i == 0):
+                    ax[i].legend(loc='upper right')
+            plt.subplots_adjust(wspace=0.25, hspace=0.)
+            fig.align_ylabels()
         plt.suptitle('MCMC chains')
         if (ofile is not None):
             index = ofile.rfind('/')
@@ -845,7 +858,8 @@ def chains(fit,
 
 def corner(fit,
            samples,
-           ofile=None):
+           ofile=None,
+           fixpos=False):
     """
     Parameters
     ----------
@@ -855,6 +869,8 @@ def corner(fit,
         Posterior samples.
     ofile: str
         Path under which figures shall be saved.
+    fixpos: bool
+        Fix position of fit?
     """
     
     if (fit['model'] == 'ud'):
@@ -877,14 +893,12 @@ def corner(fit,
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
-        if (samples.shape[1] > 3):
+        if (fixpos == True):
             temp = samples.copy()
-            temp[:, :-2] *= 100.
-            temp[:, -2] = np.sqrt(samples[:, -2]**2+samples[:, -1]**2)
-            temp[:, -1] = np.rad2deg(np.arctan2(samples[:, -2], samples[:, -1]))
+            temp[:, 0] *= 100.
             fig = cp.corner(temp,
-                            labels=[r'$f$ [%]']*(temp.shape[1]-2)+[r'$\rho$ [mas]', r'$\varphi$ [deg]'],
-                            titles=[r'$f$']*(temp.shape[1]-2)+[r'$\rho$', r'$\varphi$'],
+                            labels=[r'$f$ [%]'],
+                            titles=[r'$f$'],
                             quantiles=[0.16, 0.5, 0.84],
                             show_titles=True,
                             title_fmt='.3f')
@@ -898,25 +912,46 @@ def corner(fit,
             # plt.show()
             plt.close()
         else:
-            temp = samples.copy()
-            temp[:, 0] *= 100.
-            temp[:, 1] = np.sqrt(samples[:, 1]**2+samples[:, 2]**2)
-            temp[:, 2] = np.rad2deg(np.arctan2(samples[:, 1], samples[:, 2]))
-            fig = cp.corner(temp,
-                            labels=[r'$f$ [%]', r'$\rho$ [mas]', r'$\varphi$ [deg]'],
-                            titles=[r'$f$', r'$\rho$', r'$\varphi$'],
-                            quantiles=[0.16, 0.5, 0.84],
-                            show_titles=True,
-                            title_fmt='.3f')
-            if (ofile is not None):
-                index = ofile.rfind('/')
-                if index != -1:
-                    temp = ofile[:index]
-                    if (not os.path.exists(temp)):
-                        os.makedirs(temp)
-                plt.savefig(ofile+'_mcmc_corner.pdf')
-            # plt.show()
-            plt.close()
+            if (samples.shape[1] > 3):
+                temp = samples.copy()
+                temp[:, :-2] *= 100.
+                temp[:, -2] = np.sqrt(samples[:, -2]**2+samples[:, -1]**2)
+                temp[:, -1] = np.rad2deg(np.arctan2(samples[:, -2], samples[:, -1]))
+                fig = cp.corner(temp,
+                                labels=[r'$f$ [%]']*(temp.shape[1]-2)+[r'$\rho$ [mas]', r'$\varphi$ [deg]'],
+                                titles=[r'$f$']*(temp.shape[1]-2)+[r'$\rho$', r'$\varphi$'],
+                                quantiles=[0.16, 0.5, 0.84],
+                                show_titles=True,
+                                title_fmt='.3f')
+                if (ofile is not None):
+                    index = ofile.rfind('/')
+                    if index != -1:
+                        temp = ofile[:index]
+                        if (not os.path.exists(temp)):
+                            os.makedirs(temp)
+                    plt.savefig(ofile+'_mcmc_corner.pdf')
+                # plt.show()
+                plt.close()
+            else:
+                temp = samples.copy()
+                temp[:, 0] *= 100.
+                temp[:, 1] = np.sqrt(samples[:, 1]**2+samples[:, 2]**2)
+                temp[:, 2] = np.rad2deg(np.arctan2(samples[:, 1], samples[:, 2]))
+                fig = cp.corner(temp,
+                                labels=[r'$f$ [%]', r'$\rho$ [mas]', r'$\varphi$ [deg]'],
+                                titles=[r'$f$', r'$\rho$', r'$\varphi$'],
+                                quantiles=[0.16, 0.5, 0.84],
+                                show_titles=True,
+                                title_fmt='.3f')
+                if (ofile is not None):
+                    index = ofile.rfind('/')
+                    if index != -1:
+                        temp = ofile[:index]
+                        if (not os.path.exists(temp)):
+                            os.makedirs(temp)
+                    plt.savefig(ofile+'_mcmc_corner.pdf')
+                # plt.show()
+                plt.close()
     else:
         temp = samples.copy()
         temp[:, 0] *= 100.

@@ -1101,7 +1101,8 @@ class data():
              sampler='emcee',
              cov=False,
              smear=None,
-             ofile=None):
+             ofile=None,
+             fixpos=False):
         """
         Parameters
         ----------
@@ -1131,6 +1132,8 @@ class data():
             Numerical bandwidth smearing which shall be used.
         ofile: str
             Path under which figures shall be saved.
+        fixpos: bool
+            Fix position of fit?
 
         Returns
         -------
@@ -1220,6 +1223,12 @@ class data():
                 ndof += [np.prod(data_list[i][self.observables[j]].shape)]
         ndof = np.sum(ndof)
         
+        if (fixpos == True):
+            pc = fit['p'].copy()
+            ec = fit['dp'].copy()
+            fit['p'] = np.array([fit['p'][0]])
+            fit['dp'] = np.array([fit['dp'][0]])
+        
         if (temp is None):
             temp = fit['chi2_red']
         ndim = len(fit['p'])
@@ -1242,7 +1251,10 @@ class data():
             if (fit['model'] == 'ud'):
                 emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_ud, args=[data_list, self.observables, cov, smear, temp])
             elif (fit['model'] == 'bin'):
-                emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_bin, args=[data_list, self.observables, cov, smear, temp])
+                if (fixpos == True):
+                    emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_bin_fixpos, args=[pc, data_list, self.observables, cov, smear, temp])
+                else:
+                    emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_bin, args=[data_list, self.observables, cov, smear, temp])
             else:
                 emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_ud_bin, args=[data_list, self.observables, cov, smear, temp])
 
@@ -1361,12 +1373,14 @@ class data():
         if (sampler == 'emcee'):
             plot.chains(fit=fit,
                         samples=samples,
-                        ofile=ofile)
+                        ofile=ofile,
+                        fixpos=fixpos)
 
         if ofile is not None:
             plot.corner(fit=fit,
                         samples=samples,
-                        ofile=ofile)
+                        ofile=ofile,
+                        fixpos=fixpos)
         
         pp = np.percentile(samples, 50., axis=0)
         pu = np.percentile(samples, 84., axis=0)-pp
@@ -1389,6 +1403,9 @@ class data():
             fit['smear'] = smear
             fit['cov'] = str(cov)
         elif (fit['model'] == 'bin'):
+            if (fixpos == True):
+                pp = np.append(pp, pc[1:])
+                pe = np.append(pe, ec[1:])
             chi2 = util.chi2_bin(p0=pp,
                                  data_list=data_list,
                                  observables=self.observables,
@@ -2003,6 +2020,80 @@ class data():
                 data_list[i]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=data_list[i])-util.v2kp(vis_ref, data=data_list[i]))
         
         return data_list
+    
+    def sub_companion(self,
+                      fit_sub):
+        """
+        Parameters
+        ----------
+        fit_sub: dict
+            Model fit to be subtracted.
+        """
+        
+        print('Subtracting '+fit_sub['model']+' model')
+        
+        buffer = deepcopy(self.data_list)
+        
+        ww = np.where(np.array(self.inst_list) == self.inst)[0]
+        for i in range(len(ww)):
+            for j in range(len(self.data_list[ww[i]])):
+                if (fit_sub['smear'] is not None):
+                    wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0]*fit_sub['smear']))
+                    for k in range(self.data_list[ww[i]][j]['wave'].shape[0]):
+                        wave[k*fit_sub['smear']:(k+1)*fit_sub['smear']] = np.linspace(self.data_list[ww[i]][j]['wave'][k]-0.5*self.data_list[ww[i]][j]['dwave'][k], self.data_list[ww[i]][j]['wave'][k]+0.5*self.data_list[ww[i]][j]['dwave'][k], fit_sub['smear'])
+                    self.data_list[ww[i]][j]['uu_smear'] = np.divide(self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                    self.data_list[ww[i]][j]['vv_smear'] = np.divide(self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+        
+        if (fit_sub['model'] == 'ud'):
+            print('   No companion data found!')
+        else:
+            fit_sub_copy = deepcopy(fit_sub)
+            fit_sub_copy['p'][0] = -fit_sub_copy['p'][0]
+        
+        ww = np.where(np.array(self.inst_list) == self.inst)[0]
+        for i in range(len(ww)):
+            for j in range(len(self.data_list[ww[i]])):
+                p0 = fit_sub_copy['p']
+                dra = p0[1].copy()
+                ddec = p0[2].copy()
+                rho = np.sqrt(dra**2+ddec**2)
+                phi = np.rad2deg(np.arctan2(dra, ddec))
+                if (pa_mtoc == '-'):
+                    phi -= self.data_list[ww[i]][j]['pa']
+                elif (pa_mtoc == '+'):
+                    phi += self.data_list[ww[i]][j]['pa']
+                else:
+                    raise UserWarning('Model to chip conversion for position angle not known')
+                phi = ((phi+180.) % 360.)-180.
+                dra_temp = rho*np.sin(np.deg2rad(phi))
+                ddec_temp = rho*np.cos(np.deg2rad(phi))
+                if (fit_sub['model'] == 'bin'):
+                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp]) # w/ companion
+                    vis_bin = util.vis_bin(p0=p0_temp,
+                                           data=self.data_list[ww[i]][j],
+                                           smear=fit_sub['smear'])
+                    p0_temp = np.array([0., dra_temp, ddec_temp]) # w/o companion
+                    vis_ref = util.vis_bin(p0=p0_temp,
+                                           data=self.data_list[ww[i]][j],
+                                           smear=fit_sub['smear'])
+                else:
+                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()]) # w/ companion
+                    vis_bin = util.vis_ud_bin(p0=p0_temp,
+                                              data=self.data_list[ww[i]][j],
+                                              smear=fit_sub['smear'])
+                    p0_temp = np.array([0., dra_temp, ddec_temp, p0[3].copy()]) # w/o companion
+                    vis_ref = util.vis_ud_bin(p0=p0_temp,
+                                              data=self.data_list[ww[i]][j],
+                                              smear=fit_sub['smear'])
+                
+                if ('v2' in self.observables):
+                    self.data_list[ww[i]][j]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=self.data_list[ww[i]][j])-util.v2v2(vis_ref, data=self.data_list[ww[i]][j]))
+                if ('cp' in self.observables):
+                    self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
+                if ('kp' in self.observables):
+                    self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
+        
+        return buffer
     
     def systematics(self,
                     fit,

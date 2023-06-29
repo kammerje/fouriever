@@ -595,6 +595,57 @@ def lnprob_bin(p0,
     
     return -0.5*np.sum(chi2)/temp
 
+def lnprob_bin_fixpos(p0,
+                      pr,
+                      data_list,
+                      observables,
+                      cov=False,
+                      smear=None,
+                      temp=1.):
+    """
+    Parameters
+    ----------
+    p0: array
+        p0[0]: float
+            Relative flux of companion.
+    pr: array
+        pr[0]: float
+            Will be overwritten.
+        pr[1]: float
+            Right ascension offset of companion (mas).
+        pr[2]: float
+            Declination offset of companion (mas).
+    data_list: list of dict
+        List of data whose chi-squared shall be computed. The list contains one
+        data structure for each observation.
+    observables: list of str
+        List of observables which shall be considered.
+    cov: bool
+        True if covariance shall be considered.
+    smear: int
+        Numerical bandwidth smearing which shall be used.
+    temp: float
+        Covariance inflation factor.
+    
+    Returns
+    -------
+    lnprob: float
+        Log-likelihood of unresolved companion model.
+    """
+    
+    if (p0[0] < 0.):
+        
+        return -np.inf
+    
+    pr[0] = p0
+    chi2 = chi2_bin(pr,
+                    data_list,
+                    observables,
+                    cov=cov,
+                    smear=smear)
+    
+    return -0.5*np.sum(chi2)/temp
+
 def vis_ud_bin(p0,
                data,
                smear=None):
