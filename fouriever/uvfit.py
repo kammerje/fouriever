@@ -1745,7 +1745,7 @@ class data():
         print('Computing detection limits ('+str(sigma)+'-sigma)')
         if (cmin >= 1.):
             raise ValueError('Minimum contrast must be less than 1')
-        f0s = np.logspace(np.log10(cmin), 0, 100)
+        f0s = np.logspace(np.log10(cmin), 0, 200)
         ffs_absil = []
         ffs_injection = []
         nc = np.prod(grid_ra_dec[0].shape)
@@ -1801,19 +1801,20 @@ class data():
                                       tol=ftol,
                                       options={'maxiter': 1000})
                     else:
-                        fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]]),
-                                    'model': 'bin',
-                                    'smear': smear}
-                        temp = [self.lim_injection(f0, fit_inj, data_list, self.observables, cov, smear, ndof, None, sigma) for f0 in f0s]
-                        temp = np.array(temp)
-                        f0 = f0s[np.argmin(temp)]
-                        pp = minimize(self.lim_injection,
-                                      f0,
-                                      args=(fit_inj, data_list, self.observables, cov, smear, ndof, None, sigma),
-                                      method='L-BFGS-B',
-                                      bounds=[(0., 1.)],
-                                      tol=ftol,
-                                      options={'maxiter': 1000})
+                        # fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]]),
+                        #             'model': 'bin',
+                        #             'smear': smear}
+                        # temp = [self.lim_injection(f0, fit_inj, data_list, self.observables, cov, smear, ndof, None, sigma) for f0 in f0s]
+                        # temp = np.array(temp)
+                        # f0 = f0s[np.argmin(temp)]
+                        # pp = minimize(self.lim_injection,
+                        #               f0,
+                        #               args=(fit_inj, data_list, self.observables, cov, smear, ndof, None, sigma),
+                        #               method='L-BFGS-B',
+                        #               bounds=[(0., 1.)],
+                        #               tol=ftol,
+                        #               options={'maxiter': 1000})
+                        pp = {'x': [ffs_absil[-1]]}
                     ffs_injection += [pp['x'][0].copy()]
                 
                 else:

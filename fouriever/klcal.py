@@ -655,13 +655,13 @@ class data():
             
             else:
                 raise UserWarning('Support for this data format is not implemented')
-        oi_v2_sci = np.array(oi_v2_sci)
-        oi_dv2_sci = np.array(oi_dv2_sci)
-        oi_cp_sci = np.array(oi_cp_sci)
-        oi_dcp_sci = np.array(oi_dcp_sci)
-        kp_kp_sci = np.array(kp_kp_sci)
-        kp_dkp_sci = np.array(kp_dkp_sci)
-        kp_kpcov_sci = np.array(kp_kpcov_sci)
+        # oi_v2_sci = np.array(oi_v2_sci)
+        # oi_dv2_sci = np.array(oi_dv2_sci)
+        # oi_cp_sci = np.array(oi_cp_sci)
+        # oi_dcp_sci = np.array(oi_dcp_sci)
+        # kp_kp_sci = np.array(kp_kp_sci)
+        # kp_dkp_sci = np.array(kp_dkp_sci)
+        # kp_kpcov_sci = np.array(kp_kpcov_sci)
         print('')
         
         return None
