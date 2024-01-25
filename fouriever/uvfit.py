@@ -521,12 +521,15 @@ class data():
             Best fit model parameters.
         """
 
+        # =============================================================
+        # Extract data, baseline info and wavelength info from data_list
+        # =============================================================
         bmax = []
         bmin = []
         dmax = []
         lmin = []
         lerr = []
-        ww = np.where(np.array(self.inst_list) == self.inst)[0]
+        ww = np.where(np.array(self.inst_list) == self.inst)[0]  # Use only the datasets's "main" instrument
         if data_list is None:
             data_list = []
             for i in range(len(ww)):
@@ -561,6 +564,11 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
+
+        # =============================================================
+        # Derive FOV and min/max spatial scale information.
+        # Will determine separation range for the grid if not specified
+        # =============================================================
         if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS', 'ERIS']):
             smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
             waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
@@ -590,7 +598,10 @@ class data():
         if (step_size is None):
             step_size = smin
         
-        if (cov == False):
+        # =============================================================
+        # Pre-compute data covariance info to data_list
+        # =============================================================
+        if not cov:
             print('   Using data covariance = False')
             for i in range(len(data_list)):
                 data_list[i]['covflag'] = False
@@ -604,49 +615,53 @@ class data():
                     if (self.observables[j] == 'v2'):
                         try:
                             covs += [data_list[i]['v2cov']]
-                        except:
+                        except Exception:
                             covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'cp'):
                         try:
                             covs += [data_list[i]['cpcov']]
-                        except:
+                        except Exception:
                             covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'kp'):
                         try:
                             covs += [data_list[i]['kpcov']]
-                        except:
+                        except Exception:
                             covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
                             allcov = False
                             covs += []
                 data_list[i]['cov'] = block_diag(*covs)
                 data_list[i]['icv'] = self.invert(data_list[i]['cov'])
                 data_list[i]['covflag'] = True
-                if (errflag == False):
+                if not errflag:
                     try:
                         rk = np.linalg.matrix_rank(data_list[i]['cov'])
                         sz = data_list[i]['cov'].shape[0]
                         if (rk < sz):
                             errflag = True
                             print('   WARNING: covariance matrix does not have full rank')
-                    except:
+                    except Exception:
                         continue
-            if (allcov == False):
+            if not allcov:
                 print('   WARNING: not all data sets have covariances')
         
         klflag = False
         ndof = []
         for i in range(len(data_list)):
-            if (data_list[i]['klflag'] == True):
+            if data_list[i]['klflag']:
                 klflag = True
             for j in range(len(self.observables)):
                 ndof += [np.prod(data_list[i][self.observables[j]].shape)]
         ndof = np.sum(ndof)
 
+        # =============================================================
+        # Compute best uniform-disk model for chi2 normalization
+        # =============================================================
         if ((model == 'ud') or (model == 'ud_bin')):
+            # If UD is free in model, optimize
             if ('v2' not in self.observables):
                 raise UserWarning('Can only fit uniform disk with visibility amplitudes')
             print('Computing best fit uniform disk diameter (DO NOT TRUST UNCERTAINTIES)')
@@ -669,7 +684,7 @@ class data():
             fit['ndof'] = ndof
             fit['smear'] = smear
             fit['cov'] = str(cov)
-            if (klflag == True):
+            if klflag:
                 plot.v2_ud(data_list=data_list,
                              fit=fit,
                              smear=smear,
@@ -680,6 +695,7 @@ class data():
                                   smear=smear,
                                   ofile=ofile)
         else:
+            # If UD is not in model, use point-source as reference chi2
             thetap = {}
             thetap['fun'] = util.chi2_ud(p0=np.array([0.]),
                                          data_list=data_list,
@@ -687,6 +703,9 @@ class data():
                                          cov=cov,
                                          smear=smear)
         
+        # =============================================================
+        # Chi2 map for binary or binary + uniform disk model
+        # =============================================================
         if ((model == 'bin') or (model == 'ud_bin')):
             if (('cp' not in self.observables) and ('kp' not in self.observables)):
                 raise UserWarning('Can only fit companion with closure or kernel phases')
@@ -696,9 +715,12 @@ class data():
                                                      verbose=True)
             
             print('Computing chi-squared map (DO NOT TRUST UNCERTAINTIES)')
-            f0 = 1e-4
+            f0 = 1e-4  # Initial gues for contrast will be 1e-4 at all points
+            # List to store minimization starting point
             p0s = []
+            # Same as p0s but will also include grid points that are NaN (i.e. outside sep range)
             p0s_all = []
+            # List to store minimization result (scipy objects)
             pps = []
             pes = []
             chi2s = []
@@ -710,8 +732,10 @@ class data():
                     if (ctr % 10 == 0):
                         sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
                         sys.stdout.flush()
-                    if ((np.isnan(grid_ra_dec[0][i, j]) == False) and (np.isnan(grid_ra_dec[1][i, j]) == False)):
+                    # Ensure current grid point is not nan (i.e. it is within sep range)
+                    if (not np.isnan(grid_ra_dec[0][i, j])) and (not np.isnan(grid_ra_dec[1][i, j])):
                         if (model == 'bin'):
+                            # Initial guess for position is current grid point
                             p0 = np.array([f0, grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]])
                             pp = minimize(util.chi2_bin,
                                           p0,
@@ -734,6 +758,7 @@ class data():
                         pe = np.sqrt(max(1., abs(pp['fun']))*ftol*np.diag(pp['hess_inv'].todense()))
                         pes += [pe]
                         chi2s += [pp['fun']]
+                    # Regardless of whether this grid point was NaN or not, still store in p0s_all
                     p0 = np.array([f0, grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]])
                     p0s_all += [p0]
             sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
@@ -745,6 +770,8 @@ class data():
             pes = np.array(pes)
             chi2s = np.array(chi2s)
             
+            # For each solution, check its spatial distance from the others.
+            # Solutions closer than a certain threshold are considered duplicates
             pps_unique = [pps[0]]
             chi2s_unique = [chi2s[0]]
             dists_unique = []
@@ -767,6 +794,8 @@ class data():
             print('   Optimal step size = %.1f mas' % opt)
             print('   Current step size = %.1f mas' % step_size)
             
+            # Loop over chi2 values from lowest to highest
+            # pick the first one that is inside sep range and search box
             ww = np.argsort(chi2s)
             chi2s_sorted = np.sort(chi2s)
             for i in range(len(chi2s_sorted)):
@@ -796,14 +825,17 @@ class data():
                     dpa = np.rad2deg(np.sqrt((pp[2]/sep**2*pe[1])**2+(-pp[1]/sep**2*pe[2])**2))
                     chi2 = chi2s_sorted[i]
                     break
-            
+
+            # Use the best-fit solution to compute confidence level
+            # Based on chi2 ratio with a UD model
             try:
                 nsigma, log_bin_prob = util.nsigma(chi2r_test=thetap['fun']/ndof,
                                                    chi2r_true=chi2/ndof,
                                                    ndof=ndof,
                                                    use_mpmath=use_mpmath)
-            except:
+            except Exception:
                 raise UserWarning('No local minima inside separation range or search box')
+
             if (model == 'bin'):
                 print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0]*100., pe[0]*100.))
                 print('   Best fit companion right ascension = %.1f +/- %.1f mas' % (pp[1], pe[1]))
@@ -858,6 +890,8 @@ class data():
                                         fit=fit,
                                         ofile=ofile)
             
+            # Produce chi2 grid by interpolating the minimization results
+            # to a fine regular grid
             chi2_map, chi2_grid = plot.chi2map(pps_unique=pps_unique,
                          chi2s_unique=chi2s_unique,
                          fit=fit,
