@@ -706,7 +706,6 @@ class data():
         # =============================================================
         # Chi2 map for binary or binary + uniform disk model
         # =============================================================
-                                          tol=ftol,
         if not ((model == 'bin') or (model == 'ud_bin')):
             raise ValueError(f"Model {model} is not supported for chi2map. Use 'bin' or 'ud_bin'")
 
@@ -725,7 +724,6 @@ class data():
         p0s_all = []
         # List to store minimization result (scipy objects)
         pps = []
-        # TODO: Not sure what this is. See operation done below. Probably some uncertainty estimate
         pes = []
         chi2s = []
         nc = np.prod(grid_ra_dec[0].shape)
@@ -759,7 +757,6 @@ class data():
                                         options={'maxiter': 1000})
                     p0s += [p0]
                     pps += [pp['x']]
-                    # TODO: What does this do? Uncertainty estimate?
                     pe = np.sqrt(max(1., abs(pp['fun']))*ftol*np.diag(pp['hess_inv'].todense()))
                     pes += [pe]
                     chi2s += [pp['fun']]
