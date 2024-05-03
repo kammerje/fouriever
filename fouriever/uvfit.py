@@ -1324,6 +1324,13 @@ class data():
             ln_prob = samples[:, -1]
             samples = samples[:, :-1]
 
+        if (ofile is not None):
+            index = ofile.rfind('/')
+            if (index != -1):
+                temp = ofile[:index]
+                if (not os.path.exists(temp)):
+                    os.makedirs(temp)
+            np.save(ofile+'_mcmc_chains.npy', samples)
         if (sampler == 'emcee'):
             plot.chains(fit=fit,
                         samples=samples,
