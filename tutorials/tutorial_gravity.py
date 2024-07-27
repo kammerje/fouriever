@@ -12,7 +12,7 @@ import numpy as np
 import os
 
 from fouriever import uvfit
-
+from scipy.stats import pearsonr
 
 # =============================================================================
 # MAIN
@@ -47,6 +47,15 @@ fit = data.mcmc(fit=fit, # best fit from gridsearch
                 # ofile='../figures/betaPic_90deg', # save figures
                 # ofile='../figures/HIP78183', # save figures
                 sampler='emcee') # sampling algorithm
+
+samples=fit['samples']
+ras=samples[:,1]
+decs=samples[:,2]
+print("median RA offset:",np.median(ras))
+print("median DEC offset:",np.median(decs))
+print("sigma RA offset:",np.std(ras))
+print("sigma DEC offset:",np.std(decs))
+print("pearson rho:",pearsonr(ras,decs).statistic)
 
 # Compute chi-squared map after subtracting best fit companion.
 fit_sub = data.chi2map_sub(fit_sub=fit, # best fit from MCMC
