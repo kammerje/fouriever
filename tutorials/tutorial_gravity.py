@@ -51,6 +51,7 @@ fit = data.mcmc(fit=fit, # best fit from gridsearch
 samples=fit['samples']
 ras=samples[:,-2]
 decs=samples[:,-1]
+print("valid for model='bin' and model='ud_bin':")
 print("median RA offset:",np.median(ras))
 print("median DEC offset:",np.median(decs))
 print("sigma RA offset:",np.std(ras))
