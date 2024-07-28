@@ -49,8 +49,8 @@ fit = data.mcmc(fit=fit, # best fit from gridsearch
                 sampler='emcee') # sampling algorithm
 
 samples=fit['samples']
-ras=samples[:,1]
-decs=samples[:,2]
+ras=samples[:,-2]
+decs=samples[:,-1]
 print("median RA offset:",np.median(ras))
 print("median DEC offset:",np.median(decs))
 print("sigma RA offset:",np.std(ras))
