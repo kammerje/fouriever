@@ -55,7 +55,7 @@ def get_grid(sep_range,
     
     nc = int(np.ceil(sep_range[1]/step_size))
     temp = np.linspace(-nc*step_size, nc*step_size, 2*nc+1)
-    grid_ra_dec = np.meshgrid(temp, temp)
+    grid_ra_dec = np.array(np.meshgrid(temp, temp))
     grid_ra_dec[0] = np.fliplr(grid_ra_dec[0])
     sep = np.sqrt(grid_ra_dec[0]**2+grid_ra_dec[1]**2)
     pa = np.rad2deg(np.arctan2(grid_ra_dec[0], grid_ra_dec[1]))

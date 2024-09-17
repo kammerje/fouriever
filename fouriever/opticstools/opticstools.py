@@ -220,7 +220,7 @@ def airy(x_in, obstruction_sz=0):
 
     return y1
 
-def curved_wf(sz,m_per_pix,f_length=np.infty,wave=633e-9, tilt=[0.0,0.0], power=None,diam=None,defocus=None):
+def curved_wf(sz,m_per_pix,f_length=np.inf,wave=633e-9, tilt=[0.0,0.0], power=None,diam=None,defocus=None):
     """A curved wavefront centered on the *middle*
     of the python array.
     

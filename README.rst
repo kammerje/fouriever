@@ -17,7 +17,7 @@ From here, it is highly recommended that you create a unique Conda environment t
 
 ::
 
-	conda create -n fouriever python=3.12
+	conda create --name fouriever python=3.11
 	conda activate fouriever
 
 With the Conda environment created and activated, move to the cloned directory and install the dependencies and fouriever itself:
