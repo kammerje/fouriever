@@ -1547,6 +1547,7 @@ class data():
     def detlim(self,
                sigma=3.,
                fit_sub=None,
+               fit_sub_2=None,
                cov=False,
                sep_range=None,
                step_size=None,
@@ -1560,6 +1561,8 @@ class data():
             Confidence level for which the detection limits shall be computed.
         fit_sub: dict
             Model fit to be subtracted.
+        fit_sub_2: dict
+            Second model fit to be subtracted.
         cov: bool
             True if covariance shall be considered.
         sep_range: tuple of float
@@ -1637,6 +1640,68 @@ class data():
                         self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
                     if ('kp' in self.observables):
                         self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
+        
+            if (fit_sub_2 is not None):
+                print('Subtracting '+fit_sub_2['model']+' model')
+                
+                ww = np.where(np.array(self.inst_list) == self.inst)[0]
+                for i in range(len(ww)):
+                    for j in range(len(self.data_list[ww[i]])):
+                        if (smear is not None):
+                            wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0]*smear))
+                            for k in range(self.data_list[ww[i]][j]['wave'].shape[0]):
+                                wave[k*smear:(k+1)*smear] = np.linspace(self.data_list[ww[i]][j]['wave'][k]-0.5*self.data_list[ww[i]][j]['dwave'][k], self.data_list[ww[i]][j]['wave'][k]+0.5*self.data_list[ww[i]][j]['dwave'][k], smear)
+                            self.data_list[ww[i]][j]['uu_smear'] = np.divide(self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :])
+                            self.data_list[ww[i]][j]['vv_smear'] = np.divide(self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+                
+                if (fit_sub_2['model'] == 'ud'):
+                    print('   No companion data found!')
+                else:
+                    fit_sub_2_copy = deepcopy(fit_sub_2)
+                    fit_sub_2_copy['p'][0] = -fit_sub_2_copy['p'][0]
+                
+                ww = np.where(np.array(self.inst_list) == self.inst)[0]
+                for i in range(len(ww)):
+                    for j in range(len(self.data_list[ww[i]])):
+                        p0 = fit_sub_2_copy['p']
+                        dra = p0[1].copy()
+                        ddec = p0[2].copy()
+                        rho = np.sqrt(dra**2+ddec**2)
+                        phi = np.rad2deg(np.arctan2(dra, ddec))
+                        if (pa_mtoc == '-'):
+                            phi -= self.data_list[ww[i]][j]['pa']
+                        elif (pa_mtoc == '+'):
+                            phi += self.data_list[ww[i]][j]['pa']
+                        else:
+                            raise UserWarning('Model to chip conversion for position angle not known')
+                        phi = ((phi+180.) % 360.)-180.
+                        dra_temp = rho*np.sin(np.deg2rad(phi))
+                        ddec_temp = rho*np.cos(np.deg2rad(phi))
+                        if (fit_sub_2['model'] == 'bin'):
+                            p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp]) # w/ companion
+                            vis_bin = util.vis_bin(p0=p0_temp,
+                                                   data=self.data_list[ww[i]][j],
+                                                   smear=fit_sub_2['smear'])
+                            p0_temp = np.array([0., dra_temp, ddec_temp]) # w/o companion
+                            vis_ref = util.vis_bin(p0=p0_temp,
+                                                   data=self.data_list[ww[i]][j],
+                                                   smear=fit_sub_2['smear'])
+                        else:
+                            p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()]) # w/ companion
+                            vis_bin = util.vis_ud_bin(p0=p0_temp,
+                                                      data=self.data_list[ww[i]][j],
+                                                      smear=fit_sub_2['smear'])
+                            p0_temp = np.array([0., dra_temp, ddec_temp, p0[3].copy()]) # w/o companion
+                            vis_ref = util.vis_ud_bin(p0=p0_temp,
+                                                      data=self.data_list[ww[i]][j],
+                                                      smear=fit_sub_2['smear'])
+                        
+                        if ('v2' in self.observables):
+                            self.data_list[ww[i]][j]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=self.data_list[ww[i]][j])-util.v2v2(vis_ref, data=self.data_list[ww[i]][j]))
+                        if ('cp' in self.observables):
+                            self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
+                        if ('kp' in self.observables):
+                            self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
         
         data_list = []
         bmax = []
