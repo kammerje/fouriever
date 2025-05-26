@@ -11,9 +11,11 @@ import warnings
 import mpmath
 import numpy as np
 
+import matplotlib.pyplot as plt
 from scipy import stats
 from scipy.special import j1
 
+formats_known = ['pdf', 'png', 'jpg', 'npy']
 
 rad2mas = 180.0 / np.pi * 3600.0 * 1000.0  # convert rad to mas
 mas2rad = np.pi / 180.0 / 3600.0 / 1000.0  # convert mas to rad
@@ -915,3 +917,45 @@ def glob_fits_files(fits_dir):
     for i, item in enumerate(fits_files):
         fits_files[i] = os.path.basename(item)
     return fits_files
+
+
+def save_ofile(ofile, out_id, *save_args, out_ext=None, **save_kwargs):
+    # ofile is [dir/]prefix where dir is optional
+    if (ofile is None):
+        return
+    odir, basename = os.path.split(ofile)
+    stem, ext = os.path.splitext(basename)
+    if (odir != ""):
+        os.makedirs(odir, exist_ok=True)
+
+    # Figure out extension:
+    # 1. If out_ext is set, it always has precedence
+    # 2. Otherwise, if ofile contains a valid extension
+    # 3. Final fallback is PDF
+    # 4. There are warnings in case of clashes
+    if ext in formats_known:
+        if out_ext is None:
+            out_ext = ext
+        else:
+            warnings.warn(
+                f"ofile {ofile} contains known extension {ext}, but output extension {out_ext} will be used",
+                category=RuntimeWarning,
+                stacklevel=2
+            )
+    else:
+        out_ext = out_ext or "pdf"
+        if ext != "":
+            warnings.warn(
+                f"ofile {ofile} contains unknown extension {ext}. Output extension {out_ext} will be used",
+                category=RuntimeWarning,
+                stacklevel=2
+            )
+
+    # os.path.join will just ignore odir if it is empty
+    out_path = os.path.join(odir, stem + '_' + out_id + '.' + out_ext)
+    if out_ext == "npy":
+        np.save(out_path, *save_args, **save_kwargs)
+    elif out_ext in formats_known:
+        plt.savefig(out_path, *save_args, **save_kwargs)
+    else:
+        return out_path

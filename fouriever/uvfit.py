@@ -452,7 +452,8 @@ class data:
             hdu3 = pyfits.ImageHDU(nsigmas)
             hdu3.header['EXTNAME'] = 'NSIGMAS'
             hdul = pyfits.HDUList([hdu0, hdu1, hdu2, hdu3])
-            hdul.writeto(ofile + '.fits', output_verify='fix', overwrite=True)
+            out_path = util.save_ofile(ofile, "lincmap", out_ext="fits")
+            hdul.writeto(out_path, output_verify='fix', overwrite=True)
             hdul.close()
 
         return fit
