@@ -1127,21 +1127,21 @@ class data:
                 for j in range(len(self.data_list[ww[i]])):
                     v2_out += [self.data_list[ww[i]][j]['v2']]
             v2_out = np.concatenate(v2_out)
-            np.save(ofile + '_v2', v2_out)
+            util.save_ofile(ofile, "v2", v2_out, out_ext="npy")
         if 'cp' in self.observables:
             cp_out = []
             for i in range(len(ww)):
                 for j in range(len(self.data_list[ww[i]])):
                     cp_out += [self.data_list[ww[i]][j]['cp']]
             cp_out = np.concatenate(cp_out)
-            np.save(ofile + '_cp', cp_out)
+            util.save_ofile(ofile, "cp", cp_out, out_ext="npy")
         if 'kp' in self.observables:
             kp_out = []
             for i in range(len(ww)):
                 for j in range(len(self.data_list[ww[i]])):
                     kp_out += [self.data_list[ww[i]][j]['kp']]
             kp_out = np.concatenate(kp_out)
-            np.save(ofile + '_kp', kp_out)
+            util.save_ofile(ofile, "kp", kp_out, out_ext="npy")
 
         self.data_list = buffer
 
@@ -2617,6 +2617,6 @@ class data:
             plt.ylabel('$v$ (arcsec$^{-1}$)', fontsize=12.0, labelpad=0.25)
             plt.minorticks_on()
             plt.tight_layout()
-            plt.savefig(ofile + '_phase.pdf')
+            util.save_ofile(ofile, "phase")
 
         return phase_list, u_list, v_list
