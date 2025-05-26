@@ -1119,6 +1119,7 @@ class data:
                         - util.v2kp(vis_ref, data=self.data_list[ww[i]][j])
                     )
 
+        # TODO: Handle ofile here
         if 'v2' in self.observables:
             v2_out = []
             for i in range(len(ww)):
