@@ -123,7 +123,8 @@ class data:
         """ """
 
         for i in range(len(self.fitsfiles)):
-            hdul = pyfits.open(os.path.join(self.idir, self.fitsfiles[i]))
+            file_path = os.path.join(self.idir, self.fitsfiles[i])
+            hdul = pyfits.open(file_path)
             try:
                 hdul.pop('V2COV')
             except KeyError:
@@ -132,7 +133,7 @@ class data:
                 hdul.pop('CPCOV')
             except KeyError:
                 pass
-            hdul.writeto(os.path.join(self.idir, self.fitsfiles[i]), output_verify='fix', overwrite=True)
+            hdul.writeto(file_path, output_verify='fix', overwrite=True)
 
         pass
 
@@ -175,7 +176,7 @@ class data:
             hdu0.header['EXTNAME'] = 'V2COV'
             hdu0.header['INSNAME'] = self.inst
             hdul += [hdu0]
-            hdul.writeto(odir + self.fitsfiles[i], output_verify='fix', overwrite=True)
+            hdul.writeto(os.path.join(odir, self.fitsfiles[i]), output_verify='fix', overwrite=True)
 
         # plt.imshow(cor, origin='lower')
         # plt.xlabel('Index')
@@ -234,7 +235,7 @@ class data:
             hdu0.header['EXTNAME'] = 'CPCOV'
             hdu0.header['INSNAME'] = self.inst
             hdul += [hdu0]
-            hdul.writeto(odir + self.fitsfiles[i], output_verify='fix', overwrite=True)
+            hdul.writeto(os.path.join(odir, self.fitsfiles[i]), output_verify='fix', overwrite=True)
 
         # plt.imshow(cor, origin='lower')
         # plt.xlabel('Index')
