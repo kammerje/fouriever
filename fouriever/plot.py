@@ -48,23 +48,25 @@ def _save_ofile(ofile, out_id, out_ext=None):
     if (odir != ""):
         os.makedirs(odir, exist_ok=True)
 
-    if ext not in formats_known:
-        # If the specified extension is not valid, default to the one specified and fallback to PDF
-        out_ext = out_ext or "pdf"
-        if ext != "":
-            warnings.warn(
-                f"ofile {ofile} contains extension {ext}, but it is unknown so output extension {out_ext} will be used",
-                category=RuntimeWarning,
-                stacklevel=2
-            )
-    else:
-        # If the extension is valid and no out_ext was specified, use that extension
-        # If an out_ext was specified, it has priority, but we warn user
+    # Figure out extension:
+    # 1. If out_ext is set, it always has precedence
+    # 2. Otherwise, if ofile contains a valid extension
+    # 3. Final fallback is PDF
+    # 4. There are warnings in case of clashes
+    if ext in formats_known:
         if out_ext is None:
             out_ext = ext
         else:
             warnings.warn(
-                f"ofile {ofile} contains extension {ext}, but output extension {out_ext} will be used",
+                f"ofile {ofile} contains known extension {ext}, but output extension {out_ext} will be used",
+                category=RuntimeWarning,
+                stacklevel=2
+            )
+    else:
+        out_ext = out_ext or "pdf"
+        if ext != "":
+            warnings.warn(
+                f"ofile {ofile} contains unknown extension {ext}. Output extension {out_ext} will be used",
                 category=RuntimeWarning,
                 stacklevel=2
             )
