@@ -20,7 +20,7 @@ from . import util
 from .opticstools import opticstools as ot
 
 pa_mtoc = '-'  # model to chip conversion for position angle
-formats_known = ['.pdf', '.png', '.jpg']
+formats_known = ['pdf', 'png', 'jpg']
 
 datacol = 'mediumaquamarine'
 modelcol = 'teal'
@@ -48,8 +48,7 @@ def _save_ofile(ofile, out_id, out_ext=None):
     if (odir != ""):
         os.makedirs(odir, exist_ok=True)
 
-    # TODO: Include dot in ext? Or remove from formats known?
-    if ("." + ext not in formats_known):
+    if ext not in formats_known:
         # If the specified extension is not valid, default to the one specified and fallback to PDF
         out_ext = out_ext or "pdf"
         if ext != "":
