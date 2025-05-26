@@ -35,7 +35,7 @@ observables_known = ['v2', 'cp', 'kp']
 # =============================================================================
 
 class data():
-    
+
     def __init__(self,
                  idir,
                  fitsfiles):
@@ -48,13 +48,13 @@ class data():
             List of fits files which shall be opened. All fits files from
             ``idir`` are opened with ``fitsfiles=None``.
         """
-        
+
         if (fitsfiles is None):
             fitsfiles = glob.glob(idir+'*fits')
             for i, item in enumerate(fitsfiles):
                 head, tail = os.path.split(item)
                 fitsfiles[i] = tail
-        
+
         self.inst_list = []
         self.data_list = []
         for i in range(len(fitsfiles)):
@@ -62,12 +62,12 @@ class data():
                                              fitsfile=fitsfiles[i])
             self.inst_list += inst_list
             self.data_list += data_list
-        
+
         self.set_inst(inst=self.inst_list[0])
         self.set_observables(self.get_observables())
-        
+
         return None
-    
+
     def get_inst(self):
         """
         Returns
@@ -75,9 +75,9 @@ class data():
         inst_list: list of str
             List of instruments from which data was opened.
         """
-        
+
         return self.inst_list
-    
+
     def set_inst(self,
                  inst):
         """
@@ -113,7 +113,7 @@ class data():
                 if (observables_known[i] not in self.data_list[ww[j]][0].keys()):
                     flag = False
                 j += 1
-            if (flag == True):
+            if flag:
                 observables += [observables_known[i]]
         
         return observables
@@ -260,7 +260,7 @@ class data():
         if (step_size is None):
             step_size = smin
         
-        if (cov == False):
+        if not cov:
             print('   Using data covariance = False')
             for i in range(len(data_list)):
                 data_list[i]['covflag'] = False
@@ -274,37 +274,37 @@ class data():
                     if (self.observables[j] == 'v2'):
                         try:
                             covs += [data_list[i]['v2cov']]
-                        except:
+                        except KeyError:
                             covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'cp'):
                         try:
                             covs += [data_list[i]['cpcov']]
-                        except:
+                        except KeyError:
                             covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'kp'):
                         try:
                             covs += [data_list[i]['kpcov']]
-                        except:
+                        except KeyError:
                             covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
                             allcov = False
                             covs += []
                 data_list[i]['cov'] = block_diag(*covs)
                 data_list[i]['icv'] = self.invert(data_list[i]['cov'])
                 data_list[i]['covflag'] = True
-                if (errflag == False):
+                if not errflag:
                     try:
                         rk = np.linalg.matrix_rank(data_list[i]['cov'])
                         sz = data_list[i]['cov'].shape[0]
                         if (rk < sz):
                             errflag = True
                             print('   WARNING: covariance matrix does not have full rank')
-                    except:
+                    except Exception:
                         continue
-            if (allcov == False):
+            if not allcov:
                 print('   WARNING: not all data sets have covariances')
         
         ndof = []
@@ -339,7 +339,7 @@ class data():
                 if (ctr % 100 == 0):
                     sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
                     sys.stdout.flush()
-                if ((np.isnan(grid_ra_dec[0][i, j]) == False) and (np.isnan(grid_ra_dec[1][i, j]) == False)):
+                if ((not np.isnan(grid_ra_dec[0][i, j])) and (not np.isnan(grid_ra_dec[1][i, j]))):
                     p0 = np.array([f0, grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]])
                     ff, fe = util.clin(p0,
                                        data_list,
@@ -446,7 +446,7 @@ class data():
                      searchbox=searchbox,
                      plot_nsigma=plot_nsigma)
         
-        if (save_as_fits == True):
+        if save_as_fits:
             hdu0 = pyfits.PrimaryHDU(pps)
             hdu0.header['EXTNAME'] = 'LINCMAP'
             hdu0.header['MODEL'] = 'bin'
@@ -1224,7 +1224,7 @@ class data():
         if (smear is not None):
             print('   Bandwidth smearing = %.0f' % smear)
         
-        if (cov == False):
+        if not cov:
             print('   Using data covariance = False')
             for i in range(len(data_list)):
                 data_list[i]['covflag'] = False
@@ -1238,37 +1238,37 @@ class data():
                     if (self.observables[j] == 'v2'):
                         try:
                             covs += [data_list[i]['v2cov']]
-                        except:
+                        except KeyError:
                             covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'cp'):
                         try:
                             covs += [data_list[i]['cpcov']]
-                        except:
+                        except KeyError:
                             covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'kp'):
                         try:
                             covs += [data_list[i]['kpcov']]
-                        except:
+                        except KeyError:
                             covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
                             allcov = False
                             covs += []
                 data_list[i]['cov'] = block_diag(*covs)
                 data_list[i]['icv'] = self.invert(data_list[i]['cov'])
                 data_list[i]['covflag'] = True
-                if (errflag == False):
+                if not errflag:
                     try:
                         rk = np.linalg.matrix_rank(data_list[i]['cov'])
                         sz = data_list[i]['cov'].shape[0]
                         if (rk < sz):
                             errflag = True
                             print('   WARNING: covariance matrix does not have full rank')
-                    except:
+                    except Exception:
                         continue
-            if (allcov == False):
+            if not allcov:
                 print('   WARNING: not all data sets have covariances')
         
         ndof = []
@@ -1277,7 +1277,7 @@ class data():
                 ndof += [np.prod(data_list[i][self.observables[j]].shape)]
         ndof = np.sum(ndof)
         
-        if (fixpos == True):
+        if fixpos:
             pc = fit['p'].copy()
             ec = fit['dp'].copy()
             fit['p'] = np.array([fit['p'][0]])
@@ -1305,7 +1305,7 @@ class data():
             if (fit['model'] == 'ud'):
                 emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_ud, args=[data_list, self.observables, cov, smear, temp])
             elif (fit['model'] == 'bin'):
-                if (fixpos == True):
+                if fixpos:
                     emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_bin_fixpos, args=[pc, data_list, self.observables, cov, smear, temp])
                 else:
                     emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_bin, args=[data_list, self.observables, cov, smear, temp])
@@ -1457,7 +1457,7 @@ class data():
             fit['smear'] = smear
             fit['cov'] = str(cov)
         elif (fit['model'] == 'bin'):
-            if (fixpos == True):
+            if fixpos:
                 pp = np.append(pp, pc[1:])
                 pe = np.append(pe, ec[1:])
             chi2 = util.chi2_bin(p0=pp,
@@ -1758,7 +1758,7 @@ class data():
         if (step_size is None):
             step_size = smin
         
-        if (cov == False):
+        if not cov:
             print('   Using data covariance = False')
             for i in range(len(data_list)):
                 data_list[i]['covflag'] = False
@@ -1772,43 +1772,43 @@ class data():
                     if (self.observables[j] == 'v2'):
                         try:
                             covs += [data_list[i]['v2cov']]
-                        except:
+                        except KeyError:
                             covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'cp'):
                         try:
                             covs += [data_list[i]['cpcov']]
-                        except:
+                        except KeyError:
                             covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
                             allcov = False
                             covs += []
                     if (self.observables[j] == 'kp'):
                         try:
                             covs += [data_list[i]['kpcov']]
-                        except:
+                        except KeyError:
                             covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
                             allcov = False
                             covs += []
                 data_list[i]['cov'] = block_diag(*covs)
                 data_list[i]['icv'] = self.invert(data_list[i]['cov'])
                 data_list[i]['covflag'] = True
-                if (errflag == False):
+                if not errflag:
                     try:
                         rk = np.linalg.matrix_rank(data_list[i]['cov'])
                         sz = data_list[i]['cov'].shape[0]
                         if (rk < sz):
                             errflag = True
                             print('   WARNING: covariance matrix does not have full rank')
-                    except:
+                    except Exception:
                         continue
-            if (allcov == False):
+            if not allcov:
                 print('   WARNING: not all data sets have covariances')
         
         klflag = False
         ndof = []
         for i in range(len(data_list)):
-            if (data_list[i]['klflag'] == True):
+            if data_list[i]['klflag']:
                 klflag = True
             for j in range(len(self.observables)):
                 ndof += [np.prod(data_list[i][self.observables[j]].shape)]
@@ -1857,7 +1857,7 @@ class data():
                 if (ctr % 10 == 0):
                     sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
                     sys.stdout.flush()
-                if ((np.isnan(grid_ra_dec[0][i, j]) == False) and (np.isnan(grid_ra_dec[1][i, j]) == False)):
+                if ((not np.isnan(grid_ra_dec[0][i, j])) and (not np.isnan(grid_ra_dec[1][i, j]))):
                     
                     # Absil method.
                     if ('v2' in self.observables):

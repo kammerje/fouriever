@@ -5,7 +5,6 @@ from __future__ import division
 # IMPORTS
 # =============================================================================
 
-import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -13,7 +12,6 @@ import corner as cp
 import matplotlib.gridspec as gridspec
 import matplotlib.patheffects as PathEffects
 import os
-import sys
 
 from scipy.interpolate import Rbf
 
@@ -564,12 +562,12 @@ def lincmap(pps,
     ax[0].set_xlabel('$\Delta$RA [mas]')
     ax[0].set_ylabel('$\Delta$DEC [mas]')
     ax[0].set_title('Linear contrast map')
-    if (plot_nsigma == False):
+    if not plot_nsigma:
         p1 = ax[1].imshow(chi2s/fit['ndof'], cmap='cubehelix', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
     else:
         p1 = ax[1].imshow(nsigmas, cmap='cubehelix_r', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
     c1 = plt.colorbar(p1, ax=ax[1])
-    if (plot_nsigma == False):
+    if not plot_nsigma:
         c1.set_label('$\chi^2$', rotation=270, labelpad=20)
     else:
         c1.set_label('$N_{\sigma}$', rotation=270, labelpad=20)
@@ -592,7 +590,7 @@ def lincmap(pps,
     text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
     ax[1].set_xlabel('$\Delta$RA [mas]')
     ax[1].set_ylabel('$\Delta$DEC [mas]')
-    if (plot_nsigma == False):
+    if not plot_nsigma:
         if (searchbox is None):
             ax[1].set_title('Chi-squared map')
         else:
@@ -771,7 +769,7 @@ def chains(fit,
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
-        if (fixpos == True):
+        if fixpos:
             ylabels = ['$f$ [%]']
             fig = plt.figure(figsize=(6.4, 1.6))
             plt.plot(samples[:, 0]*100., color=datacol)
@@ -893,7 +891,7 @@ def corner(fit,
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
-        if (fixpos == True):
+        if fixpos:
             temp = samples.copy()
             temp[:, 0] *= 100.
             fig = cp.corner(temp,

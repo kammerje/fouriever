@@ -6,12 +6,10 @@ from __future__ import division
 # =============================================================================
 
 import astropy.io.fits as pyfits
-import matplotlib.pyplot as plt
 import numpy as np
 
 import glob
 import os
-import sys
 
 from . import inst
 
@@ -105,7 +103,7 @@ class data():
                 if (observables_known[i] not in self.data_list[ww[j]][0].keys()):
                     flag = False
                 j += 1
-            if (flag == True):
+            if flag:
                 observables += [observables_known[i]]
         
         return observables
@@ -137,11 +135,11 @@ class data():
             hdul = pyfits.open(os.path.join(self.idir, self.fitsfiles[i]))
             try:
                 hdul.pop('V2COV')
-            except:
+            except KeyError:
                 pass
             try:
                 hdul.pop('CPCOV')
-            except:
+            except KeyError:
                 pass
             hdul.writeto(os.path.join(self.idir, self.fitsfiles[i]), output_verify='fix', overwrite=True)
         

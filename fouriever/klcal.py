@@ -6,7 +6,6 @@ from __future__ import division
 # =============================================================================
 
 import astropy.io.fits as pyfits
-import matplotlib.pyplot as plt
 import numpy as np
 
 import glob
@@ -129,7 +128,7 @@ class data():
                 if (observables_known[i] not in self.sci_data_list[ww[j]][0].keys()):
                     flag = False
                 j += 1
-            if (flag == True):
+            if flag:
                 observables += [observables_known[i]]
         
         return observables
@@ -197,7 +196,7 @@ class data():
                         data_temp += [data_list[j][self.observables[i]].flatten()]
                     else:
                         data_temp += [np.nanmean(data_list[j][self.observables[i]], axis=1).flatten()]
-                except:
+                except KeyError:
                     pass
             
             print('   '+self.observables[i]+': '+str(len(data_temp))+' data sets')
@@ -285,7 +284,7 @@ class data():
                                     cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
                                     temp[k] = np.sqrt(np.diag(cov))
                                 hdul['KP-SIGM'].data = temp
-                            except:
+                            except KeyError:
                                 hdul['KP-SIGM'].data = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data).dot(self.P[self.observables[j]].T)
                         elif (len(hdul['KP-SIGM'].data.shape) == 3):
                             try:
@@ -297,7 +296,7 @@ class data():
                                         cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
                                         temp[k, l] = np.sqrt(np.diag(cov))
                                 hdul['KP-SIGM'].data = temp
-                            except:
+                            except KeyError:
                                 temp = np.zeros((hdul['KP-SIGM'].data.shape[0], self.P[self.observables[j]].shape[0], self.P[self.observables[j]].shape[0]))
                                 for k in range(hdul['KP-SIGM'].data.shape[0]):
                                     temp[k] = self.P[self.observables[j]].dot(hdul['KP-SIGM'].data[k]).dot(self.P[self.observables[j]].T)
@@ -323,7 +322,7 @@ class data():
                                         cov = self.P[self.observables[j]].dot(var).dot(self.P[self.observables[j]].T)
                                         temp[k, l] = np.sqrt(np.diag(cov))
                                 hdul['EKP-SIGM'].data = temp
-                        except:
+                        except Exception:
                             pass
                         
                         try:
@@ -340,7 +339,7 @@ class data():
                                     for l in range(hdul['KP-COV'].data.shape[1]):
                                         temp[k, l] = self.P[self.observables[j]].dot(hdul['KP-COV'].data[k, l]).dot(self.P[self.observables[j]].T)
                                 hdul['KP-COV'].data = temp
-                        except:
+                        except Exception:
                             pass
                         
                         try:
@@ -357,7 +356,7 @@ class data():
                                     for l in range(hdul['EKP-COV'].data.shape[1]):
                                         temp[k, l] = self.P[self.observables[j]].dot(hdul['EKP-COV'].data[k, l]).dot(self.P[self.observables[j]].T)
                                 hdul['EKP-COV'].data = temp
-                        except:
+                        except Exception:
                             pass
                 
                 ww = self.scifiles[i].rfind('/')
@@ -554,7 +553,7 @@ class data():
                 sys.stdout.write('\r   File %.0f of %.0f: OIFITS file' % (i+1, Nscifiles))
                 sys.stdout.flush()
                 
-                if (mean == True):
+                if mean:
                     iwl = hdul['OI_WAVELENGTH'].data['EFF_BAND'].shape[0]
                     owl = 1
                     hdu_wl = pyfits.BinTableHDU.from_columns(
@@ -574,7 +573,7 @@ class data():
                         
                         oi_v2_sci += [hdul['OI_VIS2'].data['VIS2DATA']]
                         oi_dv2_sci += [hdul['OI_VIS2'].data['VIS2ERR']]
-                        if (mean == False):
+                        if not mean:
                             hdul['OI_VIS2'].data['VIS2DATA'] = np.true_divide(hdul['OI_VIS2'].data['VIS2DATA'].copy(), np.mean(oi_v2_cal, axis=0))
                             hdul['OI_VIS2'].data['VIS2ERR'] = np.sqrt(hdul['OI_VIS2'].data['VIS2ERR'].copy()**2+(np.mean(oi_dv2_cal, axis=0)/np.sqrt(oi_dv2_cal.shape[0]))**2)
                         else:
@@ -611,7 +610,7 @@ class data():
                         
                         oi_cp_sci += [hdul['OI_T3'].data['T3PHI']]
                         oi_dcp_sci += [hdul['OI_T3'].data['T3PHIERR']]
-                        if (mean == False):
+                        if not mean:
                             hdul['OI_T3'].data['T3PHI'] = hdul['OI_T3'].data['T3PHI'].copy()-np.mean(oi_cp_cal, axis=0)
                             hdul['OI_T3'].data['T3PHIERR'] = np.sqrt(hdul['OI_T3'].data['T3PHIERR'].copy()**2+(np.mean(oi_dcp_cal, axis=0)/np.sqrt(oi_dcp_cal.shape[0]))**2)
                         else:

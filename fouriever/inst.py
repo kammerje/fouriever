@@ -6,12 +6,9 @@ from __future__ import division
 # =============================================================================
 
 import astropy.io.fits as pyfits
-import matplotlib.pyplot as plt
 import numpy as np
 
 import os
-
-from scipy.linalg import block_diag
 
 
 # =============================================================================
@@ -73,22 +70,22 @@ def open(idir,
         raise UserWarning(f'Unknown file type: {idir+fitsfile}')
     hdul.close()
     
-    if (verbose == True):
+    if verbose:
         for i in range(len(inst_list)):
             print('Opened '+inst_list[i]+' data')
             print('   %.0f observations' % len(data_list[i]))
             try:
                 print('   %.0f baselines' % data_list[i][0]['v2'].shape[0])
-            except:
+            except KeyError:
                 None
             try:
                 print('   %.0f triangles' % data_list[i][0]['cp'].shape[0])
-            except:
+            except KeyError:
                 None
             try:
                 print('   %.0f Fourier phases' % data_list[i][0]['kpmat'].shape[1])
                 print('   %.0f kernel phases' % data_list[i][0]['kpmat'].shape[0])
-            except:
+            except KeyError:
                 None
             print('   %.0f wavelengths' % data_list[i][0]['wave'].shape[0])
     
@@ -120,7 +117,7 @@ def open_oifile(hdul):
                 try:
                     data[inst]['wave'] = np.append(data[inst]['wave'], hdul[i].data['EFF_WAVE'], axis=0)
                     data[inst]['dwave'] = np.append(data[inst]['dwave'], hdul[i].data['EFF_BAND'], axis=0)
-                except:
+                except KeyError:
                     if (inst not in data):
                         data[inst] = {}
                     data[inst]['wave'] = hdul[i].data['EFF_WAVE']
@@ -128,7 +125,7 @@ def open_oifile(hdul):
             if (hdul[i].header['EXTNAME'] == 'OI_VIS2'):
                 inst = hdul[i].header['INSNAME']
                 try:
-                    if ((klflag == True) or ('VIS2DATA' in hdul)):
+                    if (klflag or ('VIS2DATA' in hdul)):
                         klflag = True
                         data[inst]['v2'] = np.append(data[inst]['v2'], hdul['VIS2DATA'].data, axis=0)
                         data[inst]['dv2'] = np.append(data[inst]['dv2'], hdul['VIS2ERR'].data, axis=0)
@@ -138,10 +135,10 @@ def open_oifile(hdul):
                     data[inst]['v2u'] = np.append(data[inst]['v2u'], hdul[i].data['UCOORD'], axis=0)
                     data[inst]['v2v'] = np.append(data[inst]['v2v'], hdul[i].data['VCOORD'], axis=0)
                     data[inst]['v2sta'] = np.append(data[inst]['v2sta'], hdul[i].data['STA_INDEX'], axis=0)
-                except:
+                except KeyError:
                     if (inst not in data):
                         data[inst] = {}
-                    if ((klflag == True) or ('VIS2DATA' in hdul)):
+                    if (klflag or ('VIS2DATA' in hdul)):
                         klflag = True
                         data[inst]['v2'] = hdul['VIS2DATA'].data
                         data[inst]['dv2'] = hdul['VIS2ERR'].data
@@ -154,7 +151,7 @@ def open_oifile(hdul):
             if (hdul[i].header['EXTNAME'] == 'OI_T3'):
                 inst = hdul[i].header['INSNAME']
                 try:
-                    if ((klflag == True) or ('T3PHI' in hdul)):
+                    if (klflag or ('T3PHI' in hdul)):
                         klflag = True
                         data[inst]['cp'] = np.append(data[inst]['cp'], np.deg2rad(hdul['T3PHI'].data), axis=0)
                         data[inst]['dcp'] = np.append(data[inst]['dcp'], np.deg2rad(hdul['T3PHIERR'].data), axis=0)
@@ -162,10 +159,10 @@ def open_oifile(hdul):
                         data[inst]['cp'] = np.append(data[inst]['cp'], np.deg2rad(hdul[i].data['T3PHI']), axis=0)
                         data[inst]['dcp'] = np.append(data[inst]['dcp'], np.deg2rad(hdul[i].data['T3PHIERR']), axis=0)
                     data[inst]['cpsta'] = np.append(data[inst]['cpsta'], hdul[i].data['STA_INDEX'], axis=0)
-                except:
+                except KeyError:
                     if (inst not in data):
                         data[inst] = {}
-                    if ((klflag == True) or ('T3PHI' in hdul)):
+                    if (klflag or ('T3PHI' in hdul)):
                         klflag = True
                         data[inst]['cp'] = np.deg2rad(hdul['T3PHI'].data)
                         data[inst]['dcp'] = np.deg2rad(hdul['T3PHIERR'].data)
@@ -177,7 +174,7 @@ def open_oifile(hdul):
                 inst = hdul[i].header['INSNAME']
                 try:
                     data[inst]['v2cov'] = np.append(data[inst]['v2cov'], hdul[i].data, axis=0)
-                except:
+                except KeyError:
                     if (inst not in data):
                         data[inst] = {}
                     data[inst]['v2cov'] = hdul[i].data
@@ -185,11 +182,11 @@ def open_oifile(hdul):
                 inst = hdul[i].header['INSNAME']
                 try:
                     data[inst]['cpcov'] = np.append(data[inst]['cpcov'], hdul[i].data, axis=0)
-                except:
+                except KeyError:
                     if (inst not in data):
                         data[inst] = {}
                     data[inst]['cpcov'] = hdul[i].data
-        except:
+        except Exception:
             continue
     
     inst_list = []
@@ -209,7 +206,7 @@ def open_oifile(hdul):
             data[key]['dcp'] = data[key]['dcp'][:, np.newaxis]
         nbase = np.unique(data[key]['v2sta'], axis=0).shape[0]
         ntria = np.unique(data[key]['cpsta'], axis=0).shape[0]
-        if (klflag == True):
+        if klflag:
             nobs = 1
             if len(np.unique(data[key]['cpsta'])) == 1:
                 is_sampy = True
@@ -226,7 +223,7 @@ def open_oifile(hdul):
         inst_list += [key]
         data_list += [[]]
         for j in range(nobs):
-            if (klflag == True):
+            if klflag:
                 data_list[i] += [{}]
                 data_list[i][j]['wave'] = data[key]['wave'].copy()
                 data_list[i][j]['dwave'] = data[key]['dwave'].copy()
@@ -260,11 +257,11 @@ def open_oifile(hdul):
                 data_list[i][j]['cpsta'] = data[key]['cpsta'][j*ntria:(j+1)*ntria].copy()
             try:
                 data_list[i][j]['v2cov'] = data[key]['v2cov'][j]
-            except:
+            except KeyError:
                 pass
             try:
                 data_list[i][j]['cpcov'] = data[key]['cpcov'][j]
-            except:
+            except KeyError:
                 pass
             cpmat = np.zeros((data_list[i][j]['cpsta'].shape[0], data_list[i][j]['v2sta'].shape[0]))
             for k in range(cpmat.shape[0]):
@@ -275,28 +272,28 @@ def open_oifile(hdul):
                 flag2 = False
                 flag3 = False
                 l = 0
-                while ((flag1 & flag2 & flag3) == False):
+                while not (flag1 & flag2 & flag3):
                     base = data_list[i][j]['v2sta'][l]
-                    if ((flag1 == False) & np.array_equal(base1, base)):
+                    if ((not flag1) & np.array_equal(base1, base)):
                         cpmat[k, l] = 1
                         flag1 = True
-                    elif ((flag2 == False) & np.array_equal(base2, base)):
+                    elif ((not flag2) & np.array_equal(base2, base)):
                         cpmat[k, l] = 1
                         flag2 = True
-                    elif ((flag3 == False) & np.array_equal(base3, base)):
+                    elif ((not flag3) & np.array_equal(base3, base)):
                         cpmat[k, l] = 1
                         flag3 = True
-                    elif ((flag1 == False) & np.array_equal(base1[::-1], base)):
+                    elif ((not flag1) & np.array_equal(base1[::-1], base)):
                         cpmat[k, l] = -1
                         flag1 = True
-                    elif ((flag2 == False) & np.array_equal(base2[::-1], base)):
+                    elif ((not flag2) & np.array_equal(base2[::-1], base)):
                         cpmat[k, l] = -1
                         flag2 = True
-                    elif ((flag3 == False) & np.array_equal(base3[::-1], base)):
+                    elif ((not flag3) & np.array_equal(base3[::-1], base)):
                         cpmat[k, l] = -1
                         flag3 = True
                     l += 1
-            if (is_sampy == True):
+            if is_sampy:
                 cpmat = np.array([[1, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                   [1, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                   [1, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -333,13 +330,13 @@ def open_oifile(hdul):
                                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 1],
                                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 1]])
             data_list[i][j]['cpmat'] = cpmat
-            if (klflag == True):
+            if klflag:
                 data_list[i][j]['v2mat'] = hdul['V2PROJ'].data
                 data_list[i][j]['cpmat'] = np.dot(hdul['CPPROJ'].data, data_list[i][j]['cpmat'])
                 data_list[i][j]['klflag'] = True
             else:
                 data_list[i][j]['klflag'] = False
-            if (is_sampy == True):
+            if is_sampy:
                 data_list[i][j]['diam'] = 6.5
             else:
                 try:
@@ -351,7 +348,7 @@ def open_oifile(hdul):
                         data_list[i][j]['diam'] = 6.5
                     else:
                         raise UserWarning('Telescope not known')
-                except:
+                except KeyError:
                     if ('GRAVITY' in inst_list[i]):
                         data_list[i][j]['diam'] = 8.2
                     elif ('PIONIER' in inst_list[i]):
@@ -388,17 +385,17 @@ def open_kpfile_old(hdul):
     if (len(hdul['KP-DATA'].data.shape) == 1):
         try:
             inst_list = [hdul[0].header['INSTRUME']]
-        except:
+        except KeyError:
             inst_list = [hdul[0].header['CURRINST']]
         data_list = [[{}]]
         try:
             data_list[0][0]['wave'] = np.array([hdul[0].header['HIERARCH ESO INS CWLEN']*1e-6])
-        except:
+        except KeyError:
             data_list[0][0]['wave'] = np.array([hdul[0].header['CWAVEL']])
         data_list[0][0]['dwave'] = np.array([0.])
         try:
             data_list[0][0]['pa'] = np.mean(hdul['TEL'].data['DETPA'])
-        except:
+        except KeyError:
             data_list[0][0]['pa'] = np.mean(hdul['TEL'].data['pa'])
         data_list[0][0]['kp'] = hdul['KP-DATA'].data[:, np.newaxis]
         data_list[0][0]['dkp'] = np.sqrt(np.diag(hdul['KP-SIGM'].data))[:, np.newaxis]
@@ -409,7 +406,7 @@ def open_kpfile_old(hdul):
         data_list[0][0]['vv'] = np.divide(data_list[0][0]['kpv'][:, np.newaxis], data_list[0][0]['wave'][np.newaxis, :])
         try:
             data_list[0][0]['kpcov'] = hdul['KP-SIGM'].data
-        except:
+        except KeyError:
             pass
         data_list[0][0]['klflag'] = False # only relevant for OIFITS files
         data_list[0][0]['kpmat'] = hdul['KER-MAT'].data    
@@ -423,19 +420,19 @@ def open_kpfile_old(hdul):
         nobs = hdul['KP-DATA'].data.shape[0]
         try:
             inst_list = [hdul[0].header['INSTRUME']]
-        except:
+        except KeyError:
             inst_list = [hdul[0].header['CURRINST']]
         data_list = []
         for i in range(nobs):
             temp = {}
             try:
                 temp['wave'] = np.array([hdul[0].header['HIERARCH ESO INS CWLEN']*1e-6])
-            except:
+            except KeyError:
                 temp['wave'] = np.array([hdul[0].header['CWAVEL']])
             temp['dwave'] = np.array([0.])
             try:
                 temp['pa'] = hdul['TEL'].data['DETPA'].copy()[i]
-            except:
+            except KeyError:
                 temp['pa'] = hdul['TEL'].data['pa'].copy()[i]
             temp['kp'] = hdul['KP-DATA'].data.copy()[i, :, np.newaxis]
             temp['dkp'] = np.sqrt(np.diag(hdul['KP-SIGM'].data.copy()[i]))[:, np.newaxis]
@@ -446,7 +443,7 @@ def open_kpfile_old(hdul):
             temp['vv'] = np.divide(temp['kpv'][:, np.newaxis], temp['wave'][np.newaxis, :])
             try:
                 temp['kpcov'] = hdul['KP-SIGM'].data.copy()[i]
-            except:
+            except KeyError:
                 pass
             temp['klflag'] = False # only relevant for OIFITS files
             temp['kpmat'] = hdul['KER-MAT'].data.copy()
@@ -487,16 +484,16 @@ def open_kpfile_new(hdul):
         temp['wave'] = hdul['CWAVEL'].data['CWAVEL']
         try:
             temp['dwave'] = hdul['CWAVEL'].data['DWAVEL']
-        except:
+        except KeyError:
             temp['dwave'] = hdul['CWAVEL'].data['BWIDTH']
         temp['pa'] = hdul['DETPA'].data[i]
         temp['kp'] = np.swapaxes(hdul['KP-DATA'].data.copy()[i], 0, 1)
-        if (ekp == True):
+        if ekp:
             try:
                 temp['dkp'] = np.swapaxes(hdul['EKP-SIGM'].data.copy()[i], 0, 1)
-            except:
+            except KeyError:
                 ekp = False
-        if (ekp == False):
+        if not ekp:
             temp['dkp'] = np.swapaxes(hdul['KP-SIGM'].data.copy()[i], 0, 1)
         temp['kpu'] = -hdul['UV-PLANE'].data['UUC'].copy()
         temp['kpv'] = hdul['UV-PLANE'].data['VVC'].copy()
@@ -504,11 +501,11 @@ def open_kpfile_new(hdul):
         temp['uu'] = np.divide(temp['kpu'][:, np.newaxis], temp['wave'][np.newaxis, :])
         temp['vv'] = np.divide(temp['kpv'][:, np.newaxis], temp['wave'][np.newaxis, :])
         try:
-            if (ekp == True):
+            if ekp:
                 temp['kpcov'] = hdul['EKP-COV'].data.copy()[i, 0]
             else:
                 temp['kpcov'] = hdul['KP-COV'].data.copy()[i, 0]
-        except:
+        except KeyError:
             pass
         temp['klflag'] = False # only relevant for OIFITS files
         temp['kpmat'] = hdul['KER-MAT'].data.copy()

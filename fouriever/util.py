@@ -10,7 +10,6 @@ import mpmath
 import numpy as np
 
 from scipy import stats
-from scipy.interpolate import interp1d
 from scipy.special import j1
 
 
@@ -50,7 +49,7 @@ def get_grid(sep_range,
             Position angle of grid cells (deg).
     """
     
-    if (verbose == True):
+    if verbose:
         print('Computing grid')
     
     nc = int(np.ceil(sep_range[1]/step_size))
@@ -67,7 +66,7 @@ def get_grid(sep_range,
     grid_sep_pa[0][mask] = np.nan
     grid_sep_pa[1][mask] = np.nan
     
-    if (verbose == True):
+    if verbose:
         print('   Min. sep. = %.1f mas' % np.nanmin(grid_sep_pa[0]))
         print('   Max. sep. = %.1f mas' % np.nanmax(grid_sep_pa[0]))
         print('   %.0f non-empty grid cells' % np.sum(np.logical_not(np.isnan(grid_sep_pa[0]))))
@@ -90,7 +89,7 @@ def v2v2(vis,
         Squared visibility amplitude.
     """
     
-    if (data['klflag'] == True):
+    if data['klflag']:
         return np.abs(np.dot(data['v2mat'], vis))**2
     else:
         return np.abs(vis)**2
@@ -201,11 +200,11 @@ def clin(p0,
                                data=data_list[i])/p0[0]]
         sig = np.concatenate(sig).flatten()
         mod = np.concatenate(mod).flatten()
-        if (cov == False):
+        if not cov:
             var = np.concatenate(err).flatten()**2
             mod_icv = np.divide(mod, var)
         else:
-            if (data_list[i]['covflag'] == False):
+            if not data_list[i]['covflag']:
                 var = np.concatenate(err).flatten()**2
                 mod_icv = np.divide(mod, var)
             else:
@@ -305,11 +304,11 @@ def chi2_ud(p0,
         sig = np.concatenate(sig).flatten()
         mod = np.concatenate(mod).flatten()
         res = sig-mod
-        if (cov == False):
+        if not cov:
             var = np.concatenate(err).flatten()**2
             res_icv = np.divide(res, var)
         else:
-            if (data_list[i]['covflag'] == False):
+            if not data_list[i]['covflag']:
                 var = np.concatenate(err).flatten()**2
                 res_icv = np.divide(res, var)
             else:
@@ -481,11 +480,11 @@ def chi2_bin(p0,
             sig = np.concatenate(sig).flatten()
             mod = np.concatenate(mod).flatten()
             res = sig-mod
-            if (cov == False):
+            if not cov:
                 var = np.concatenate(err).flatten()**2
                 res_icv = np.divide(res, var)
             else:
-                if (data_list[i]['covflag'] == False):
+                if not data_list[i]['covflag']:
                     var = np.concatenate(err).flatten()**2
                     res_icv = np.divide(res, var)
                 else:
@@ -538,11 +537,11 @@ def chi2_bin(p0,
             sig = np.concatenate(sig).flatten()
             mod = np.concatenate(mod).flatten()
             res = sig-mod
-            if (cov == False):
+            if not cov:
                 var = np.concatenate(err).flatten()**2
                 res_icv = np.divide(res, var)
             else:
-                if (data_list[i]['covflag'] == False):
+                if not data_list[i]['covflag']:
                     var = np.concatenate(err).flatten()**2
                     res_icv = np.divide(res, var)
                 else:
@@ -766,11 +765,11 @@ def chi2_ud_bin(p0,
         sig = np.concatenate(sig).flatten()
         mod = np.concatenate(mod).flatten()
         res = sig-mod
-        if (cov == False):
+        if not cov:
             var = np.concatenate(err).flatten()**2
             res_icv = np.divide(res, var)
         else:
-            if (data_list[i]['covflag'] == False):
+            if not data_list[i]['covflag']:
                 var = np.concatenate(err).flatten()**2
                 res_icv = np.divide(res, var)
             else:
@@ -904,11 +903,11 @@ def chi2_ud_bin_fitdiamonly(theta0,
         sig = np.concatenate(sig).flatten()
         mod = np.concatenate(mod).flatten()
         res = sig-mod
-        if (cov == False):
+        if not cov:
             var = np.concatenate(err).flatten()**2
             res_icv = np.divide(res, var)
         else:
-            if (data_list[i]['covflag'] == False):
+            if not data_list[i]['covflag']:
                 var = np.concatenate(err).flatten()**2
                 res_icv = np.divide(res, var)
             else:

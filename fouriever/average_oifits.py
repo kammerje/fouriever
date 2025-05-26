@@ -6,11 +6,7 @@ from __future__ import division
 # =============================================================================
 
 import astropy.io.fits as pyfits
-import matplotlib.pyplot as plt
 import numpy as np
-
-from scipy.special import j1
-import scipy.stats as stats
 
 rad2mas = 180./np.pi*3600.*1000. # convert rad to mas
 mas2rad = np.pi/180./3600./1000. # convert mas to rad
