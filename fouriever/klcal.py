@@ -8,9 +8,10 @@ from __future__ import division
 import astropy.io.fits as pyfits
 import numpy as np
 
-import glob
 import os
 import sys
+
+from fouriever.util import glob_fits_files
 
 from . import inst
 
@@ -45,16 +46,10 @@ class data:
         self.calfiles = calfiles
 
         if self.scifiles is None:
-            self.scifiles = glob.glob(self.scidir + '*fits')
-            for i, item in enumerate(self.scifiles):
-                head, tail = os.path.split(item)
-                self.scifiles[i] = tail
+            self.scifiles = glob_fits_files(self.scidir)
 
         if self.calfiles is None:
-            self.calfiles = glob.glob(self.caldir + '*fits')
-            for i, item in enumerate(self.calfiles):
-                head, tail = os.path.split(item)
-                self.calfiles[i] = tail
+            self.calfiles = glob_fits_files(self.caldir)
 
         self.sci_inst_list = []
         self.sci_data_list = []

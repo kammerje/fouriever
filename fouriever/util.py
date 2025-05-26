@@ -5,6 +5,8 @@ from __future__ import division
 # IMPORTS
 # =============================================================================
 
+import os
+import glob
 import warnings
 import mpmath
 import numpy as np
@@ -907,3 +909,9 @@ def nsigma(chi2r_test, chi2r_true, ndof, use_mpmath=False):
     # if (np.isnan(nsigma)):
     #     nsigma = 50.
     # return nsigma
+
+def glob_fits_files(fits_dir):
+    fits_files = glob.glob(os.path.join(fits_dir, '*fits'))
+    for i, item in enumerate(fits_files):
+        fits_files[i] = os.path.basename(item)
+    return fits_files
