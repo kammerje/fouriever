@@ -5,6 +5,7 @@ from __future__ import division
 # IMPORTS
 # =============================================================================
 
+import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -38,7 +39,7 @@ plt.rc('figure', titlesize=18)
 # MAIN
 # =============================================================================
 
-def _save_ofile(ofile, out_id):
+def _save_ofile(ofile, out_id, out_ext=None):
     # ofile is [dir/]prefix where dir is optional
     if (ofile is None):
         return
@@ -46,12 +47,35 @@ def _save_ofile(ofile, out_id):
     stem, ext = os.path.splitext(basename)
     if (odir != ""):
         os.makedirs(odir, exist_ok=True)
+
     # TODO: Include dot in ext? Or remove from formats known?
     if ("." + ext not in formats_known):
-        ext = "pdf"
+        # If the specified extension is not valid, default to the one specified and fallback to PDF
+        out_ext = out_ext or "pdf"
+        if ext != "":
+            warnings.warn(
+                f"ofile {ofile} contains extension {ext}, but it is unknown so output extension {out_ext} will be used",
+                category=RuntimeWarning,
+                stacklevel=2
+            )
+    else:
+        # If the extension is valid and no out_ext was specified, use that extension
+        # If an out_ext was specified, it has priority, but we warn user
+        if out_ext is None:
+            out_ext = ext
+        else:
+            warnings.warn(
+                f"ofile {ofile} contains extension {ext}, but output extension {out_ext} will be used",
+                category=RuntimeWarning,
+                stacklevel=2
+            )
+
     # os.path.join will just ignore odir if it is empty
-    out_path = os.path.join(odir, stem + '_' + out_id + '.' + ext)
-    plt.savefig(out_path)
+    out_path = os.path.join(odir, stem + '_' + out_id + '.' + out_ext)
+    if out_ext == "npy":
+        np.save(out_path)
+    else:
+        plt.savefig(out_path)
 
 
 def v2_ud_base(data_list, fit, smear=None, ofile=None):
@@ -1098,17 +1122,7 @@ def detlim(ffs_absil, ffs_injection, sigma, sep_range, step_size, ofile=None):
     data += [rad * step_size]  # mas
     data += [-2.5 * np.log10(avg)]  # mag
     data = np.array(data)
-    # TODO: Handle with save_ofile
-    if ofile is not None:
-        index = ofile.rfind('/')
-        if index != -1:
-            temp = ofile[:index]
-            if not os.path.exists(temp):
-                os.makedirs(temp)
-        if ofile[-4:] in formats_known:
-            np.save(ofile[:-4] + '_detlim_absil.npy', data)
-        else:
-            np.save(ofile + '_detlim_absil.npy', data)
+    _save_ofile(ofile, "detlim_absil", out_ext="npy")
     rad, avg = ot.azimuthalAverage(ffs_injection, returnradii=True, binsize=1)
     ax.plot(rad * step_size, -2.5 * np.log10(avg), color=colors[1], lw=3, label='Method Injection')
     # ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[1], lw=3, ls='--', label='Method Injection (w/ cov)')
@@ -1116,17 +1130,7 @@ def detlim(ffs_absil, ffs_injection, sigma, sep_range, step_size, ofile=None):
     data += [rad * step_size]  # mas
     data += [-2.5 * np.log10(avg)]  # mag
     data = np.array(data)
-    # TODO: Handle with save_ofile
-    if ofile is not None:
-        index = ofile.rfind('/')
-        if index != -1:
-            temp = ofile[:index]
-            if not os.path.exists(temp):
-                os.makedirs(temp)
-        if ofile[-4:] in formats_known:
-            np.save(ofile[:-4] + '_detlim_injection.npy', data)
-        else:
-            np.save(ofile + '_detlim_injection.npy', data)
+    _save_ofile(ofile, "detlim_injection", out_ext="npy")
 
     # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_X.npy')
     # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_Y.npy')
