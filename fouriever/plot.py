@@ -1080,8 +1080,7 @@ def detlim(ffs_absil, ffs_injection, sigma, sep_range, step_size, ofile=None):
     data += [rad * step_size]  # mas
     data += [-2.5 * np.log10(avg)]  # mag
     data = np.array(data)
-    # TODO: Add data arg
-    util.save_ofile(ofile, "detlim_absil", out_ext="npy")
+    util.save_ofile(ofile, "detlim_absil", data, out_ext="npy")
     rad, avg = ot.azimuthalAverage(ffs_injection, returnradii=True, binsize=1)
     ax.plot(rad * step_size, -2.5 * np.log10(avg), color=colors[1], lw=3, label='Method Injection')
     # ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[1], lw=3, ls='--', label='Method Injection (w/ cov)')
@@ -1089,8 +1088,7 @@ def detlim(ffs_absil, ffs_injection, sigma, sep_range, step_size, ofile=None):
     data += [rad * step_size]  # mas
     data += [-2.5 * np.log10(avg)]  # mag
     data = np.array(data)
-    # TODO: Add data arg
-    util.save_ofile(ofile, "detlim_injection", out_ext="npy")
+    util.save_ofile(ofile, "detlim_injection", data, out_ext="npy")
 
     # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_X.npy')
     # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_Y.npy')
