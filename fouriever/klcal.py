@@ -423,17 +423,9 @@ class data:
                         except Exception:
                             pass
 
-                ww = self.scifiles[i].rfind('/')
-                if ww == -1:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][:-5] + '_klcal.fits'), overwrite=True, output_verify='fix'
-                    )
-                else:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][ww + 1 : -5] + '_klcal.fits'),
-                        overwrite=True,
-                        output_verify='fix',
-                    )
+                file_stem = os.path.splitext(os.path.basename(self.scifiles[i]))[0]
+                out_path = os.path.join(odir, file_stem+'_klcal.fits')
+                hdul.writeto(out_path, overwrite=True, output_verify='fix')
                 hdul.close()
 
             elif ('OI_VIS2' in hdul) and ('OI_T3' in hdul):
@@ -526,17 +518,9 @@ class data:
                                 )
                         hdul += [hdu0, hdu1, hdu2]
 
-                ww = self.scifiles[i].rfind('/')
-                if ww == -1:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][:-7] + '_klcal.oifits'), overwrite=True, output_verify='fix'
-                    )
-                else:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][ww + 1 : -7] + '_klcal.oifits'),
-                        overwrite=True,
-                        output_verify='fix',
-                    )
+                file_stem = os.path.splitext(os.path.basename(self.scifiles[i]))[0]
+                out_path = os.path.join(odir, file_stem+'_klcal.oifits')
+                hdul.writeto(out_path, overwrite=True, output_verify='fix')
                 hdul.close()
 
             else:
@@ -643,13 +627,9 @@ class data:
                             hdul['KP-COV'].data.copy() + np.mean(kp_kpcov_cal, axis=0) / kp_kpcov_cal.shape[0]
                         )
 
-                ww = self.scifiles[i].rfind('/')
-                if ww == -1:
-                    hdul.writeto(odir + self.scifiles[i][:-5] + '_cal.fits', overwrite=True, output_verify='fix')
-                else:
-                    hdul.writeto(
-                        odir + self.scifiles[i][ww + 1 : -5] + '_cal.fits', overwrite=True, output_verify='fix'
-                    )
+                file_stem = os.path.splitext(os.path.basename(self.scifiles[i]))[0]
+                out_path = os.path.join(odir, file_stem+'_cal.fits')
+                hdul.writeto(out_path, overwrite=True, output_verify='fix')
                 hdul.close()
 
             elif ('OI_VIS2' in hdul) and ('OI_T3' in hdul):
@@ -830,17 +810,9 @@ class data:
                             hdul.pop('OI_T3')
                             hdul += [hdu_cp]
 
-                ww = self.scifiles[i].rfind('/')
-                if ww == -1:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][:-7] + '_cal.oifits'), overwrite=True, output_verify='fix'
-                    )
-                else:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][ww + 1 : -7] + '_cal.oifits'),
-                        overwrite=True,
-                        output_verify='fix',
-                    )
+                file_stem = os.path.splitext(os.path.basename(self.scifiles[i]))[0]
+                out_path = os.path.join(odir, file_stem+'_cal.oifits')
+                hdul.writeto(out_path, overwrite=True, output_verify='fix')
                 hdul.close()
 
             else:
