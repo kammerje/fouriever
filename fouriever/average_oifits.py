@@ -19,8 +19,10 @@ pa_mtoc = '-'  # model to chip conversion for position angle
 
 
 def average_single(fitsfile):
-    path = fitsfile.replace('.oifits', '_avg.oifits')
 
+    fitsfile = str(fitsfile)  # In case a Path is passed
+    
+    out_path = fitsfile.replace('.oifits', '_avg.oifits')
     hdul = pyfits.open(fitsfile)
 
     oi_wavelength = pyfits.BinTableHDU.from_columns(
@@ -126,7 +128,7 @@ def average_single(fitsfile):
     hdul.append(oi_wavelength)
     hdul.append(oi_vis2)
     hdul.append(oi_t3)
-    hdul.writeto(path, output_verify='fix', overwrite=True)
+    hdul.writeto(out_path, output_verify='fix', overwrite=True)
     hdul.close()
 
-    return path
+    return out_path
