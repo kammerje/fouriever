@@ -48,10 +48,7 @@ class data:
         """
 
         if fitsfiles is None:
-            fitsfiles = glob.glob(idir + '*fits')
-            for i, item in enumerate(fitsfiles):
-                head, tail = os.path.split(item)
-                fitsfiles[i] = tail
+            fitsfiles = util.glob_fits_files(idir)
 
         self.inst_list = []
         self.data_list = []
