@@ -23,9 +23,9 @@ from . import inst
 from . import plot
 from . import util
 
-rad2mas = 180./np.pi*3600.*1000. # convert rad to mas
-mas2rad = np.pi/180./3600./1000. # convert mas to rad
-pa_mtoc = '-' # model to chip conversion for position angle
+rad2mas = 180.0 / np.pi * 3600.0 * 1000.0  # convert rad to mas
+mas2rad = np.pi / 180.0 / 3600.0 / 1000.0  # convert mas to rad
+pa_mtoc = '-'  # model to chip conversion for position angle
 ftol = 1e-5
 observables_known = ['v2', 'cp', 'kp']
 
@@ -34,11 +34,9 @@ observables_known = ['v2', 'cp', 'kp']
 # MAIN
 # =============================================================================
 
-class data():
 
-    def __init__(self,
-                 idir,
-                 fitsfiles):
+class data:
+    def __init__(self, idir, fitsfiles):
         """
         Parameters
         ----------
@@ -49,8 +47,8 @@ class data():
             ``idir`` are opened with ``fitsfiles=None``.
         """
 
-        if (fitsfiles is None):
-            fitsfiles = glob.glob(idir+'*fits')
+        if fitsfiles is None:
+            fitsfiles = glob.glob(idir + '*fits')
             for i, item in enumerate(fitsfiles):
                 head, tail = os.path.split(item)
                 fitsfiles[i] = tail
@@ -58,8 +56,7 @@ class data():
         self.inst_list = []
         self.data_list = []
         for i in range(len(fitsfiles)):
-            inst_list, data_list = inst.open(idir=idir,
-                                             fitsfile=fitsfiles[i])
+            inst_list, data_list = inst.open(idir=idir, fitsfile=fitsfiles[i])
             self.inst_list += inst_list
             self.data_list += data_list
 
@@ -78,8 +75,7 @@ class data():
 
         return self.inst_list
 
-    def set_inst(self,
-                 inst):
+    def set_inst(self, inst):
         """
         Parameters
         ----------
@@ -87,12 +83,12 @@ class data():
             Instrument which shall be selected.
         """
 
-        if (inst in self.inst_list):
+        if inst in self.inst_list:
             self.inst = inst
-            print('Selected instrument = '+self.inst)
+            print('Selected instrument = ' + self.inst)
             print('   Use self.set_inst(inst) to change the selected instrument')
         else:
-            raise UserWarning(inst+' is an unknown instrument')
+            raise UserWarning(inst + ' is an unknown instrument')
 
         return None
 
@@ -109,8 +105,8 @@ class data():
         for i in range(len(observables_known)):
             j = 0
             flag = True
-            while (j < len(ww) and flag):
-                if (observables_known[i] not in self.data_list[ww[j]][0].keys()):
+            while j < len(ww) and flag:
+                if observables_known[i] not in self.data_list[ww[j]][0].keys():
                     flag = False
                 j += 1
             if flag:
@@ -118,8 +114,7 @@ class data():
 
         return observables
 
-    def set_observables(self,
-                        observables):
+    def set_observables(self, observables):
         """
         Parameters
         ----------
@@ -129,16 +124,15 @@ class data():
 
         observables_valid = self.get_observables()
         for i in range(len(observables)):
-            if (observables[i] not in observables_valid):
-                raise UserWarning(observables[i]+' is not a valid observable for the currently selected instrument')
+            if observables[i] not in observables_valid:
+                raise UserWarning(observables[i] + ' is not a valid observable for the currently selected instrument')
         self.observables = observables
-        print('Selected observables = '+str(self.observables))
+        print('Selected observables = ' + str(self.observables))
         print('   Use self.set_observables(observables) to change the selected observables')
 
         return None
 
-    def invert(self,
-               M):
+    def invert(self, M):
         """
         Parameters
         ----------
@@ -152,23 +146,25 @@ class data():
         """
 
         sx, sy = M.shape
-        if (sx != sy):
+        if sx != sy:
             raise UserWarning('Can only invert square matrices')
         M_inv = np.linalg.pinv(M)
 
         return M_inv
 
-    def lincmap(self,
-                cov=False,
-                sep_range=None,
-                step_size=None,
-                smear=None,
-                vmin=None,
-                vmax=None,
-                ofile=None,
-                save_as_fits=False,
-                searchbox=None,
-                plot_nsigma=False):
+    def lincmap(
+        self,
+        cov=False,
+        sep_range=None,
+        step_size=None,
+        smear=None,
+        vmin=None,
+        vmax=None,
+        ofile=None,
+        save_as_fits=False,
+        searchbox=None,
+        plot_nsigma=False,
+    ):
         """
         Parameters
         ----------
@@ -202,7 +198,7 @@ class data():
             Best fit model parameters.
         """
 
-        if ((len(self.observables) != 1) or ((self.observables[0] != 'cp') and (self.observables[0] != 'kp'))):
+        if (len(self.observables) != 1) or ((self.observables[0] != 'cp') and (self.observables[0] != 'kp')):
             raise UserWarning('Can only compute linear contrast map with closure or kernel phases')
 
         data_list = []
@@ -220,10 +216,14 @@ class data():
                 dmax += [self.data_list[ww[i]][j]['diam']]
                 lmin += [np.min(self.data_list[ww[i]][j]['wave'])]
                 lerr += [np.mean(self.data_list[ww[i]][j]['dwave'])]
-                if (smear is not None):
-                    wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                if smear is not None:
+                    wave = np.zeros((data_list[-1]['wave'].shape[0] * smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                        wave[k * smear : (k + 1) * smear] = np.linspace(
+                            data_list[-1]['wave'][k] - 0.5 * data_list[-1]['dwave'][k],
+                            data_list[-1]['wave'][k] + 0.5 * data_list[-1]['dwave'][k],
+                            smear,
+                        )
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         bmax = np.max(bmax)
@@ -231,21 +231,21 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS', 'ERIS']):
-            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
-            waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
-            diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
-            smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
+        if self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS', 'ERIS']:
+            smin = 0.5 * lmin / bmax * rad2mas  # smallest spatial scale (mas)
+            waveFOV = 5.0 * lmin / bmax * rad2mas  # bandwidth smearing field-of-view (mas)
+            diffFOV = 0.5 * lmin / bmin * rad2mas  # diffraction field-of-view (mas)
+            smax = min(waveFOV, diffFOV)  # largest spatial scale (mas)
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Largest spatial scale = %.1f mas' % smax)
             print('   Minimum baseline = %.2f m' % bmin)
             print('   Maximum baseline = %.2f m' % bmax)
         else:
-            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
-            waveFOV = 0.5*lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
-            diffFOV = 1.2*lmin/dmax*rad2mas # diffraction field-of-view (mas)
-            smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
+            smin = 0.5 * lmin / bmax * rad2mas  # smallest spatial scale (mas)
+            waveFOV = 0.5 * lmin**2 / lerr / bmax * rad2mas  # bandwidth smearing field-of-view (mas)
+            diffFOV = 1.2 * lmin / dmax * rad2mas  # diffraction field-of-view (mas)
+            smax = min(waveFOV, diffFOV)  # largest spatial scale (mas)
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Bandwidth smearing FOV = %.1f mas' % waveFOV)
@@ -253,11 +253,11 @@ class data():
             print('   Largest spatial scale = %.1f mas' % smax)
             print('   Minimum baseline = %.2f m' % bmin)
             print('   Maximum baseline = %.2f m' % bmax)
-        if (smear is not None):
+        if smear is not None:
             print('   Bandwidth smearing = %.0f' % smear)
-        if (sep_range is None):
-            sep_range = (smin, 1.2*smax)
-        if (step_size is None):
+        if sep_range is None:
+            sep_range = (smin, 1.2 * smax)
+        if step_size is None:
             step_size = smin
 
         if not cov:
@@ -271,25 +271,25 @@ class data():
             for i in range(len(data_list)):
                 covs = []
                 for j in range(len(self.observables)):
-                    if (self.observables[j] == 'v2'):
+                    if self.observables[j] == 'v2':
                         try:
                             covs += [data_list[i]['v2cov']]
                         except KeyError:
-                            covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dv2'].flatten() ** 2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 'cp'):
+                    if self.observables[j] == 'cp':
                         try:
                             covs += [data_list[i]['cpcov']]
                         except KeyError:
-                            covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dcp'].flatten() ** 2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 'kp'):
+                    if self.observables[j] == 'kp':
                         try:
                             covs += [data_list[i]['kpcov']]
                         except KeyError:
-                            covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dkp'].flatten() ** 2)]
                             allcov = False
                             covs += []
                 data_list[i]['cov'] = block_diag(*covs)
@@ -299,7 +299,7 @@ class data():
                     try:
                         rk = np.linalg.matrix_rank(data_list[i]['cov'])
                         sz = data_list[i]['cov'].shape[0]
-                        if (rk < sz):
+                        if rk < sz:
                             errflag = True
                             print('   WARNING: covariance matrix does not have full rank')
                     except Exception:
@@ -314,15 +314,11 @@ class data():
         ndof = np.sum(ndof)
 
         thetap = {}
-        thetap['fun'] = util.chi2_bin(p0=np.array([0., 0., 0.]),
-                                      data_list=data_list,
-                                      observables=self.observables,
-                                      cov=cov,
-                                      smear=smear)
+        thetap['fun'] = util.chi2_bin(
+            p0=np.array([0.0, 0.0, 0.0]), data_list=data_list, observables=self.observables, cov=cov, smear=smear
+        )
 
-        grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
-                                                 step_size=step_size,
-                                                 verbose=True)
+        grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range, step_size=step_size, verbose=True)
 
         print('Computing linear contrast map (DO NOT TRUST UNCERTAINTIES)')
         f0 = 1e-4
@@ -336,27 +332,17 @@ class data():
         for i in range(grid_ra_dec[0].shape[0]):
             for j in range(grid_ra_dec[0].shape[1]):
                 ctr += 1
-                if (ctr % 100 == 0):
+                if ctr % 100 == 0:
                     sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
                     sys.stdout.flush()
-                if ((not np.isnan(grid_ra_dec[0][i, j])) and (not np.isnan(grid_ra_dec[1][i, j]))):
+                if (not np.isnan(grid_ra_dec[0][i, j])) and (not np.isnan(grid_ra_dec[1][i, j])):
                     p0 = np.array([f0, grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]])
-                    ff, fe = util.clin(p0,
-                                       data_list,
-                                       self.observables,
-                                       cov,
-                                       smear)
+                    ff, fe = util.clin(p0, data_list, self.observables, cov, smear)
                     p0s += [p0]
                     pps += [np.array([ff, grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]])]
-                    pes += [np.array([fe, 0., 0.])]
-                    chi2s += [util.chi2_bin(pps[-1],
-                                            data_list,
-                                            self.observables,
-                                            cov,
-                                            smear)]
-                    nsigma, _ = util.nsigma(chi2r_test=thetap['fun']/ndof,
-                                            chi2r_true=chi2s[-1]/ndof,
-                                            ndof=ndof)
+                    pes += [np.array([fe, 0.0, 0.0])]
+                    chi2s += [util.chi2_bin(pps[-1], data_list, self.observables, cov, smear)]
+                    nsigma, _ = util.nsigma(chi2r_test=thetap['fun'] / ndof, chi2r_true=chi2s[-1] / ndof, ndof=ndof)
                     nsigmas += [nsigma]
                 else:
                     p0s += [np.array([np.nan, np.nan, np.nan])]
@@ -373,48 +359,50 @@ class data():
         chi2s = np.array(chi2s)
         nsigmas = np.array(nsigmas)
 
-        if (searchbox is None):
-            chi2s[pps[:, 0] < 0.] = np.nan
+        if searchbox is None:
+            chi2s[pps[:, 0] < 0.0] = np.nan
             chi2 = np.nanmin(chi2s)
             pp = pps[np.nanargmin(chi2s)]
             pe = pes[np.nanargmin(chi2s)]
         else:
-            chi2s[pps[:, 0] < 0.] = np.nan
+            chi2s[pps[:, 0] < 0.0] = np.nan
             chi2s_copy = chi2s.copy()
-            if ('RA' in searchbox.keys()):
+            if 'RA' in searchbox.keys():
                 RA = pps[:, 1]
                 chi2s_copy[RA < searchbox['RA'][0]] = np.nan
                 chi2s_copy[RA > searchbox['RA'][1]] = np.nan
-            if ('DEC' in searchbox.keys()):
+            if 'DEC' in searchbox.keys():
                 DEC = pps[:, 2]
                 chi2s_copy[DEC < searchbox['DEC'][0]] = np.nan
                 chi2s_copy[DEC > searchbox['DEC'][1]] = np.nan
-            if ('rho' in searchbox.keys()):
-                rho = np.sqrt(pps[:, 1]**2+pps[:, 2]**2)
+            if 'rho' in searchbox.keys():
+                rho = np.sqrt(pps[:, 1] ** 2 + pps[:, 2] ** 2)
                 chi2s_copy[rho < searchbox['rho'][0]] = np.nan
                 chi2s_copy[rho > searchbox['rho'][1]] = np.nan
-            if ('phi' in searchbox.keys()):
+            if 'phi' in searchbox.keys():
                 phi = np.rad2deg(np.arctan2(pps[:, 1], pps[:, 2]))
                 chi2s_copy[phi < searchbox['phi'][0]] = np.nan
                 chi2s_copy[phi > searchbox['phi'][1]] = np.nan
             chi2 = np.nanmin(chi2s_copy)
             pp = pps[np.nanargmin(chi2s_copy)]
             pe = pes[np.nanargmin(chi2s_copy)]
-        sep = np.sqrt(pp[1]**2+pp[2]**2)
+        sep = np.sqrt(pp[1] ** 2 + pp[2] ** 2)
         pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
-        nsigma, _ = util.nsigma(chi2r_test=thetap['fun']/ndof,
-                                chi2r_true=chi2/ndof,
-                                ndof=ndof)
+        nsigma, _ = util.nsigma(chi2r_test=thetap['fun'] / ndof, chi2r_true=chi2 / ndof, ndof=ndof)
 
-        print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0]*100., pe[0]*100.))
+        print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0] * 100.0, pe[0] * 100.0))
         print('   Best fit companion right ascension = %.1f mas' % pp[1])
         print('   Best fit companion declination = %.1f mas' % pp[2])
         print('   Best fit companion separation = %.1f mas' % sep)
         print('   Best fit companion position angle = %.1f deg' % pa)
-        print('   Best fit red. chi2 = %.3f (bin)' % (chi2/ndof))
+        print('   Best fit red. chi2 = %.3f (bin)' % (chi2 / ndof))
         print('   Significance of companion = %.1f sigma' % nsigma)
-        pps = np.swapaxes(np.swapaxes(pps.reshape((grid_ra_dec[0].shape[0], grid_ra_dec[0].shape[1], pps.shape[1])), 0, 2), 1, 2)
-        pes = np.swapaxes(np.swapaxes(pes.reshape((grid_ra_dec[0].shape[0], grid_ra_dec[0].shape[1], pes.shape[1])), 0, 2), 1, 2)
+        pps = np.swapaxes(
+            np.swapaxes(pps.reshape((grid_ra_dec[0].shape[0], grid_ra_dec[0].shape[1], pps.shape[1])), 0, 2), 1, 2
+        )
+        pes = np.swapaxes(
+            np.swapaxes(pes.reshape((grid_ra_dec[0].shape[0], grid_ra_dec[0].shape[1], pes.shape[1])), 0, 2), 1, 2
+        )
         chi2s = chi2s.reshape(grid_ra_dec[0].shape)
         nsigmas = nsigmas.reshape(grid_ra_dec[0].shape)
 
@@ -422,7 +410,7 @@ class data():
         fit['model'] = 'bin'
         fit['p'] = pp
         fit['dp'] = pe
-        fit['chi2_red'] = chi2/ndof
+        fit['chi2_red'] = chi2 / ndof
         fit['ndof'] = ndof
         fit['nsigma'] = nsigma
         fit['smear'] = smear
@@ -433,18 +421,20 @@ class data():
         fit['nsigmas'] = nsigmas
         fit['radec'] = grid_ra_dec
 
-        plot.lincmap(pps=pps,
-                     pes=pes,
-                     chi2s=chi2s,
-                     nsigmas=nsigmas,
-                     fit=fit,
-                     sep_range=sep_range,
-                     step_size=step_size,
-                     vmin=vmin,
-                     vmax=vmax,
-                     ofile=ofile,
-                     searchbox=searchbox,
-                     plot_nsigma=plot_nsigma)
+        plot.lincmap(
+            pps=pps,
+            pes=pes,
+            chi2s=chi2s,
+            nsigmas=nsigmas,
+            fit=fit,
+            sep_range=sep_range,
+            step_size=step_size,
+            vmin=vmin,
+            vmax=vmax,
+            ofile=ofile,
+            searchbox=searchbox,
+            plot_nsigma=plot_nsigma,
+        )
 
         if save_as_fits:
             hdu0 = pyfits.PrimaryHDU(pps)
@@ -452,7 +442,7 @@ class data():
             hdu0.header['MODEL'] = 'bin'
             hdu0.header['NDOF'] = ndof
             hdu0.header['NSIGMA'] = nsigma
-            if (smear is None):
+            if smear is None:
                 hdu0.header['SMEAR'] = 'None'
             else:
                 hdu0.header['SMEAR'] = smear
@@ -465,21 +455,23 @@ class data():
             hdu3 = pyfits.ImageHDU(nsigmas)
             hdu3.header['EXTNAME'] = 'NSIGMAS'
             hdul = pyfits.HDUList([hdu0, hdu1, hdu2, hdu3])
-            hdul.writeto(ofile+'.fits', output_verify='fix', overwrite=True)
+            hdul.writeto(ofile + '.fits', output_verify='fix', overwrite=True)
             hdul.close()
 
         return fit
 
-    def chi2map(self,
-                model='ud_bin',
-                cov=False,
-                sep_range=None,
-                step_size=None,
-                smear=None,
-                ofile=None,
-                searchbox=None,
-                data_list=None,
-                use_mpmath=False):
+    def chi2map(
+        self,
+        model='ud_bin',
+        cov=False,
+        sep_range=None,
+        step_size=None,
+        smear=None,
+        ofile=None,
+        searchbox=None,
+        data_list=None,
+        use_mpmath=False,
+    ):
         """
         Parameters
         ----------
@@ -540,10 +532,14 @@ class data():
                     dmax += [self.data_list[ww[i]][j]['diam']]
                     lmin += [np.min(self.data_list[ww[i]][j]['wave'])]
                     lerr += [np.mean(self.data_list[ww[i]][j]['dwave'])]
-                    if (smear is not None):
-                        wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                    if smear is not None:
+                        wave = np.zeros((data_list[-1]['wave'].shape[0] * smear))
                         for k in range(data_list[-1]['wave'].shape[0]):
-                            wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                            wave[k * smear : (k + 1) * smear] = np.linspace(
+                                data_list[-1]['wave'][k] - 0.5 * data_list[-1]['dwave'][k],
+                                data_list[-1]['wave'][k] + 0.5 * data_list[-1]['dwave'][k],
+                                smear,
+                            )
                         data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                         data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         else:
@@ -553,10 +549,14 @@ class data():
                 dmax += [data_list[j]['diam']]
                 lmin += [np.min(data_list[j]['wave'])]
                 lerr += [np.mean(data_list[j]['dwave'])]
-                if (smear is not None):
-                    wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                if smear is not None:
+                    wave = np.zeros((data_list[-1]['wave'].shape[0] * smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                        wave[k * smear : (k + 1) * smear] = np.linspace(
+                            data_list[-1]['wave'][k] - 0.5 * data_list[-1]['dwave'][k],
+                            data_list[-1]['wave'][k] + 0.5 * data_list[-1]['dwave'][k],
+                            smear,
+                        )
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         bmax = np.max(bmax)
@@ -569,21 +569,21 @@ class data():
         # Derive FOV and min/max spatial scale information.
         # Will determine separation range for the grid if not specified
         # =============================================================
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS', 'ERIS']):
-            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
-            waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
-            diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
-            smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
+        if self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS', 'ERIS']:
+            smin = 0.5 * lmin / bmax * rad2mas  # smallest spatial scale (mas)
+            waveFOV = 5.0 * lmin / bmax * rad2mas  # bandwidth smearing field-of-view (mas)
+            diffFOV = 0.5 * lmin / bmin * rad2mas  # diffraction field-of-view (mas)
+            smax = min(waveFOV, diffFOV)  # largest spatial scale (mas)
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Largest spatial scale = %.1f mas' % smax)
             print('   Minimum baseline = %.2f m' % bmin)
             print('   Maximum baseline = %.2f m' % bmax)
         else:
-            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
-            waveFOV = 0.5*lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
-            diffFOV = 1.2*lmin/dmax*rad2mas # diffraction field-of-view (mas)
-            smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
+            smin = 0.5 * lmin / bmax * rad2mas  # smallest spatial scale (mas)
+            waveFOV = 0.5 * lmin**2 / lerr / bmax * rad2mas  # bandwidth smearing field-of-view (mas)
+            diffFOV = 1.2 * lmin / dmax * rad2mas  # diffraction field-of-view (mas)
+            smax = min(waveFOV, diffFOV)  # largest spatial scale (mas)
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Bandwidth smearing FOV = %.1f mas' % waveFOV)
@@ -591,11 +591,11 @@ class data():
             print('   Largest spatial scale = %.1f mas' % smax)
             print('   Minimum baseline = %.2f m' % bmin)
             print('   Maximum baseline = %.2f m' % bmax)
-        if (smear is not None):
+        if smear is not None:
             print('   Bandwidth smearing = %.0f' % smear)
-        if (sep_range is None):
-            sep_range = (smin, 1.2*smax)
-        if (step_size is None):
+        if sep_range is None:
+            sep_range = (smin, 1.2 * smax)
+        if step_size is None:
             step_size = smin
 
         # =============================================================
@@ -612,25 +612,25 @@ class data():
             for i in range(len(data_list)):
                 covs = []
                 for j in range(len(self.observables)):
-                    if (self.observables[j] == 'v2'):
+                    if self.observables[j] == 'v2':
                         try:
                             covs += [data_list[i]['v2cov']]
                         except Exception:
-                            covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dv2'].flatten() ** 2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 'cp'):
+                    if self.observables[j] == 'cp':
                         try:
                             covs += [data_list[i]['cpcov']]
                         except Exception:
-                            covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dcp'].flatten() ** 2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 'kp'):
+                    if self.observables[j] == 'kp':
                         try:
                             covs += [data_list[i]['kpcov']]
                         except Exception:
-                            covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dkp'].flatten() ** 2)]
                             allcov = False
                             covs += []
                 data_list[i]['cov'] = block_diag(*covs)
@@ -640,7 +640,7 @@ class data():
                     try:
                         rk = np.linalg.matrix_rank(data_list[i]['cov'])
                         sz = data_list[i]['cov'].shape[0]
-                        if (rk < sz):
+                        if rk < sz:
                             errflag = True
                             print('   WARNING: covariance matrix does not have full rank')
                     except Exception:
@@ -660,48 +660,42 @@ class data():
         # =============================================================
         # Compute best uniform-disk model for chi2 normalization
         # =============================================================
-        if ((model == 'ud') or (model == 'ud_bin')):
+        if (model == 'ud') or (model == 'ud_bin'):
             # If UD is free in model, optimize
-            if ('v2' not in self.observables):
+            if 'v2' not in self.observables:
                 raise UserWarning('Can only fit uniform disk with visibility amplitudes')
             print('Computing best fit uniform disk diameter (DO NOT TRUST UNCERTAINTIES)')
-            theta0 = np.array([1.])
-            thetap = minimize(util.chi2_ud,
-                              theta0,
-                              args=(data_list, self.observables, cov, smear),
-                              method='L-BFGS-B',
-                              bounds=[(0., np.inf)],
-                              tol=ftol,
-                              options={'maxiter': 1000})
-            thetae = np.sqrt(max(1., abs(thetap['fun']))*ftol*np.diag(thetap['hess_inv'].todense()))
+            theta0 = np.array([1.0])
+            thetap = minimize(
+                util.chi2_ud,
+                theta0,
+                args=(data_list, self.observables, cov, smear),
+                method='L-BFGS-B',
+                bounds=[(0.0, np.inf)],
+                tol=ftol,
+                options={'maxiter': 1000},
+            )
+            thetae = np.sqrt(max(1.0, abs(thetap['fun'])) * ftol * np.diag(thetap['hess_inv'].todense()))
             print('   Best fit uniform disk diameter = %.5f +/- %.5f mas' % (thetap['x'][0], thetae))
-            print('   Best fit red. chi2 = %.3f (ud)' % (thetap['fun']/ndof))
+            print('   Best fit red. chi2 = %.3f (ud)' % (thetap['fun'] / ndof))
             fit = {}
             fit['model'] = 'ud'
             fit['p'] = thetap['x']
             fit['dp'] = np.array(thetae)
-            fit['chi2_red'] = thetap['fun']/ndof
+            fit['chi2_red'] = thetap['fun'] / ndof
             fit['ndof'] = ndof
             fit['smear'] = smear
             fit['cov'] = str(cov)
             if klflag:
-                plot.v2_ud(data_list=data_list,
-                             fit=fit,
-                             smear=smear,
-                             ofile=ofile)
+                plot.v2_ud(data_list=data_list, fit=fit, smear=smear, ofile=ofile)
             else:
-                plot.v2_ud_base(data_list=data_list,
-                                  fit=fit,
-                                  smear=smear,
-                                  ofile=ofile)
+                plot.v2_ud_base(data_list=data_list, fit=fit, smear=smear, ofile=ofile)
         else:
             # If UD is not in model, use point-source as reference chi2
             thetap = {}
-            thetap['fun'] = util.chi2_ud(p0=np.array([0.]),
-                                         data_list=data_list,
-                                         observables=self.observables,
-                                         cov=cov,
-                                         smear=smear)
+            thetap['fun'] = util.chi2_ud(
+                p0=np.array([0.0]), data_list=data_list, observables=self.observables, cov=cov, smear=smear
+            )
 
         # =============================================================
         # Chi2 map for binary or binary + uniform disk model
@@ -709,12 +703,10 @@ class data():
         if not ((model == 'bin') or (model == 'ud_bin')):
             raise ValueError(f"Model {model} is not supported for chi2map. Use 'bin' or 'ud_bin'")
 
-        if (('cp' not in self.observables) and ('kp' not in self.observables)):
+        if ('cp' not in self.observables) and ('kp' not in self.observables):
             raise UserWarning('Can only fit companion with closure or kernel phases')
 
-        grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
-                                                    step_size=step_size,
-                                                    verbose=True)
+        grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range, step_size=step_size, verbose=True)
 
         print('Computing chi-squared map (DO NOT TRUST UNCERTAINTIES)')
         f0 = 1e-4  # Initial gues for contrast will be 1e-4 at all points
@@ -731,33 +723,37 @@ class data():
         for i in range(grid_ra_dec[0].shape[0]):
             for j in range(grid_ra_dec[0].shape[1]):
                 ctr += 1
-                if (ctr % 10 == 0):
+                if ctr % 10 == 0:
                     sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
                     sys.stdout.flush()
                 # Ensure current grid point is not nan (i.e. it is within sep range)
                 if (not np.isnan(grid_ra_dec[0][i, j])) and (not np.isnan(grid_ra_dec[1][i, j])):
-                    if (model == 'bin'):
+                    if model == 'bin':
                         # Initial guess for position is current grid point
                         p0 = np.array([f0, grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]])
-                        pp = minimize(util.chi2_bin,
-                                        p0,
-                                        args=(data_list, self.observables, cov, smear),
-                                        method='L-BFGS-B',
-                                        bounds=[(0., 1.), (-np.inf, np.inf), (-np.inf, np.inf)],
-                                        tol=ftol,
-                                        options={'maxiter': 1000})
+                        pp = minimize(
+                            util.chi2_bin,
+                            p0,
+                            args=(data_list, self.observables, cov, smear),
+                            method='L-BFGS-B',
+                            bounds=[(0.0, 1.0), (-np.inf, np.inf), (-np.inf, np.inf)],
+                            tol=ftol,
+                            options={'maxiter': 1000},
+                        )
                     else:
                         p0 = np.array([f0, grid_ra_dec[0][i, j], grid_ra_dec[1][i, j], thetap['x'][0]])
-                        pp = minimize(util.chi2_ud_bin,
-                                        p0,
-                                        args=(data_list, self.observables, cov, smear),
-                                        method='L-BFGS-B',
-                                        bounds=[(0., 1.), (-np.inf, np.inf), (-np.inf, np.inf), (0., np.inf)],
-                                        tol=ftol,
-                                        options={'maxiter': 1000})
+                        pp = minimize(
+                            util.chi2_ud_bin,
+                            p0,
+                            args=(data_list, self.observables, cov, smear),
+                            method='L-BFGS-B',
+                            bounds=[(0.0, 1.0), (-np.inf, np.inf), (-np.inf, np.inf), (0.0, np.inf)],
+                            tol=ftol,
+                            options={'maxiter': 1000},
+                        )
                     p0s += [p0]
                     pps += [pp['x']]
-                    pe = np.sqrt(max(1., abs(pp['fun']))*ftol*np.diag(pp['hess_inv'].todense()))
+                    pe = np.sqrt(max(1.0, abs(pp['fun'])) * ftol * np.diag(pp['hess_inv'].todense()))
                     pes += [pe]
                     chi2s += [pp['fun']]
                 # Regardless of whether this grid point was NaN or not, still store in p0s_all
@@ -778,13 +774,18 @@ class data():
         chi2s_unique = [chi2s[0]]
         dists_unique = []
         for i in range(1, pps.shape[0]):
-            diffs = np.array(pps_unique)-pps[i]
-            dists = np.sqrt(np.sum(diffs[:, 1:3]**2, axis=1))
-            if (model == 'bin'):
-                if (np.sum((dists < 0.5*step_size) & (np.abs(diffs[:, 0]) < 1e-2)) > 0):
+            diffs = np.array(pps_unique) - pps[i]
+            dists = np.sqrt(np.sum(diffs[:, 1:3] ** 2, axis=1))
+            if model == 'bin':
+                if np.sum((dists < 0.5 * step_size) & (np.abs(diffs[:, 0]) < 1e-2)) > 0:
                     continue
             else:
-                if (np.sum((dists < 0.5*step_size) & (np.abs(diffs[:, 0]) < 1e-2) & (np.abs(diffs[:, 3]) < 0.1*smin)) > 0):
+                if (
+                    np.sum(
+                        (dists < 0.5 * step_size) & (np.abs(diffs[:, 0]) < 1e-2) & (np.abs(diffs[:, 3]) < 0.1 * smin)
+                    )
+                    > 0
+                ):
                     continue
             pps_unique += [pps[i]]
             chi2s_unique += [chi2s[i]]
@@ -802,105 +803,98 @@ class data():
         chi2s_sorted = np.sort(chi2s)
         for i in range(len(chi2s_sorted)):
             pp = pps[ww[i]].copy()
-            sep = np.sqrt(pp[1]**2+pp[2]**2)
-            if (sep_range[0] <= sep and sep <= sep_range[1]):
-                if (searchbox is not None):
-                    if ('RA' in searchbox.keys()):
+            sep = np.sqrt(pp[1] ** 2 + pp[2] ** 2)
+            if sep_range[0] <= sep and sep <= sep_range[1]:
+                if searchbox is not None:
+                    if 'RA' in searchbox.keys():
                         RA = pp[1]
-                        if ((RA < searchbox['RA'][0]) or (RA > searchbox['RA'][1])):
+                        if (RA < searchbox['RA'][0]) or (RA > searchbox['RA'][1]):
                             continue
-                    if ('DEC' in searchbox.keys()):
+                    if 'DEC' in searchbox.keys():
                         DEC = pp[2]
-                        if ((DEC < searchbox['DEC'][0]) or (DEC > searchbox['DEC'][1])):
+                        if (DEC < searchbox['DEC'][0]) or (DEC > searchbox['DEC'][1]):
                             continue
-                    if ('rho' in searchbox.keys()):
-                        rho = np.sqrt(pp[1]**2+pp[2]**2)
-                        if ((rho < searchbox['rho'][0]) or (rho > searchbox['rho'][1])):
+                    if 'rho' in searchbox.keys():
+                        rho = np.sqrt(pp[1] ** 2 + pp[2] ** 2)
+                        if (rho < searchbox['rho'][0]) or (rho > searchbox['rho'][1]):
                             continue
-                    if ('rho' in searchbox.keys()):
+                    if 'rho' in searchbox.keys():
                         phi = np.rad2deg(np.arctan2(pp[1], pp[2]))
-                        if ((phi < searchbox['phi'][0]) or (phi > searchbox['phi'][1])):
+                        if (phi < searchbox['phi'][0]) or (phi > searchbox['phi'][1]):
                             continue
                 pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
                 pe = pes[ww[i]].copy()
-                dsep = np.sqrt((pp[1]/sep*pe[1])**2+(pp[2]/sep*pe[2])**2)
-                dpa = np.rad2deg(np.sqrt((pp[2]/sep**2*pe[1])**2+(-pp[1]/sep**2*pe[2])**2))
+                dsep = np.sqrt((pp[1] / sep * pe[1]) ** 2 + (pp[2] / sep * pe[2]) ** 2)
+                dpa = np.rad2deg(np.sqrt((pp[2] / sep**2 * pe[1]) ** 2 + (-pp[1] / sep**2 * pe[2]) ** 2))
                 chi2 = chi2s_sorted[i]
                 break
 
         # Use the best-fit solution to compute confidence level
         # Based on chi2 ratio with a UD model
         try:
-            nsigma, log_bin_prob = util.nsigma(chi2r_test=thetap['fun']/ndof,
-                                                chi2r_true=chi2/ndof,
-                                                ndof=ndof,
-                                                use_mpmath=use_mpmath)
+            nsigma, log_bin_prob = util.nsigma(
+                chi2r_test=thetap['fun'] / ndof, chi2r_true=chi2 / ndof, ndof=ndof, use_mpmath=use_mpmath
+            )
         except Exception:
             raise UserWarning('No local minima inside separation range or search box')
 
-        if (model == 'bin'):
-            print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0]*100., pe[0]*100.))
+        if model == 'bin':
+            print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0] * 100.0, pe[0] * 100.0))
             print('   Best fit companion right ascension = %.1f +/- %.1f mas' % (pp[1], pe[1]))
             print('   Best fit companion declination = %.1f +/- %.1f mas' % (pp[2], pe[2]))
             print('   Best fit companion separation = %.1f +/- %.1f mas' % (sep, dsep))
             print('   Best fit companion position angle = %.1f +/- %.1f deg' % (pa, dpa))
-            print('   Best fit red. chi2 = %.3f (bin)' % (chi2/ndof))
+            print('   Best fit red. chi2 = %.3f (bin)' % (chi2 / ndof))
             print('   Log-probability of companion = %.2e' % log_bin_prob)
             print('   Significance of companion = %.1f sigma' % nsigma)
             fit = {}
             fit['model'] = 'bin'
             fit['p'] = pp
             fit['dp'] = pe
-            fit['chi2_red'] = chi2/ndof
+            fit['chi2_red'] = chi2 / ndof
             fit['ndof'] = ndof
             fit['log_bin_prob'] = log_bin_prob
             fit['nsigma'] = nsigma
             fit['smear'] = smear
             fit['cov'] = str(cov)
             fit['radec'] = grid_ra_dec
-            if ('cp' in self.observables):
-                plot.cp_bin(data_list=data_list,
-                            fit=fit,
-                            smear=smear,
-                            ofile=ofile)
-            if ('kp' in self.observables):
-                plot.kp_bin(data_list=data_list,
-                            fit=fit,
-                            smear=smear,
-                            ofile=ofile)
+            if 'cp' in self.observables:
+                plot.cp_bin(data_list=data_list, fit=fit, smear=smear, ofile=ofile)
+            if 'kp' in self.observables:
+                plot.kp_bin(data_list=data_list, fit=fit, smear=smear, ofile=ofile)
         else:
-            print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0]*100., pe[0]*100.))
+            print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0] * 100.0, pe[0] * 100.0))
             print('   Best fit companion right ascension = %.1f +/- %.1f mas' % (pp[1], pe[1]))
             print('   Best fit companion declination = %.1f +/- %.1f mas' % (pp[2], pe[2]))
             print('   Best fit companion separation = %.1f +/- %.1f mas' % (sep, dsep))
             print('   Best fit companion position angle = %.1f +/- %.1f deg' % (pa, dpa))
             print('   Best fit uniform disk diameter = %.5f +/- %.5f mas' % (pp[3], pe[3]))
-            print('   Best fit red. chi2 = %.3f (ud+bin)' % (chi2/ndof))
+            print('   Best fit red. chi2 = %.3f (ud+bin)' % (chi2 / ndof))
             print('   Significance of companion = %.1f sigma' % nsigma)
             fit = {}
             fit['model'] = 'ud_bin'
             fit['p'] = pp
             fit['dp'] = pe
-            fit['chi2_red'] = chi2/ndof
+            fit['chi2_red'] = chi2 / ndof
             fit['ndof'] = ndof
             fit['nsigma'] = nsigma
             fit['smear'] = smear
             fit['cov'] = str(cov)
             fit['radec'] = grid_ra_dec
-            if ('cp' in self.observables):
-                plot.v2_cp_ud_bin(data_list=data_list,
-                                    fit=fit,
-                                    ofile=ofile)
+            if 'cp' in self.observables:
+                plot.v2_cp_ud_bin(data_list=data_list, fit=fit, ofile=ofile)
 
         # Produce chi2 grid by interpolating the minimization results
         # to a fine regular grid
-        chi2_map, chi2_grid = plot.chi2map(pps_unique=pps_unique,
-                        chi2s_unique=chi2s_unique,
-                        fit=fit,
-                        sep_range=sep_range,
-                        step_size=step_size,
-                        ofile=ofile,
-                        searchbox=searchbox)
+        chi2_map, chi2_grid = plot.chi2map(
+            pps_unique=pps_unique,
+            chi2s_unique=chi2s_unique,
+            fit=fit,
+            sep_range=sep_range,
+            step_size=step_size,
+            ofile=ofile,
+            searchbox=searchbox,
+        )
 
         fit['chi2_map'] = chi2_map
         fit['chi2_grid'] = chi2_grid
@@ -910,27 +904,19 @@ class data():
 
         for i in range(chi2_map.shape[0]):
             for j in range(chi2_map.shape[1]):
-                nsigma_map[i, j], log_prob_map[i, j] = \
-                    util.nsigma(chi2r_test=thetap['fun']/ndof,
-                                chi2r_true=chi2_map[i, j]/ndof,
-                                ndof=ndof,
-                                use_mpmath=use_mpmath)
+                nsigma_map[i, j], log_prob_map[i, j] = util.nsigma(
+                    chi2r_test=thetap['fun'] / ndof, chi2r_true=chi2_map[i, j] / ndof, ndof=ndof, use_mpmath=use_mpmath
+                )
 
         fit['nsigma_map'] = nsigma_map
         fit['log_prob_map'] = log_prob_map
-        fit['chi2r_test'] = thetap['fun']/ndof
+        fit['chi2r_test'] = thetap['fun'] / ndof
 
         return fit
 
-    def chi2map_sub(self,
-                    fit_sub,
-                    model='ud_bin',
-                    cov=False,
-                    sep_range=None,
-                    step_size=None,
-                    smear=None,
-                    ofile=None,
-                    searchbox=None):
+    def chi2map_sub(
+        self, fit_sub, model='ud_bin', cov=False, sep_range=None, step_size=None, smear=None, ofile=None, searchbox=None
+    ):
         """
         Parameters
         ----------
@@ -961,21 +947,29 @@ class data():
             Best fit model parameters.
         """
 
-        print('Subtracting '+fit_sub['model']+' model')
+        print('Subtracting ' + fit_sub['model'] + ' model')
 
         buffer = deepcopy(self.data_list)
 
         ww = np.where(np.array(self.inst_list) == self.inst)[0]
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
-                if (smear is not None):
-                    wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0]*smear))
+                if smear is not None:
+                    wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0] * smear))
                     for k in range(self.data_list[ww[i]][j]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(self.data_list[ww[i]][j]['wave'][k]-0.5*self.data_list[ww[i]][j]['dwave'][k], self.data_list[ww[i]][j]['wave'][k]+0.5*self.data_list[ww[i]][j]['dwave'][k], smear)
-                    self.data_list[ww[i]][j]['uu_smear'] = np.divide(self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :])
-                    self.data_list[ww[i]][j]['vv_smear'] = np.divide(self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+                        wave[k * smear : (k + 1) * smear] = np.linspace(
+                            self.data_list[ww[i]][j]['wave'][k] - 0.5 * self.data_list[ww[i]][j]['dwave'][k],
+                            self.data_list[ww[i]][j]['wave'][k] + 0.5 * self.data_list[ww[i]][j]['dwave'][k],
+                            smear,
+                        )
+                    self.data_list[ww[i]][j]['uu_smear'] = np.divide(
+                        self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :]
+                    )
+                    self.data_list[ww[i]][j]['vv_smear'] = np.divide(
+                        self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :]
+                    )
 
-        if (fit_sub['model'] == 'ud'):
+        if fit_sub['model'] == 'ud':
             print('   No companion data found!')
         else:
             fit_sub_copy = deepcopy(fit_sub)
@@ -987,59 +981,59 @@ class data():
                 p0 = fit_sub_copy['p']
                 dra = p0[1].copy()
                 ddec = p0[2].copy()
-                rho = np.sqrt(dra**2+ddec**2)
+                rho = np.sqrt(dra**2 + ddec**2)
                 phi = np.rad2deg(np.arctan2(dra, ddec))
-                if (pa_mtoc == '-'):
+                if pa_mtoc == '-':
                     phi -= self.data_list[ww[i]][j]['pa']
-                elif (pa_mtoc == '+'):
+                elif pa_mtoc == '+':
                     phi += self.data_list[ww[i]][j]['pa']
                 else:
                     raise UserWarning('Model to chip conversion for position angle not known')
-                phi = ((phi+180.) % 360.)-180.
-                dra_temp = rho*np.sin(np.deg2rad(phi))
-                ddec_temp = rho*np.cos(np.deg2rad(phi))
-                if (fit_sub['model'] == 'bin'):
-                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp]) # w/ companion
-                    vis_bin = util.vis_bin(p0=p0_temp,
-                                           data=self.data_list[ww[i]][j],
-                                           smear=fit_sub['smear'])
-                    p0_temp = np.array([0., dra_temp, ddec_temp]) # w/o companion
-                    vis_ref = util.vis_bin(p0=p0_temp,
-                                           data=self.data_list[ww[i]][j],
-                                           smear=fit_sub['smear'])
+                phi = ((phi + 180.0) % 360.0) - 180.0
+                dra_temp = rho * np.sin(np.deg2rad(phi))
+                ddec_temp = rho * np.cos(np.deg2rad(phi))
+                if fit_sub['model'] == 'bin':
+                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp])  # w/ companion
+                    vis_bin = util.vis_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
+                    p0_temp = np.array([0.0, dra_temp, ddec_temp])  # w/o companion
+                    vis_ref = util.vis_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
                 else:
-                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()]) # w/ companion
-                    vis_bin = util.vis_ud_bin(p0=p0_temp,
-                                              data=self.data_list[ww[i]][j],
-                                              smear=fit_sub['smear'])
-                    p0_temp = np.array([0., dra_temp, ddec_temp, p0[3].copy()]) # w/o companion
-                    vis_ref = util.vis_ud_bin(p0=p0_temp,
-                                              data=self.data_list[ww[i]][j],
-                                              smear=fit_sub['smear'])
+                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()])  # w/ companion
+                    vis_bin = util.vis_ud_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
+                    p0_temp = np.array([0.0, dra_temp, ddec_temp, p0[3].copy()])  # w/o companion
+                    vis_ref = util.vis_ud_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
 
-                if ('v2' in self.observables):
-                    self.data_list[ww[i]][j]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=self.data_list[ww[i]][j])-util.v2v2(vis_ref, data=self.data_list[ww[i]][j]))
-                if ('cp' in self.observables):
-                    self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
-                if ('kp' in self.observables):
-                    self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
+                if 'v2' in self.observables:
+                    self.data_list[ww[i]][j]['v2'] += np.sign(p0[0]) * (
+                        util.v2v2(vis_bin, data=self.data_list[ww[i]][j])
+                        - util.v2v2(vis_ref, data=self.data_list[ww[i]][j])
+                    )
+                if 'cp' in self.observables:
+                    self.data_list[ww[i]][j]['cp'] += np.sign(p0[0]) * (
+                        util.v2cp(vis_bin, data=self.data_list[ww[i]][j])
+                        - util.v2cp(vis_ref, data=self.data_list[ww[i]][j])
+                    )
+                if 'kp' in self.observables:
+                    self.data_list[ww[i]][j]['kp'] += np.sign(p0[0]) * (
+                        util.v2kp(vis_bin, data=self.data_list[ww[i]][j])
+                        - util.v2kp(vis_ref, data=self.data_list[ww[i]][j])
+                    )
 
-        fit = self.chi2map(model=model,
-                           cov=cov,
-                           sep_range=sep_range,
-                           step_size=step_size,
-                           smear=smear,
-                           ofile=ofile,
-                           searchbox=searchbox)
+        fit = self.chi2map(
+            model=model,
+            cov=cov,
+            sep_range=sep_range,
+            step_size=step_size,
+            smear=smear,
+            ofile=ofile,
+            searchbox=searchbox,
+        )
 
         self.data_list = buffer
 
         return fit
 
-    def save_sub(self,
-                 fit_sub,
-                 smear=None,
-                 ofile=None):
+    def save_sub(self, fit_sub, smear=None, ofile=None):
         """
         Parameters
         ----------
@@ -1056,21 +1050,29 @@ class data():
             Best fit model parameters.
         """
 
-        print('Subtracting '+fit_sub['model']+' model')
+        print('Subtracting ' + fit_sub['model'] + ' model')
 
         buffer = deepcopy(self.data_list)
 
         ww = np.where(np.array(self.inst_list) == self.inst)[0]
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
-                if (smear is not None):
-                    wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0]*smear))
+                if smear is not None:
+                    wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0] * smear))
                     for k in range(self.data_list[ww[i]][j]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(self.data_list[ww[i]][j]['wave'][k]-0.5*self.data_list[ww[i]][j]['dwave'][k], self.data_list[ww[i]][j]['wave'][k]+0.5*self.data_list[ww[i]][j]['dwave'][k], smear)
-                    self.data_list[ww[i]][j]['uu_smear'] = np.divide(self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :])
-                    self.data_list[ww[i]][j]['vv_smear'] = np.divide(self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+                        wave[k * smear : (k + 1) * smear] = np.linspace(
+                            self.data_list[ww[i]][j]['wave'][k] - 0.5 * self.data_list[ww[i]][j]['dwave'][k],
+                            self.data_list[ww[i]][j]['wave'][k] + 0.5 * self.data_list[ww[i]][j]['dwave'][k],
+                            smear,
+                        )
+                    self.data_list[ww[i]][j]['uu_smear'] = np.divide(
+                        self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :]
+                    )
+                    self.data_list[ww[i]][j]['vv_smear'] = np.divide(
+                        self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :]
+                    )
 
-        if (fit_sub['model'] == 'ud'):
+        if fit_sub['model'] == 'ud':
             print('   No companion data found!')
         else:
             fit_sub_copy = deepcopy(fit_sub)
@@ -1082,81 +1084,84 @@ class data():
                 p0 = fit_sub_copy['p']
                 dra = p0[1].copy()
                 ddec = p0[2].copy()
-                rho = np.sqrt(dra**2+ddec**2)
+                rho = np.sqrt(dra**2 + ddec**2)
                 phi = np.rad2deg(np.arctan2(dra, ddec))
-                if (pa_mtoc == '-'):
+                if pa_mtoc == '-':
                     phi -= self.data_list[ww[i]][j]['pa']
-                elif (pa_mtoc == '+'):
+                elif pa_mtoc == '+':
                     phi += self.data_list[ww[i]][j]['pa']
                 else:
                     raise UserWarning('Model to chip conversion for position angle not known')
-                phi = ((phi+180.) % 360.)-180.
-                dra_temp = rho*np.sin(np.deg2rad(phi))
-                ddec_temp = rho*np.cos(np.deg2rad(phi))
-                if (fit_sub['model'] == 'bin'):
-                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp]) # w/ companion
-                    vis_bin = util.vis_bin(p0=p0_temp,
-                                           data=self.data_list[ww[i]][j],
-                                           smear=fit_sub['smear'])
-                    p0_temp = np.array([0., dra_temp, ddec_temp]) # w/o companion
-                    vis_ref = util.vis_bin(p0=p0_temp,
-                                           data=self.data_list[ww[i]][j],
-                                           smear=fit_sub['smear'])
+                phi = ((phi + 180.0) % 360.0) - 180.0
+                dra_temp = rho * np.sin(np.deg2rad(phi))
+                ddec_temp = rho * np.cos(np.deg2rad(phi))
+                if fit_sub['model'] == 'bin':
+                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp])  # w/ companion
+                    vis_bin = util.vis_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
+                    p0_temp = np.array([0.0, dra_temp, ddec_temp])  # w/o companion
+                    vis_ref = util.vis_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
                 else:
-                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()]) # w/ companion
-                    vis_bin = util.vis_ud_bin(p0=p0_temp,
-                                              data=self.data_list[ww[i]][j],
-                                              smear=fit_sub['smear'])
-                    p0_temp = np.array([0., dra_temp, ddec_temp, p0[3].copy()]) # w/o companion
-                    vis_ref = util.vis_ud_bin(p0=p0_temp,
-                                              data=self.data_list[ww[i]][j],
-                                              smear=fit_sub['smear'])
+                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()])  # w/ companion
+                    vis_bin = util.vis_ud_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
+                    p0_temp = np.array([0.0, dra_temp, ddec_temp, p0[3].copy()])  # w/o companion
+                    vis_ref = util.vis_ud_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
 
-                if ('v2' in self.observables):
-                    self.data_list[ww[i]][j]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=self.data_list[ww[i]][j])-util.v2v2(vis_ref, data=self.data_list[ww[i]][j]))
-                if ('cp' in self.observables):
-                    self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
-                if ('kp' in self.observables):
-                    self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
+                if 'v2' in self.observables:
+                    self.data_list[ww[i]][j]['v2'] += np.sign(p0[0]) * (
+                        util.v2v2(vis_bin, data=self.data_list[ww[i]][j])
+                        - util.v2v2(vis_ref, data=self.data_list[ww[i]][j])
+                    )
+                if 'cp' in self.observables:
+                    self.data_list[ww[i]][j]['cp'] += np.sign(p0[0]) * (
+                        util.v2cp(vis_bin, data=self.data_list[ww[i]][j])
+                        - util.v2cp(vis_ref, data=self.data_list[ww[i]][j])
+                    )
+                if 'kp' in self.observables:
+                    self.data_list[ww[i]][j]['kp'] += np.sign(p0[0]) * (
+                        util.v2kp(vis_bin, data=self.data_list[ww[i]][j])
+                        - util.v2kp(vis_ref, data=self.data_list[ww[i]][j])
+                    )
 
-        if ('v2' in self.observables):
+        if 'v2' in self.observables:
             v2_out = []
             for i in range(len(ww)):
                 for j in range(len(self.data_list[ww[i]])):
                     v2_out += [self.data_list[ww[i]][j]['v2']]
             v2_out = np.concatenate(v2_out)
-            np.save(ofile+'_v2', v2_out)
-        if ('cp' in self.observables):
+            np.save(ofile + '_v2', v2_out)
+        if 'cp' in self.observables:
             cp_out = []
             for i in range(len(ww)):
                 for j in range(len(self.data_list[ww[i]])):
                     cp_out += [self.data_list[ww[i]][j]['cp']]
             cp_out = np.concatenate(cp_out)
-            np.save(ofile+'_cp', cp_out)
-        if ('kp' in self.observables):
+            np.save(ofile + '_cp', cp_out)
+        if 'kp' in self.observables:
             kp_out = []
             for i in range(len(ww)):
                 for j in range(len(self.data_list[ww[i]])):
                     kp_out += [self.data_list[ww[i]][j]['kp']]
             kp_out = np.concatenate(kp_out)
-            np.save(ofile+'_kp', kp_out)
+            np.save(ofile + '_kp', kp_out)
 
         self.data_list = buffer
 
         return None
 
-    def mcmc(self,
-             fit,
-             temp=1.,
-             nburn=250,
-             nstep=5000,
-             nwalkers=None,
-             n_live_points=1000,
-             sampler='emcee',
-             cov=False,
-             smear=None,
-             ofile=None,
-             fixpos=False):
+    def mcmc(
+        self,
+        fit,
+        temp=1.0,
+        nburn=250,
+        nstep=5000,
+        nwalkers=None,
+        n_live_points=1000,
+        sampler='emcee',
+        cov=False,
+        smear=None,
+        ofile=None,
+        fixpos=False,
+    ):
         """
         Parameters
         ----------
@@ -1195,18 +1200,18 @@ class data():
             Best fit model parameters.
         """
 
-        if (fit['model'] == 'ud'):
-            if ('v2' not in self.observables):
+        if fit['model'] == 'ud':
+            if 'v2' not in self.observables:
                 raise UserWarning('Can only fit uniform disk with visibility amplitudes')
             print('Computing best fit uniform disk diameter (UNCERTAINTIES FROM MCMC)')
-        elif (fit['model'] == 'bin'):
-            if (('cp' not in self.observables) and ('kp' not in self.observables)):
+        elif fit['model'] == 'bin':
+            if ('cp' not in self.observables) and ('kp' not in self.observables):
                 raise UserWarning('Can only fit companion with closure or kernel phases')
             print('Computing best fit companion parameters (UNCERTAINTIES FROM MCMC)')
         else:
-            if ('v2' not in self.observables):
+            if 'v2' not in self.observables:
                 raise UserWarning('Can only fit uniform disk with visibility amplitudes')
-            if (('cp' not in self.observables) and ('kp' not in self.observables)):
+            if ('cp' not in self.observables) and ('kp' not in self.observables):
                 raise UserWarning('Can only fit companion with closure or kernel phases')
             print('Computing best fit uniform disk and companion parameters (UNCERTAINTIES FROM MCMC)')
 
@@ -1215,13 +1220,17 @@ class data():
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
                 data_list += [deepcopy(self.data_list[ww[i]][j])]
-                if (smear is not None):
-                    wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                if smear is not None:
+                    wave = np.zeros((data_list[-1]['wave'].shape[0] * smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                        wave[k * smear : (k + 1) * smear] = np.linspace(
+                            data_list[-1]['wave'][k] - 0.5 * data_list[-1]['dwave'][k],
+                            data_list[-1]['wave'][k] + 0.5 * data_list[-1]['dwave'][k],
+                            smear,
+                        )
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
-        if (smear is not None):
+        if smear is not None:
             print('   Bandwidth smearing = %.0f' % smear)
 
         if not cov:
@@ -1235,25 +1244,25 @@ class data():
             for i in range(len(data_list)):
                 covs = []
                 for j in range(len(self.observables)):
-                    if (self.observables[j] == 'v2'):
+                    if self.observables[j] == 'v2':
                         try:
                             covs += [data_list[i]['v2cov']]
                         except KeyError:
-                            covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dv2'].flatten() ** 2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 'cp'):
+                    if self.observables[j] == 'cp':
                         try:
                             covs += [data_list[i]['cpcov']]
                         except KeyError:
-                            covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dcp'].flatten() ** 2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 'kp'):
+                    if self.observables[j] == 'kp':
                         try:
                             covs += [data_list[i]['kpcov']]
                         except KeyError:
-                            covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dkp'].flatten() ** 2)]
                             allcov = False
                             covs += []
                 data_list[i]['cov'] = block_diag(*covs)
@@ -1263,7 +1272,7 @@ class data():
                     try:
                         rk = np.linalg.matrix_rank(data_list[i]['cov'])
                         sz = data_list[i]['cov'].shape[0]
-                        if (rk < sz):
+                        if rk < sz:
                             errflag = True
                             print('   WARNING: covariance matrix does not have full rank')
                     except Exception:
@@ -1283,34 +1292,42 @@ class data():
             fit['p'] = np.array([fit['p'][0]])
             fit['dp'] = np.array([fit['dp'][0]])
 
-        if (temp is None):
+        if temp is None:
             temp = fit['chi2_red']
         ndim = len(fit['p'])
         if nwalkers is None:
-            nwalkers = (ndim+1)*2
+            nwalkers = (ndim + 1) * 2
         scale = []
         for i in range(len(fit['p'])):
-            if (fit['dp'][i]/fit['p'][i] <= 0.05):
+            if fit['dp'][i] / fit['p'][i] <= 0.05:
                 scale += [fit['dp'][i]]
             else:
-                scale += [0.05*fit['p'][i]]
+                scale += [0.05 * fit['p'][i]]
         scale = np.array(scale)
 
         print('   Covariance inflation factor = %.3f' % temp)
         print('   This may take a few minutes')
 
-        if (sampler == 'emcee'):
+        if sampler == 'emcee':
             p0 = [np.random.normal(loc=fit['p'], scale=scale) for i in range(nwalkers)]
 
-            if (fit['model'] == 'ud'):
-                emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_ud, args=[data_list, self.observables, cov, smear, temp])
-            elif (fit['model'] == 'bin'):
+            if fit['model'] == 'ud':
+                emcee_sampler = emcee.EnsembleSampler(
+                    nwalkers, ndim, util.lnprob_ud, args=[data_list, self.observables, cov, smear, temp]
+                )
+            elif fit['model'] == 'bin':
                 if fixpos:
-                    emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_bin_fixpos, args=[pc, data_list, self.observables, cov, smear, temp])
+                    emcee_sampler = emcee.EnsembleSampler(
+                        nwalkers, ndim, util.lnprob_bin_fixpos, args=[pc, data_list, self.observables, cov, smear, temp]
+                    )
                 else:
-                    emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_bin, args=[data_list, self.observables, cov, smear, temp])
+                    emcee_sampler = emcee.EnsembleSampler(
+                        nwalkers, ndim, util.lnprob_bin, args=[data_list, self.observables, cov, smear, temp]
+                    )
             else:
-                emcee_sampler = emcee.EnsembleSampler(nwalkers, ndim, util.lnprob_ud_bin, args=[data_list, self.observables, cov, smear, temp])
+                emcee_sampler = emcee.EnsembleSampler(
+                    nwalkers, ndim, util.lnprob_ud_bin, args=[data_list, self.observables, cov, smear, temp]
+                )
 
             pos, prob, state = emcee_sampler.run_mcmc(p0, nburn)
             emcee_sampler.reset()
@@ -1318,7 +1335,7 @@ class data():
             samples = emcee_sampler.get_chain(flat=True)
             ln_z = None
 
-        elif (sampler == 'multinest'):
+        elif sampler == 'multinest':
             # Import here because it will otherwise give a
             # warning if the compiled MultiNest library is
             # not found when importing fouriever
@@ -1327,6 +1344,7 @@ class data():
             # Get the MPI rank of the process
             try:
                 from mpi4py import MPI
+
                 mpi_rank = MPI.COMM_WORLD.Get_rank()
             except ModuleNotFoundError:
                 mpi_rank = 0
@@ -1334,7 +1352,7 @@ class data():
             # Create the output folder if required
             output_folder = './multinest/'
 
-            if (mpi_rank == 0 and not os.path.exists(output_folder)):
+            if mpi_rank == 0 and not os.path.exists(output_folder):
                 os.mkdir(output_folder)
 
             # Set uniform prior boundaries with respect
@@ -1343,13 +1361,13 @@ class data():
             for i, item in enumerate(fit['p']):
                 if i == (len(fit['p']) - 2):
                     # RA range (mas)
-                    prior_bounds.append((item-20., item+20.))
+                    prior_bounds.append((item - 20.0, item + 20.0))
                 elif i == (len(fit['p']) - 1):
                     # Dec range (mas)
-                    prior_bounds.append((item-20., item+20.))
+                    prior_bounds.append((item - 20.0, item + 20.0))
                 else:
                     # Contrast range
-                    prior_bounds.append((0., 1.))
+                    prior_bounds.append((0.0, 1.0))
 
             def lnprior_multinest(cube, n_dim, n_param):
                 """
@@ -1369,7 +1387,7 @@ class data():
                 """
 
                 for i in range(n_param):
-                    cube[i] = (prior_bounds[i][0] + (prior_bounds[i][1] - prior_bounds[i][0]) * cube[i])
+                    cube[i] = prior_bounds[i][0] + (prior_bounds[i][1] - prior_bounds[i][0]) * cube[i]
 
                 return cube
 
@@ -1394,10 +1412,10 @@ class data():
                 for i in range(n_param):
                     params[i] = cube[i]
 
-                if (fit['model'] == 'ud'):
+                if fit['model'] == 'ud':
                     return util.lnprob_ud(params, data_list, self.observables, cov=cov, smear=smear, temp=temp)
 
-                elif (fit['model'] == 'bin'):
+                elif fit['model'] == 'bin':
                     return util.lnprob_bin(params, data_list, self.observables, cov=cov, smear=smear, temp=temp)
 
                 else:
@@ -1417,121 +1435,99 @@ class data():
             samples = analyzer.get_equal_weighted_posterior()
 
             # Nested sampling global log-evidence
-            ln_z = sampling_stats["nested importance sampling global log-evidence"]
-            ln_z_error = sampling_stats["nested importance sampling global log-evidence error"]
-            print(f"   Log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
+            ln_z = sampling_stats['nested importance sampling global log-evidence']
+            ln_z_error = sampling_stats['nested importance sampling global log-evidence error']
+            print(f'   Log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
 
             ln_prob = samples[:, -1]
             samples = samples[:, :-1]
 
-        if (sampler == 'emcee'):
-            plot.chains(fit=fit,
-                        samples=samples,
-                        ofile=ofile,
-                        fixpos=fixpos)
+        if sampler == 'emcee':
+            plot.chains(fit=fit, samples=samples, ofile=ofile, fixpos=fixpos)
 
         if ofile is not None:
-            plot.corner(fit=fit,
-                        samples=samples,
-                        ofile=ofile,
-                        fixpos=fixpos)
+            plot.corner(fit=fit, samples=samples, ofile=ofile, fixpos=fixpos)
 
-        pp = np.percentile(samples, 50., axis=0)
-        pu = np.percentile(samples, 84., axis=0)-pp
-        pl = pp-np.percentile(samples, 16., axis=0)
+        pp = np.percentile(samples, 50.0, axis=0)
+        pu = np.percentile(samples, 84.0, axis=0) - pp
+        pl = pp - np.percentile(samples, 16.0, axis=0)
         pe = np.mean(np.vstack((pu, pl)), axis=0)
-        if (fit['model'] == 'ud'):
-            chi2 = util.chi2_ud(p0=pp,
-                                data_list=data_list,
-                                observables=self.observables,
-                                cov=cov,
-                                smear=smear)
+        if fit['model'] == 'ud':
+            chi2 = util.chi2_ud(p0=pp, data_list=data_list, observables=self.observables, cov=cov, smear=smear)
             print('   Best fit uniform disk diameter = %.5f +/- %.5f mas' % (pp[0], pe[0]))
-            print('   Best fit red. chi2 = %.3f (ud)' % (chi2/ndof))
+            print('   Best fit red. chi2 = %.3f (ud)' % (chi2 / ndof))
             fit = {}
             fit['model'] = 'ud'
             fit['p'] = pp
             fit['dp'] = pe
-            fit['chi2_red'] = chi2/ndof
+            fit['chi2_red'] = chi2 / ndof
             fit['ndof'] = ndof
             fit['smear'] = smear
             fit['cov'] = str(cov)
-        elif (fit['model'] == 'bin'):
+        elif fit['model'] == 'bin':
             if fixpos:
                 pp = np.append(pp, pc[1:])
                 pe = np.append(pe, ec[1:])
-            chi2 = util.chi2_bin(p0=pp,
-                                 data_list=data_list,
-                                 observables=self.observables,
-                                 cov=cov,
-                                 smear=smear)
-            chi2_test = util.chi2_ud(p0=np.array([0.]),
-                                     data_list=data_list,
-                                     observables=self.observables,
-                                     cov=cov,
-                                     smear=smear)
-            nsigma, _ = util.nsigma(chi2r_test=chi2_test/ndof,
-                                    chi2r_true=chi2/ndof,
-                                    ndof=ndof)
-            sep = np.sqrt(pp[-2]**2+pp[-1]**2)
+            chi2 = util.chi2_bin(p0=pp, data_list=data_list, observables=self.observables, cov=cov, smear=smear)
+            chi2_test = util.chi2_ud(
+                p0=np.array([0.0]), data_list=data_list, observables=self.observables, cov=cov, smear=smear
+            )
+            nsigma, _ = util.nsigma(chi2r_test=chi2_test / ndof, chi2r_true=chi2 / ndof, ndof=ndof)
+            sep = np.sqrt(pp[-2] ** 2 + pp[-1] ** 2)
             pa = np.rad2deg(np.arctan2(pp[-2], pp[-1]))
-            dsep = np.sqrt((pp[-2]/sep*pe[-2])**2+(pp[-1]/sep*pe[-1])**2)
-            dpa = np.rad2deg(np.sqrt((pp[-1]/sep**2*pe[-2])**2+(-pp[-2]/sep**2*pe[-1])**2))
-            print('   Best fit companion flux = %.3f +/- %.3f %%' % (np.mean(pp[:-2])*100., np.mean(pe[:-2])*100.))
+            dsep = np.sqrt((pp[-2] / sep * pe[-2]) ** 2 + (pp[-1] / sep * pe[-1]) ** 2)
+            dpa = np.rad2deg(np.sqrt((pp[-1] / sep**2 * pe[-2]) ** 2 + (-pp[-2] / sep**2 * pe[-1]) ** 2))
+            print(
+                '   Best fit companion flux = %.3f +/- %.3f %%' % (np.mean(pp[:-2]) * 100.0, np.mean(pe[:-2]) * 100.0)
+            )
             print('   Best fit companion right ascension = %.1f +/- %.1f mas' % (pp[-2], pe[-2]))
             print('   Best fit companion declination = %.1f +/- %.1f mas' % (pp[-1], pe[-1]))
             print('   Best fit companion separation = %.1f +/- %.1f mas' % (sep, dsep))
             print('   Best fit companion position angle = %.1f +/- %.1f deg' % (pa, dpa))
-            print('   Best fit red. chi2 = %.3f (bin)' % (chi2/ndof))
+            print('   Best fit red. chi2 = %.3f (bin)' % (chi2 / ndof))
             print('   Significance of companion = %.1f sigma' % nsigma)
             fit = {}
             fit['model'] = 'bin'
             fit['p'] = pp
             fit['dp'] = pe
-            fit['chi2_red'] = chi2/ndof
+            fit['chi2_red'] = chi2 / ndof
             fit['ndof'] = ndof
             fit['nsigma'] = nsigma
             fit['smear'] = smear
             fit['cov'] = str(cov)
         else:
-            chi2 = util.chi2_ud_bin(p0=pp,
-                                    data_list=data_list,
-                                    observables=self.observables,
-                                    cov=cov,
-                                    smear=smear)
-            theta0 = np.array([1.])
-            thetap = minimize(util.chi2_ud,
-                              theta0,
-                              args=(data_list, self.observables, cov, smear),
-                              method='L-BFGS-B',
-                              bounds=[(0., np.inf)],
-                              tol=ftol,
-                              options={'maxiter': 1000})
-            chi2_test = util.chi2_ud(p0=thetap['x'],
-                                     data_list=data_list,
-                                     observables=self.observables,
-                                     cov=cov,
-                                     smear=smear)
-            nsigma, _ = util.nsigma(chi2r_test=chi2_test/ndof,
-                                    chi2r_true=chi2/ndof,
-                                    ndof=ndof)
-            sep = np.sqrt(pp[1]**2+pp[2]**2)
+            chi2 = util.chi2_ud_bin(p0=pp, data_list=data_list, observables=self.observables, cov=cov, smear=smear)
+            theta0 = np.array([1.0])
+            thetap = minimize(
+                util.chi2_ud,
+                theta0,
+                args=(data_list, self.observables, cov, smear),
+                method='L-BFGS-B',
+                bounds=[(0.0, np.inf)],
+                tol=ftol,
+                options={'maxiter': 1000},
+            )
+            chi2_test = util.chi2_ud(
+                p0=thetap['x'], data_list=data_list, observables=self.observables, cov=cov, smear=smear
+            )
+            nsigma, _ = util.nsigma(chi2r_test=chi2_test / ndof, chi2r_true=chi2 / ndof, ndof=ndof)
+            sep = np.sqrt(pp[1] ** 2 + pp[2] ** 2)
             pa = np.rad2deg(np.arctan2(pp[1], pp[2]))
-            dsep = np.sqrt((pp[1]/sep*pe[1])**2+(pp[2]/sep*pe[2])**2)
-            dpa = np.rad2deg(np.sqrt((pp[2]/sep**2*pe[1])**2+(-pp[1]/sep**2*pe[2])**2))
-            print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0]*100., pe[0]*100.))
+            dsep = np.sqrt((pp[1] / sep * pe[1]) ** 2 + (pp[2] / sep * pe[2]) ** 2)
+            dpa = np.rad2deg(np.sqrt((pp[2] / sep**2 * pe[1]) ** 2 + (-pp[1] / sep**2 * pe[2]) ** 2))
+            print('   Best fit companion flux = %.3f +/- %.3f %%' % (pp[0] * 100.0, pe[0] * 100.0))
             print('   Best fit companion right ascension = %.1f +/- %.1f mas' % (pp[1], pe[1]))
             print('   Best fit companion declination = %.1f +/- %.1f mas' % (pp[2], pe[2]))
             print('   Best fit companion separation = %.1f +/- %.1f mas' % (sep, dsep))
             print('   Best fit companion position angle = %.1f +/- %.1f deg' % (pa, dpa))
             print('   Best fit uniform disk diameter = %.5f +/- %.5f mas' % (pp[3], pe[3]))
-            print('   Best fit red. chi2 = %.3f (ud+bin)' % (chi2/ndof))
+            print('   Best fit red. chi2 = %.3f (ud+bin)' % (chi2 / ndof))
             print('   Significance of companion = %.1f sigma' % nsigma)
             fit = {}
             fit['model'] = 'ud_bin'
             fit['p'] = pp
             fit['dp'] = pe
-            fit['chi2_red'] = chi2/ndof
+            fit['chi2_red'] = chi2 / ndof
             fit['ndof'] = ndof
             fit['nsigma'] = nsigma
             fit['smear'] = smear
@@ -1544,16 +1540,18 @@ class data():
 
         return fit
 
-    def detlim(self,
-               sigma=3.,
-               fit_sub=None,
-               fit_sub_2=None,
-               cov=False,
-               sep_range=None,
-               step_size=None,
-               smear=None,
-               ofile=None,
-               cmin=1e-6):
+    def detlim(
+        self,
+        sigma=3.0,
+        fit_sub=None,
+        fit_sub_2=None,
+        cov=False,
+        sep_range=None,
+        step_size=None,
+        smear=None,
+        ofile=None,
+        cmin=1e-6,
+    ):
         """
         Parameters
         ----------
@@ -1577,22 +1575,30 @@ class data():
             Minimum contrast for which you want to fit.
         """
 
-        if (fit_sub is not None):
-            print('Subtracting '+fit_sub['model']+' model')
+        if fit_sub is not None:
+            print('Subtracting ' + fit_sub['model'] + ' model')
 
             buffer = deepcopy(self.data_list)
 
             ww = np.where(np.array(self.inst_list) == self.inst)[0]
             for i in range(len(ww)):
                 for j in range(len(self.data_list[ww[i]])):
-                    if (smear is not None):
-                        wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0]*smear))
+                    if smear is not None:
+                        wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0] * smear))
                         for k in range(self.data_list[ww[i]][j]['wave'].shape[0]):
-                            wave[k*smear:(k+1)*smear] = np.linspace(self.data_list[ww[i]][j]['wave'][k]-0.5*self.data_list[ww[i]][j]['dwave'][k], self.data_list[ww[i]][j]['wave'][k]+0.5*self.data_list[ww[i]][j]['dwave'][k], smear)
-                        self.data_list[ww[i]][j]['uu_smear'] = np.divide(self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :])
-                        self.data_list[ww[i]][j]['vv_smear'] = np.divide(self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+                            wave[k * smear : (k + 1) * smear] = np.linspace(
+                                self.data_list[ww[i]][j]['wave'][k] - 0.5 * self.data_list[ww[i]][j]['dwave'][k],
+                                self.data_list[ww[i]][j]['wave'][k] + 0.5 * self.data_list[ww[i]][j]['dwave'][k],
+                                smear,
+                            )
+                        self.data_list[ww[i]][j]['uu_smear'] = np.divide(
+                            self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :]
+                        )
+                        self.data_list[ww[i]][j]['vv_smear'] = np.divide(
+                            self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :]
+                        )
 
-            if (fit_sub['model'] == 'ud'):
+            if fit_sub['model'] == 'ud':
                 print('   No companion data found!')
             else:
                 fit_sub_copy = deepcopy(fit_sub)
@@ -1604,57 +1610,66 @@ class data():
                     p0 = fit_sub_copy['p']
                     dra = p0[1].copy()
                     ddec = p0[2].copy()
-                    rho = np.sqrt(dra**2+ddec**2)
+                    rho = np.sqrt(dra**2 + ddec**2)
                     phi = np.rad2deg(np.arctan2(dra, ddec))
-                    if (pa_mtoc == '-'):
+                    if pa_mtoc == '-':
                         phi -= self.data_list[ww[i]][j]['pa']
-                    elif (pa_mtoc == '+'):
+                    elif pa_mtoc == '+':
                         phi += self.data_list[ww[i]][j]['pa']
                     else:
                         raise UserWarning('Model to chip conversion for position angle not known')
-                    phi = ((phi+180.) % 360.)-180.
-                    dra_temp = rho*np.sin(np.deg2rad(phi))
-                    ddec_temp = rho*np.cos(np.deg2rad(phi))
-                    if (fit_sub['model'] == 'bin'):
-                        p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp]) # w/ companion
-                        vis_bin = util.vis_bin(p0=p0_temp,
-                                               data=self.data_list[ww[i]][j],
-                                               smear=fit_sub['smear'])
-                        p0_temp = np.array([0., dra_temp, ddec_temp]) # w/o companion
-                        vis_ref = util.vis_bin(p0=p0_temp,
-                                               data=self.data_list[ww[i]][j],
-                                               smear=fit_sub['smear'])
+                    phi = ((phi + 180.0) % 360.0) - 180.0
+                    dra_temp = rho * np.sin(np.deg2rad(phi))
+                    ddec_temp = rho * np.cos(np.deg2rad(phi))
+                    if fit_sub['model'] == 'bin':
+                        p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp])  # w/ companion
+                        vis_bin = util.vis_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
+                        p0_temp = np.array([0.0, dra_temp, ddec_temp])  # w/o companion
+                        vis_ref = util.vis_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
                     else:
-                        p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()]) # w/ companion
-                        vis_bin = util.vis_ud_bin(p0=p0_temp,
-                                                  data=self.data_list[ww[i]][j],
-                                                  smear=fit_sub['smear'])
-                        p0_temp = np.array([0., dra_temp, ddec_temp, p0[3].copy()]) # w/o companion
-                        vis_ref = util.vis_ud_bin(p0=p0_temp,
-                                                  data=self.data_list[ww[i]][j],
-                                                  smear=fit_sub['smear'])
+                        p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()])  # w/ companion
+                        vis_bin = util.vis_ud_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
+                        p0_temp = np.array([0.0, dra_temp, ddec_temp, p0[3].copy()])  # w/o companion
+                        vis_ref = util.vis_ud_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
 
-                    if ('v2' in self.observables):
-                        self.data_list[ww[i]][j]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=self.data_list[ww[i]][j])-util.v2v2(vis_ref, data=self.data_list[ww[i]][j]))
-                    if ('cp' in self.observables):
-                        self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
-                    if ('kp' in self.observables):
-                        self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
+                    if 'v2' in self.observables:
+                        self.data_list[ww[i]][j]['v2'] += np.sign(p0[0]) * (
+                            util.v2v2(vis_bin, data=self.data_list[ww[i]][j])
+                            - util.v2v2(vis_ref, data=self.data_list[ww[i]][j])
+                        )
+                    if 'cp' in self.observables:
+                        self.data_list[ww[i]][j]['cp'] += np.sign(p0[0]) * (
+                            util.v2cp(vis_bin, data=self.data_list[ww[i]][j])
+                            - util.v2cp(vis_ref, data=self.data_list[ww[i]][j])
+                        )
+                    if 'kp' in self.observables:
+                        self.data_list[ww[i]][j]['kp'] += np.sign(p0[0]) * (
+                            util.v2kp(vis_bin, data=self.data_list[ww[i]][j])
+                            - util.v2kp(vis_ref, data=self.data_list[ww[i]][j])
+                        )
 
-            if (fit_sub_2 is not None):
-                print('Subtracting '+fit_sub_2['model']+' model')
+            if fit_sub_2 is not None:
+                print('Subtracting ' + fit_sub_2['model'] + ' model')
 
                 ww = np.where(np.array(self.inst_list) == self.inst)[0]
                 for i in range(len(ww)):
                     for j in range(len(self.data_list[ww[i]])):
-                        if (smear is not None):
-                            wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0]*smear))
+                        if smear is not None:
+                            wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0] * smear))
                             for k in range(self.data_list[ww[i]][j]['wave'].shape[0]):
-                                wave[k*smear:(k+1)*smear] = np.linspace(self.data_list[ww[i]][j]['wave'][k]-0.5*self.data_list[ww[i]][j]['dwave'][k], self.data_list[ww[i]][j]['wave'][k]+0.5*self.data_list[ww[i]][j]['dwave'][k], smear)
-                            self.data_list[ww[i]][j]['uu_smear'] = np.divide(self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :])
-                            self.data_list[ww[i]][j]['vv_smear'] = np.divide(self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+                                wave[k * smear : (k + 1) * smear] = np.linspace(
+                                    self.data_list[ww[i]][j]['wave'][k] - 0.5 * self.data_list[ww[i]][j]['dwave'][k],
+                                    self.data_list[ww[i]][j]['wave'][k] + 0.5 * self.data_list[ww[i]][j]['dwave'][k],
+                                    smear,
+                                )
+                            self.data_list[ww[i]][j]['uu_smear'] = np.divide(
+                                self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :]
+                            )
+                            self.data_list[ww[i]][j]['vv_smear'] = np.divide(
+                                self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :]
+                            )
 
-                if (fit_sub_2['model'] == 'ud'):
+                if fit_sub_2['model'] == 'ud':
                     print('   No companion data found!')
                 else:
                     fit_sub_2_copy = deepcopy(fit_sub_2)
@@ -1666,42 +1681,49 @@ class data():
                         p0 = fit_sub_2_copy['p']
                         dra = p0[1].copy()
                         ddec = p0[2].copy()
-                        rho = np.sqrt(dra**2+ddec**2)
+                        rho = np.sqrt(dra**2 + ddec**2)
                         phi = np.rad2deg(np.arctan2(dra, ddec))
-                        if (pa_mtoc == '-'):
+                        if pa_mtoc == '-':
                             phi -= self.data_list[ww[i]][j]['pa']
-                        elif (pa_mtoc == '+'):
+                        elif pa_mtoc == '+':
                             phi += self.data_list[ww[i]][j]['pa']
                         else:
                             raise UserWarning('Model to chip conversion for position angle not known')
-                        phi = ((phi+180.) % 360.)-180.
-                        dra_temp = rho*np.sin(np.deg2rad(phi))
-                        ddec_temp = rho*np.cos(np.deg2rad(phi))
-                        if (fit_sub_2['model'] == 'bin'):
-                            p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp]) # w/ companion
-                            vis_bin = util.vis_bin(p0=p0_temp,
-                                                   data=self.data_list[ww[i]][j],
-                                                   smear=fit_sub_2['smear'])
-                            p0_temp = np.array([0., dra_temp, ddec_temp]) # w/o companion
-                            vis_ref = util.vis_bin(p0=p0_temp,
-                                                   data=self.data_list[ww[i]][j],
-                                                   smear=fit_sub_2['smear'])
+                        phi = ((phi + 180.0) % 360.0) - 180.0
+                        dra_temp = rho * np.sin(np.deg2rad(phi))
+                        ddec_temp = rho * np.cos(np.deg2rad(phi))
+                        if fit_sub_2['model'] == 'bin':
+                            p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp])  # w/ companion
+                            vis_bin = util.vis_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub_2['smear'])
+                            p0_temp = np.array([0.0, dra_temp, ddec_temp])  # w/o companion
+                            vis_ref = util.vis_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub_2['smear'])
                         else:
-                            p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()]) # w/ companion
-                            vis_bin = util.vis_ud_bin(p0=p0_temp,
-                                                      data=self.data_list[ww[i]][j],
-                                                      smear=fit_sub_2['smear'])
-                            p0_temp = np.array([0., dra_temp, ddec_temp, p0[3].copy()]) # w/o companion
-                            vis_ref = util.vis_ud_bin(p0=p0_temp,
-                                                      data=self.data_list[ww[i]][j],
-                                                      smear=fit_sub_2['smear'])
+                            p0_temp = np.array(
+                                [np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()]
+                            )  # w/ companion
+                            vis_bin = util.vis_ud_bin(
+                                p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub_2['smear']
+                            )
+                            p0_temp = np.array([0.0, dra_temp, ddec_temp, p0[3].copy()])  # w/o companion
+                            vis_ref = util.vis_ud_bin(
+                                p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub_2['smear']
+                            )
 
-                        if ('v2' in self.observables):
-                            self.data_list[ww[i]][j]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=self.data_list[ww[i]][j])-util.v2v2(vis_ref, data=self.data_list[ww[i]][j]))
-                        if ('cp' in self.observables):
-                            self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
-                        if ('kp' in self.observables):
-                            self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
+                        if 'v2' in self.observables:
+                            self.data_list[ww[i]][j]['v2'] += np.sign(p0[0]) * (
+                                util.v2v2(vis_bin, data=self.data_list[ww[i]][j])
+                                - util.v2v2(vis_ref, data=self.data_list[ww[i]][j])
+                            )
+                        if 'cp' in self.observables:
+                            self.data_list[ww[i]][j]['cp'] += np.sign(p0[0]) * (
+                                util.v2cp(vis_bin, data=self.data_list[ww[i]][j])
+                                - util.v2cp(vis_ref, data=self.data_list[ww[i]][j])
+                            )
+                        if 'kp' in self.observables:
+                            self.data_list[ww[i]][j]['kp'] += np.sign(p0[0]) * (
+                                util.v2kp(vis_bin, data=self.data_list[ww[i]][j])
+                                - util.v2kp(vis_ref, data=self.data_list[ww[i]][j])
+                            )
 
         data_list = []
         bmax = []
@@ -1718,10 +1740,14 @@ class data():
                 dmax += [self.data_list[ww[i]][j]['diam']]
                 lmin += [np.min(self.data_list[ww[i]][j]['wave'])]
                 lerr += [np.mean(self.data_list[ww[i]][j]['dwave'])]
-                if (smear is not None):
-                    wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                if smear is not None:
+                    wave = np.zeros((data_list[-1]['wave'].shape[0] * smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                        wave[k * smear : (k + 1) * smear] = np.linspace(
+                            data_list[-1]['wave'][k] - 0.5 * data_list[-1]['dwave'][k],
+                            data_list[-1]['wave'][k] + 0.5 * data_list[-1]['dwave'][k],
+                            smear,
+                        )
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
         bmax = np.max(bmax)
@@ -1729,21 +1755,21 @@ class data():
         dmax = np.max(dmax)
         lmin = np.min(lmin)
         lerr = np.mean(lerr)
-        if (self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS', 'ERIS']):
-            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
-            waveFOV = 5.*lmin/bmax*rad2mas # bandwidth smearing field-of-view (mas)
-            diffFOV = 0.5*lmin/bmin*rad2mas # diffraction field-of-view (mas)
-            smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
+        if self.inst in ['NAOS+CONICA', 'NIRC2', 'SPHERE', 'SPHERE-IFS', 'NIRCAM', 'NIRISS', 'ERIS']:
+            smin = 0.5 * lmin / bmax * rad2mas  # smallest spatial scale (mas)
+            waveFOV = 5.0 * lmin / bmax * rad2mas  # bandwidth smearing field-of-view (mas)
+            diffFOV = 0.5 * lmin / bmin * rad2mas  # diffraction field-of-view (mas)
+            smax = min(waveFOV, diffFOV)  # largest spatial scale (mas)
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Largest spatial scale = %.1f mas' % smax)
             print('   Minimum baseline = %.2f m' % bmin)
             print('   Maximum baseline = %.2f m' % bmax)
         else:
-            smin = 0.5*lmin/bmax*rad2mas # smallest spatial scale (mas)
-            waveFOV = 0.5*lmin**2/lerr/bmax*rad2mas # bandwidth smearing field-of-view (mas)
-            diffFOV = 1.2*lmin/dmax*rad2mas # diffraction field-of-view (mas)
-            smax = min(waveFOV, diffFOV) # largest spatial scale (mas)
+            smin = 0.5 * lmin / bmax * rad2mas  # smallest spatial scale (mas)
+            waveFOV = 0.5 * lmin**2 / lerr / bmax * rad2mas  # bandwidth smearing field-of-view (mas)
+            diffFOV = 1.2 * lmin / dmax * rad2mas  # diffraction field-of-view (mas)
+            smax = min(waveFOV, diffFOV)  # largest spatial scale (mas)
             print('Data properties')
             print('   Smallest spatial scale = %.1f mas' % smin)
             print('   Bandwidth smearing FOV = %.1f mas' % waveFOV)
@@ -1751,11 +1777,11 @@ class data():
             print('   Largest spatial scale = %.1f mas' % smax)
             print('   Minimum baseline = %.2f m' % bmin)
             print('   Maximum baseline = %.2f m' % bmax)
-        if (smear is not None):
+        if smear is not None:
             print('   Bandwidth smearing = %.0f' % smear)
-        if (sep_range is None):
-            sep_range = (smin, 1.2*smax)
-        if (step_size is None):
+        if sep_range is None:
+            sep_range = (smin, 1.2 * smax)
+        if step_size is None:
             step_size = smin
 
         if not cov:
@@ -1769,25 +1795,25 @@ class data():
             for i in range(len(data_list)):
                 covs = []
                 for j in range(len(self.observables)):
-                    if (self.observables[j] == 'v2'):
+                    if self.observables[j] == 'v2':
                         try:
                             covs += [data_list[i]['v2cov']]
                         except KeyError:
-                            covs += [np.diag(data_list[i]['dv2'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dv2'].flatten() ** 2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 'cp'):
+                    if self.observables[j] == 'cp':
                         try:
                             covs += [data_list[i]['cpcov']]
                         except KeyError:
-                            covs += [np.diag(data_list[i]['dcp'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dcp'].flatten() ** 2)]
                             allcov = False
                             covs += []
-                    if (self.observables[j] == 'kp'):
+                    if self.observables[j] == 'kp':
                         try:
                             covs += [data_list[i]['kpcov']]
                         except KeyError:
-                            covs += [np.diag(data_list[i]['dkp'].flatten()**2)]
+                            covs += [np.diag(data_list[i]['dkp'].flatten() ** 2)]
                             allcov = False
                             covs += []
                 data_list[i]['cov'] = block_diag(*covs)
@@ -1797,7 +1823,7 @@ class data():
                     try:
                         rk = np.linalg.matrix_rank(data_list[i]['cov'])
                         sz = data_list[i]['cov'].shape[0]
-                        if (rk < sz):
+                        if rk < sz:
                             errflag = True
                             print('   WARNING: covariance matrix does not have full rank')
                     except Exception:
@@ -1814,37 +1840,35 @@ class data():
                 ndof += [np.prod(data_list[i][self.observables[j]].shape)]
         ndof = np.sum(ndof)
 
-        if ('v2' in self.observables):
+        if 'v2' in self.observables:
             print('Computing best fit uniform disk diameter (DO NOT TRUST UNCERTAINTIES)')
-            theta0 = np.array([1.])
-            thetap = minimize(util.chi2_ud,
-                              theta0,
-                              args=(data_list, self.observables, cov, smear),
-                              method='L-BFGS-B',
-                              bounds=[(0., np.inf)],
-                              tol=ftol,
-                              options={'maxiter': 1000})
-            thetae = np.sqrt(max(1., abs(thetap['fun']))*ftol*np.diag(thetap['hess_inv'].todense()))
+            theta0 = np.array([1.0])
+            thetap = minimize(
+                util.chi2_ud,
+                theta0,
+                args=(data_list, self.observables, cov, smear),
+                method='L-BFGS-B',
+                bounds=[(0.0, np.inf)],
+                tol=ftol,
+                options={'maxiter': 1000},
+            )
+            thetae = np.sqrt(max(1.0, abs(thetap['fun'])) * ftol * np.diag(thetap['hess_inv'].todense()))
             print('   Best fit uniform disk diameter = %.5f +/- %.5f mas' % (thetap['x'][0], thetae))
-            print('   Best fit red. chi2 = %.3f (ud)' % (thetap['fun']/ndof))
+            print('   Best fit red. chi2 = %.3f (ud)' % (thetap['fun'] / ndof))
         else:
             thetap = {}
-            thetap['fun'] = util.chi2_ud(p0=np.array([0.]),
-                                         data_list=data_list,
-                                         observables=self.observables,
-                                         cov=cov,
-                                         smear=smear)
+            thetap['fun'] = util.chi2_ud(
+                p0=np.array([0.0]), data_list=data_list, observables=self.observables, cov=cov, smear=smear
+            )
 
-        if (('cp' not in self.observables) and ('kp' not in self.observables)):
+        if ('cp' not in self.observables) and ('kp' not in self.observables):
             raise UserWarning('Can only compute detection limits with closure or kernel phases')
 
-        grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
-                                                 step_size=step_size,
-                                                 verbose=True)
+        grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range, step_size=step_size, verbose=True)
 
         sigma = int(sigma)
-        print('Computing detection limits ('+str(sigma)+'-sigma)')
-        if (cmin >= 1.):
+        print('Computing detection limits (' + str(sigma) + '-sigma)')
+        if cmin >= 1.0:
             raise ValueError('Minimum contrast must be less than 1')
         f0s = np.logspace(np.log10(cmin), 0, 200)
         ffs_absil = []
@@ -1854,53 +1878,113 @@ class data():
         for i in range(grid_ra_dec[0].shape[0]):
             for j in range(grid_ra_dec[0].shape[1]):
                 ctr += 1
-                if (ctr % 10 == 0):
+                if ctr % 10 == 0:
                     sys.stdout.write('\r   Cell %.0f of %.0f' % (ctr, nc))
                     sys.stdout.flush()
-                if ((not np.isnan(grid_ra_dec[0][i, j])) and (not np.isnan(grid_ra_dec[1][i, j]))):
-
+                if (not np.isnan(grid_ra_dec[0][i, j])) and (not np.isnan(grid_ra_dec[1][i, j])):
                     # Absil method.
-                    if ('v2' in self.observables):
+                    if 'v2' in self.observables:
                         p0 = np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j], thetap['x'][0]])
-                        temp = [self.lim_absil(f0, util.chi2_ud_bin, p0, data_list, self.observables, cov, smear, thetap['fun'], ndof, sigma) for f0 in f0s]
+                        temp = [
+                            self.lim_absil(
+                                f0,
+                                util.chi2_ud_bin,
+                                p0,
+                                data_list,
+                                self.observables,
+                                cov,
+                                smear,
+                                thetap['fun'],
+                                ndof,
+                                sigma,
+                            )
+                            for f0 in f0s
+                        ]
                         temp = np.array(temp)
                         f0 = f0s[np.argmin(temp)]
-                        pp = minimize(self.lim_absil,
-                                      f0,
-                                      args=(util.chi2_ud_bin, p0, data_list, self.observables, cov, smear, thetap['fun'], ndof, sigma),
-                                      method='L-BFGS-B',
-                                      bounds=[(0., 1.)],
-                                      tol=ftol,
-                                      options={'maxiter': 1000})
+                        pp = minimize(
+                            self.lim_absil,
+                            f0,
+                            args=(
+                                util.chi2_ud_bin,
+                                p0,
+                                data_list,
+                                self.observables,
+                                cov,
+                                smear,
+                                thetap['fun'],
+                                ndof,
+                                sigma,
+                            ),
+                            method='L-BFGS-B',
+                            bounds=[(0.0, 1.0)],
+                            tol=ftol,
+                            options={'maxiter': 1000},
+                        )
                     else:
                         p0 = np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]])
-                        temp = [self.lim_absil(f0, util.chi2_bin, p0, data_list, self.observables, cov, smear, thetap['fun'], ndof, sigma) for f0 in f0s]
+                        temp = [
+                            self.lim_absil(
+                                f0,
+                                util.chi2_bin,
+                                p0,
+                                data_list,
+                                self.observables,
+                                cov,
+                                smear,
+                                thetap['fun'],
+                                ndof,
+                                sigma,
+                            )
+                            for f0 in f0s
+                        ]
                         temp = np.array(temp)
                         f0 = f0s[np.argmin(temp)]
-                        pp = minimize(self.lim_absil,
-                                      f0,
-                                      args=(util.chi2_bin, p0, data_list, self.observables, cov, smear, thetap['fun'], ndof, sigma),
-                                      method='L-BFGS-B',
-                                      bounds=[(0., 1.)],
-                                      tol=ftol,
-                                      options={'maxiter': 1000})
+                        pp = minimize(
+                            self.lim_absil,
+                            f0,
+                            args=(
+                                util.chi2_bin,
+                                p0,
+                                data_list,
+                                self.observables,
+                                cov,
+                                smear,
+                                thetap['fun'],
+                                ndof,
+                                sigma,
+                            ),
+                            method='L-BFGS-B',
+                            bounds=[(0.0, 1.0)],
+                            tol=ftol,
+                            options={'maxiter': 1000},
+                        )
                     ffs_absil += [pp['x'][0].copy()]
 
                     # Injection method.
-                    if ('v2' in self.observables):
-                        fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j], 0.]),
-                                    'model': 'bin',
-                                    'smear': smear}
-                        temp = [self.lim_injection(f0, fit_inj, data_list, self.observables, cov, smear, ndof, thetap['x'][0], sigma) for f0 in f0s]
+                    if 'v2' in self.observables:
+                        fit_inj = {
+                            'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j], 0.0]),
+                            'model': 'bin',
+                            'smear': smear,
+                        }
+                        temp = [
+                            self.lim_injection(
+                                f0, fit_inj, data_list, self.observables, cov, smear, ndof, thetap['x'][0], sigma
+                            )
+                            for f0 in f0s
+                        ]
                         temp = np.array(temp)
                         f0 = f0s[np.argmin(temp)]
-                        pp = minimize(self.lim_injection,
-                                      f0,
-                                      args=(fit_inj, data_list, self.observables, cov, smear, ndof, thetap['x'][0], sigma),
-                                      method='L-BFGS-B',
-                                      bounds=[(0., 1.)],
-                                      tol=ftol,
-                                      options={'maxiter': 1000})
+                        pp = minimize(
+                            self.lim_injection,
+                            f0,
+                            args=(fit_inj, data_list, self.observables, cov, smear, ndof, thetap['x'][0], sigma),
+                            method='L-BFGS-B',
+                            bounds=[(0.0, 1.0)],
+                            tol=ftol,
+                            options={'maxiter': 1000},
+                        )
                     else:
                         # fit_inj = {'p': np.array([f0s[0], grid_ra_dec[0][i, j], grid_ra_dec[1][i, j]]),
                         #             'model': 'bin',
@@ -1930,22 +2014,12 @@ class data():
 
         plot.detlim(ffs_absil, ffs_injection, sigma, sep_range, step_size, ofile)
 
-        if (fit_sub is not None):
+        if fit_sub is not None:
             self.data_list = buffer
 
         pass
 
-    def lim_absil(self,
-                  f0,
-                  func,
-                  p0,
-                  data_list,
-                  observables,
-                  cov,
-                  smear,
-                  chi2_true,
-                  ndof,
-                  sigma=3):
+    def lim_absil(self, f0, func, p0, data_list, observables, cov, smear, chi2_true, ndof, sigma=3):
         """
         Parameters
         ----------
@@ -1984,33 +2058,17 @@ class data():
             Chi-squared of Absil method.
         """
 
-        if (f0 <= 0.):
-
+        if f0 <= 0.0:
             return np.inf
         else:
             pp = p0.copy()
             pp[0] = f0
-            chi2_test = func(p0=pp,
-                             data_list=data_list,
-                             observables=observables,
-                             cov=cov,
-                             smear=smear)
-            nsigma, _ = util.nsigma(chi2r_test=chi2_test/ndof,
-                                    chi2r_true=chi2_true/ndof,
-                                    ndof=ndof)
+            chi2_test = func(p0=pp, data_list=data_list, observables=observables, cov=cov, smear=smear)
+            nsigma, _ = util.nsigma(chi2r_test=chi2_test / ndof, chi2r_true=chi2_true / ndof, ndof=ndof)
 
-            return np.abs(nsigma-sigma)**2
+            return np.abs(nsigma - sigma) ** 2
 
-    def lim_injection(self,
-                      f0,
-                      fit_inj,
-                      data_list,
-                      observables,
-                      cov,
-                      smear,
-                      ndof,
-                      thetap=None,
-                      sigma=3):
+    def lim_injection(self, f0, fit_inj, data_list, observables, cov, smear, ndof, thetap=None, sigma=3):
         """
         Parameters
         ----------
@@ -2040,51 +2098,41 @@ class data():
             Chi-squared of Injection method.
         """
 
-        if (f0 <= 0.):
-
+        if f0 <= 0.0:
             return np.inf
         else:
             fit_inj_copy = deepcopy(fit_inj)
             fit_inj_copy['p'][0] = f0
             data_list_copy = deepcopy(data_list)
-            data_list_copy = self.inj_companion(data_list=data_list_copy,
-                                                fit_inj=fit_inj_copy)
+            data_list_copy = self.inj_companion(data_list=data_list_copy, fit_inj=fit_inj_copy)
 
-            if ('v2' in observables):
-                thetap_ud = minimize(util.chi2_ud,
-                                     np.array([thetap]),
-                                     args=(data_list_copy, observables, cov, smear),
-                                     method='L-BFGS-B',
-                                     bounds=[(0., np.inf)],
-                                     tol=ftol,
-                                     options={'maxiter': 1000})
+            if 'v2' in observables:
+                thetap_ud = minimize(
+                    util.chi2_ud,
+                    np.array([thetap]),
+                    args=(data_list_copy, observables, cov, smear),
+                    method='L-BFGS-B',
+                    bounds=[(0.0, np.inf)],
+                    tol=ftol,
+                    options={'maxiter': 1000},
+                )
                 chi2_ud = thetap_ud['fun']
                 fit_inj_copy['p'][3] = thetap
-                chi2_bin = util.chi2_ud_bin(p0=fit_inj_copy['p'],
-                                            data_list=data_list_copy,
-                                            observables=observables,
-                                            cov=cov,
-                                            smear=smear)
+                chi2_bin = util.chi2_ud_bin(
+                    p0=fit_inj_copy['p'], data_list=data_list_copy, observables=observables, cov=cov, smear=smear
+                )
             else:
-                chi2_ud = util.chi2_ud(p0=np.array([0.]),
-                                       data_list=data_list_copy,
-                                       observables=observables,
-                                       cov=cov,
-                                       smear=smear)
-                chi2_bin = util.chi2_bin(p0=fit_inj_copy['p'],
-                                         data_list=data_list_copy,
-                                         observables=observables,
-                                         cov=cov,
-                                         smear=smear)
-            nsigma, _ = util.nsigma(chi2r_test=chi2_ud/ndof,
-                                    chi2r_true=chi2_bin/ndof,
-                                    ndof=ndof)
+                chi2_ud = util.chi2_ud(
+                    p0=np.array([0.0]), data_list=data_list_copy, observables=observables, cov=cov, smear=smear
+                )
+                chi2_bin = util.chi2_bin(
+                    p0=fit_inj_copy['p'], data_list=data_list_copy, observables=observables, cov=cov, smear=smear
+                )
+            nsigma, _ = util.nsigma(chi2r_test=chi2_ud / ndof, chi2r_true=chi2_bin / ndof, ndof=ndof)
 
-            return np.abs(nsigma-sigma)**2
+            return np.abs(nsigma - sigma) ** 2
 
-    def inj_companion(self,
-                      data_list,
-                      fit_inj):
+    def inj_companion(self, data_list, fit_inj):
         """
         Parameters
         ----------
@@ -2095,54 +2143,51 @@ class data():
             Model fit to be injected.
         """
 
-        if (fit_inj['model'] == 'ud'):
+        if fit_inj['model'] == 'ud':
             print('   No companion data found!')
 
         for i in range(len(data_list)):
             p0 = fit_inj['p']
             dra = p0[1].copy()
             ddec = p0[2].copy()
-            rho = np.sqrt(dra**2+ddec**2)
+            rho = np.sqrt(dra**2 + ddec**2)
             phi = np.rad2deg(np.arctan2(dra, ddec))
-            if (pa_mtoc == '-'):
+            if pa_mtoc == '-':
                 phi -= data_list[i]['pa']
-            elif (pa_mtoc == '+'):
+            elif pa_mtoc == '+':
                 phi += data_list[i]['pa']
             else:
                 raise UserWarning('Model to chip conversion for position angle not known')
-            phi = ((phi+180.) % 360.)-180.
-            dra_temp = rho*np.sin(np.deg2rad(phi))
-            ddec_temp = rho*np.cos(np.deg2rad(phi))
-            if (fit_inj['model'] == 'bin'):
-                p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp]) # w/ companion
-                vis_bin = util.vis_bin(p0=p0_temp,
-                                       data=data_list[i],
-                                       smear=fit_inj['smear'])
-                p0_temp = np.array([0., dra_temp, ddec_temp]) # w/o companion
-                vis_ref = util.vis_bin(p0=p0_temp,
-                                       data=data_list[i],
-                                       smear=fit_inj['smear'])
+            phi = ((phi + 180.0) % 360.0) - 180.0
+            dra_temp = rho * np.sin(np.deg2rad(phi))
+            ddec_temp = rho * np.cos(np.deg2rad(phi))
+            if fit_inj['model'] == 'bin':
+                p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp])  # w/ companion
+                vis_bin = util.vis_bin(p0=p0_temp, data=data_list[i], smear=fit_inj['smear'])
+                p0_temp = np.array([0.0, dra_temp, ddec_temp])  # w/o companion
+                vis_ref = util.vis_bin(p0=p0_temp, data=data_list[i], smear=fit_inj['smear'])
             else:
-                p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()]) # w/ companion
-                vis_bin = util.vis_ud_bin(p0=p0_temp,
-                                          data=data_list[i],
-                                          smear=fit_inj['smear'])
-                p0_temp = np.array([0., dra_temp, ddec_temp, p0[3].copy()]) # w/o companion
-                vis_ref = util.vis_ud_bin(p0=p0_temp,
-                                          data=data_list[i],
-                                          smear=fit_inj['smear'])
+                p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()])  # w/ companion
+                vis_bin = util.vis_ud_bin(p0=p0_temp, data=data_list[i], smear=fit_inj['smear'])
+                p0_temp = np.array([0.0, dra_temp, ddec_temp, p0[3].copy()])  # w/o companion
+                vis_ref = util.vis_ud_bin(p0=p0_temp, data=data_list[i], smear=fit_inj['smear'])
 
-            if ('v2' in self.observables):
-                data_list[i]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=data_list[i])-util.v2v2(vis_ref, data=data_list[i]))
-            if ('cp' in self.observables):
-                data_list[i]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=data_list[i])-util.v2cp(vis_ref, data=data_list[i]))
-            if ('kp' in self.observables):
-                data_list[i]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=data_list[i])-util.v2kp(vis_ref, data=data_list[i]))
+            if 'v2' in self.observables:
+                data_list[i]['v2'] += np.sign(p0[0]) * (
+                    util.v2v2(vis_bin, data=data_list[i]) - util.v2v2(vis_ref, data=data_list[i])
+                )
+            if 'cp' in self.observables:
+                data_list[i]['cp'] += np.sign(p0[0]) * (
+                    util.v2cp(vis_bin, data=data_list[i]) - util.v2cp(vis_ref, data=data_list[i])
+                )
+            if 'kp' in self.observables:
+                data_list[i]['kp'] += np.sign(p0[0]) * (
+                    util.v2kp(vis_bin, data=data_list[i]) - util.v2kp(vis_ref, data=data_list[i])
+                )
 
         return data_list
 
-    def sub_companion(self,
-                      fit_sub):
+    def sub_companion(self, fit_sub):
         """
         Parameters
         ----------
@@ -2150,21 +2195,29 @@ class data():
             Model fit to be subtracted.
         """
 
-        print('Subtracting '+fit_sub['model']+' model')
+        print('Subtracting ' + fit_sub['model'] + ' model')
 
         buffer = deepcopy(self.data_list)
 
         ww = np.where(np.array(self.inst_list) == self.inst)[0]
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
-                if (fit_sub['smear'] is not None):
-                    wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0]*fit_sub['smear']))
+                if fit_sub['smear'] is not None:
+                    wave = np.zeros((self.data_list[ww[i]][j]['wave'].shape[0] * fit_sub['smear']))
                     for k in range(self.data_list[ww[i]][j]['wave'].shape[0]):
-                        wave[k*fit_sub['smear']:(k+1)*fit_sub['smear']] = np.linspace(self.data_list[ww[i]][j]['wave'][k]-0.5*self.data_list[ww[i]][j]['dwave'][k], self.data_list[ww[i]][j]['wave'][k]+0.5*self.data_list[ww[i]][j]['dwave'][k], fit_sub['smear'])
-                    self.data_list[ww[i]][j]['uu_smear'] = np.divide(self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :])
-                    self.data_list[ww[i]][j]['vv_smear'] = np.divide(self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :])
+                        wave[k * fit_sub['smear'] : (k + 1) * fit_sub['smear']] = np.linspace(
+                            self.data_list[ww[i]][j]['wave'][k] - 0.5 * self.data_list[ww[i]][j]['dwave'][k],
+                            self.data_list[ww[i]][j]['wave'][k] + 0.5 * self.data_list[ww[i]][j]['dwave'][k],
+                            fit_sub['smear'],
+                        )
+                    self.data_list[ww[i]][j]['uu_smear'] = np.divide(
+                        self.data_list[ww[i]][j]['v2u'][:, np.newaxis], wave[np.newaxis, :]
+                    )
+                    self.data_list[ww[i]][j]['vv_smear'] = np.divide(
+                        self.data_list[ww[i]][j]['v2v'][:, np.newaxis], wave[np.newaxis, :]
+                    )
 
-        if (fit_sub['model'] == 'ud'):
+        if fit_sub['model'] == 'ud':
             print('   No companion data found!')
         else:
             fit_sub_copy = deepcopy(fit_sub)
@@ -2176,51 +2229,47 @@ class data():
                 p0 = fit_sub_copy['p']
                 dra = p0[1].copy()
                 ddec = p0[2].copy()
-                rho = np.sqrt(dra**2+ddec**2)
+                rho = np.sqrt(dra**2 + ddec**2)
                 phi = np.rad2deg(np.arctan2(dra, ddec))
-                if (pa_mtoc == '-'):
+                if pa_mtoc == '-':
                     phi -= self.data_list[ww[i]][j]['pa']
-                elif (pa_mtoc == '+'):
+                elif pa_mtoc == '+':
                     phi += self.data_list[ww[i]][j]['pa']
                 else:
                     raise UserWarning('Model to chip conversion for position angle not known')
-                phi = ((phi+180.) % 360.)-180.
-                dra_temp = rho*np.sin(np.deg2rad(phi))
-                ddec_temp = rho*np.cos(np.deg2rad(phi))
-                if (fit_sub['model'] == 'bin'):
-                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp]) # w/ companion
-                    vis_bin = util.vis_bin(p0=p0_temp,
-                                           data=self.data_list[ww[i]][j],
-                                           smear=fit_sub['smear'])
-                    p0_temp = np.array([0., dra_temp, ddec_temp]) # w/o companion
-                    vis_ref = util.vis_bin(p0=p0_temp,
-                                           data=self.data_list[ww[i]][j],
-                                           smear=fit_sub['smear'])
+                phi = ((phi + 180.0) % 360.0) - 180.0
+                dra_temp = rho * np.sin(np.deg2rad(phi))
+                ddec_temp = rho * np.cos(np.deg2rad(phi))
+                if fit_sub['model'] == 'bin':
+                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp])  # w/ companion
+                    vis_bin = util.vis_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
+                    p0_temp = np.array([0.0, dra_temp, ddec_temp])  # w/o companion
+                    vis_ref = util.vis_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
                 else:
-                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()]) # w/ companion
-                    vis_bin = util.vis_ud_bin(p0=p0_temp,
-                                              data=self.data_list[ww[i]][j],
-                                              smear=fit_sub['smear'])
-                    p0_temp = np.array([0., dra_temp, ddec_temp, p0[3].copy()]) # w/o companion
-                    vis_ref = util.vis_ud_bin(p0=p0_temp,
-                                              data=self.data_list[ww[i]][j],
-                                              smear=fit_sub['smear'])
+                    p0_temp = np.array([np.abs(p0[0].copy()), dra_temp, ddec_temp, p0[3].copy()])  # w/ companion
+                    vis_bin = util.vis_ud_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
+                    p0_temp = np.array([0.0, dra_temp, ddec_temp, p0[3].copy()])  # w/o companion
+                    vis_ref = util.vis_ud_bin(p0=p0_temp, data=self.data_list[ww[i]][j], smear=fit_sub['smear'])
 
-                if ('v2' in self.observables):
-                    self.data_list[ww[i]][j]['v2'] += np.sign(p0[0])*(util.v2v2(vis_bin, data=self.data_list[ww[i]][j])-util.v2v2(vis_ref, data=self.data_list[ww[i]][j]))
-                if ('cp' in self.observables):
-                    self.data_list[ww[i]][j]['cp'] += np.sign(p0[0])*(util.v2cp(vis_bin, data=self.data_list[ww[i]][j])-util.v2cp(vis_ref, data=self.data_list[ww[i]][j]))
-                if ('kp' in self.observables):
-                    self.data_list[ww[i]][j]['kp'] += np.sign(p0[0])*(util.v2kp(vis_bin, data=self.data_list[ww[i]][j])-util.v2kp(vis_ref, data=self.data_list[ww[i]][j]))
+                if 'v2' in self.observables:
+                    self.data_list[ww[i]][j]['v2'] += np.sign(p0[0]) * (
+                        util.v2v2(vis_bin, data=self.data_list[ww[i]][j])
+                        - util.v2v2(vis_ref, data=self.data_list[ww[i]][j])
+                    )
+                if 'cp' in self.observables:
+                    self.data_list[ww[i]][j]['cp'] += np.sign(p0[0]) * (
+                        util.v2cp(vis_bin, data=self.data_list[ww[i]][j])
+                        - util.v2cp(vis_ref, data=self.data_list[ww[i]][j])
+                    )
+                if 'kp' in self.observables:
+                    self.data_list[ww[i]][j]['kp'] += np.sign(p0[0]) * (
+                        util.v2kp(vis_bin, data=self.data_list[ww[i]][j])
+                        - util.v2kp(vis_ref, data=self.data_list[ww[i]][j])
+                    )
 
         return buffer
 
-    def systematics(self,
-                    fit,
-                    pa_step=1.,
-                    n_remove=None,
-                    smear=None,
-                    ofile=None):
+    def systematics(self, fit, pa_step=1.0, n_remove=None, smear=None, ofile=None):
         """
         Method for estimating the systematic uncertainties by retrieving the
         contrast and position of artificial companions that are step-wise
@@ -2263,12 +2312,16 @@ class data():
         # Check if a binary model was used.
         fit_model = fit['model']
         if fit_model != 'bin':
-            raise ValueError(f'The model of the fit dictionary is set to {fit_model} while only a binary model (model=bin) is supported.')
+            raise ValueError(
+                f'The model of the fit dictionary is set to {fit_model} while only a binary model (model=bin) is supported.'
+            )
 
         # Check if the same smear value is used as with chi2map.
         fit_smear = fit['smear']
         if smear != fit_smear:
-            warnings.warn(f'The argument of the smear parameter is set to {smear} while the value of the smear keyword in the fit dictionary is set to {fit_smear}.')
+            warnings.warn(
+                f'The argument of the smear parameter is set to {smear} while the value of the smear keyword in the fit dictionary is set to {fit_smear}.'
+            )
 
         # Select the data.
         data_list = []
@@ -2276,16 +2329,22 @@ class data():
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
                 data_list += [deepcopy(self.data_list[ww[i]][j])]
-                if (smear is not None):
-                    wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                if smear is not None:
+                    wave = np.zeros((data_list[-1]['wave'].shape[0] * smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                        wave[k * smear : (k + 1) * smear] = np.linspace(
+                            data_list[-1]['wave'][k] - 0.5 * data_list[-1]['dwave'][k],
+                            data_list[-1]['wave'][k] + 0.5 * data_list[-1]['dwave'][k],
+                            smear,
+                        )
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
 
         # Adopt separation range and step size from chi2map result.
-        sep_range = (np.nanmin(np.abs(fit['radec'][0][np.nonzero(fit['radec'][0])])),
-                     np.nanmax(np.abs(fit['radec'][0])))
+        sep_range = (
+            np.nanmin(np.abs(fit['radec'][0][np.nonzero(fit['radec'][0])])),
+            np.nanmax(np.abs(fit['radec'][0])),
+        )
         step_size = np.abs(np.nanmean(np.diff(fit['radec'][0])))
 
         # Remove real companion(s) from the data.
@@ -2293,63 +2352,65 @@ class data():
         data_comp = deepcopy(data_list)
         if n_remove is not None:
             for i in range(n_remove):
-
                 # Inject the negative companion model.
                 fit_copy = deepcopy(fit_comp)
                 fit_copy['p'][0] = -fit_copy['p'][0]
-                data_comp = self.inj_companion(data_list=deepcopy(data_comp),
-                                               fit_inj=fit_copy)
+                data_comp = self.inj_companion(data_list=deepcopy(data_comp), fit_inj=fit_copy)
 
                 # Create plot to check if the companion is removed.
                 if ofile is None:
                     out_file = None
                 else:
                     out_file = f'{ofile}_removed_{i}'
-                fit_comp = self.chi2map(model='bin',
-                                        cov=fit['cov'],
-                                        sep_range=sep_range,
-                                        step_size=step_size,
-                                        smear=smear,
-                                        ofile=out_file,
-                                        searchbox=None,
-                                        data_list=data_comp)
+                fit_comp = self.chi2map(
+                    model='bin',
+                    cov=fit['cov'],
+                    sep_range=sep_range,
+                    step_size=step_size,
+                    smear=smear,
+                    ofile=out_file,
+                    searchbox=None,
+                    data_list=data_comp,
+                )
 
         # Separation and PAs for injection-recovery test.
-        sep_test = np.sqrt(fit['p'][1]**2+fit['p'][2]**2) # mas
-        pa_test = np.arange(0., 360., pa_step) # deg
+        sep_test = np.sqrt(fit['p'][1] ** 2 + fit['p'][2] ** 2)  # mas
+        pa_test = np.arange(0.0, 360.0, pa_step)  # deg
 
         # Create empty array for storing the result.
         offset = np.zeros((pa_test.size, 3))
 
         # Iterate over PAs in steps of step_size deg.
         for pa_idx, pa_item in enumerate(pa_test):
-
             # Convert sep-PA to RA-Dec for artificial source. Use the
             # separation and contrast of the actual companion that has been
             # removed from the data.
             fit_test = deepcopy(fit)
-            fit_test['p'][1] = sep_test*np.sin(np.radians(pa_item))
-            fit_test['p'][2] = sep_test*np.cos(np.radians(pa_item))
+            fit_test['p'][1] = sep_test * np.sin(np.radians(pa_item))
+            fit_test['p'][2] = sep_test * np.cos(np.radians(pa_item))
 
             # Inject artificial source.
-            data_test = self.inj_companion(data_list=deepcopy(data_comp),
-                                           fit_inj=fit_test)
+            data_test = self.inj_companion(data_list=deepcopy(data_comp), fit_inj=fit_test)
 
             # Retrieve the contrast and position.
-            searchbox = {'RA': (fit_test['p'][1]-10., fit_test['p'][1]+10.),
-                         'DEC': (fit_test['p'][2]-10., fit_test['p'][2]+10.)}
+            searchbox = {
+                'RA': (fit_test['p'][1] - 10.0, fit_test['p'][1] + 10.0),
+                'DEC': (fit_test['p'][2] - 10.0, fit_test['p'][2] + 10.0),
+            }
             if ofile is None:
                 out_file = None
             else:
                 out_file = f'{ofile}_injected_{pa_idx}'
-            fit_chi2 = self.chi2map(model='bin',
-                                    cov=fit['cov'],
-                                    sep_range=(sep_test-20., sep_test+20.),
-                                    step_size=step_size,
-                                    smear=smear,
-                                    ofile=out_file,
-                                    searchbox=searchbox,
-                                    data_list=data_test)
+            fit_chi2 = self.chi2map(
+                model='bin',
+                cov=fit['cov'],
+                sep_range=(sep_test - 20.0, sep_test + 20.0),
+                step_size=step_size,
+                smear=smear,
+                ofile=out_file,
+                searchbox=searchbox,
+                data_list=data_test,
+            )
 
             # Store the offset between the injected and retrieved values of
             # the binary parameters.
@@ -2359,11 +2420,7 @@ class data():
 
         return offset
 
-    def estimate_phase(self,
-                       fit=None,
-                       smear=None,
-                       ofile=None,
-                       scatter_kwargs=None):
+    def estimate_phase(self, fit=None, smear=None, ofile=None, scatter_kwargs=None):
         """
         Method for estimating the phases from the closure phases.
 
@@ -2402,7 +2459,7 @@ class data():
         """
 
         # Radians to arcsec conversion factor
-        rad2asec = 180./np.pi*3600.
+        rad2asec = 180.0 / np.pi * 3600.0
 
         # Set kwargs dictionary with default values for scatter plot
         if scatter_kwargs is None:
@@ -2414,16 +2471,20 @@ class data():
         for i in range(len(ww)):
             for j in range(len(self.data_list[ww[i]])):
                 data_list += [deepcopy(self.data_list[ww[i]][j])]
-                if (smear is not None):
-                    wave = np.zeros((data_list[-1]['wave'].shape[0]*smear))
+                if smear is not None:
+                    wave = np.zeros((data_list[-1]['wave'].shape[0] * smear))
                     for k in range(data_list[-1]['wave'].shape[0]):
-                        wave[k*smear:(k+1)*smear] = np.linspace(data_list[-1]['wave'][k]-0.5*data_list[-1]['dwave'][k], data_list[-1]['wave'][k]+0.5*data_list[-1]['dwave'][k], smear)
+                        wave[k * smear : (k + 1) * smear] = np.linspace(
+                            data_list[-1]['wave'][k] - 0.5 * data_list[-1]['dwave'][k],
+                            data_list[-1]['wave'][k] + 0.5 * data_list[-1]['dwave'][k],
+                            smear,
+                        )
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
 
         # Initiate the figure
         if ofile is not None:
-            plt.figure(figsize=(3.7, 3.))
+            plt.figure(figsize=(3.7, 3.0))
             ax = plt.gca()
 
         # Initiate the output list that will be returned
@@ -2437,8 +2498,8 @@ class data():
                 # Calculate phase with the binary model and best-fit parameters
                 # uu and vv are defined as baseline (m) divided by wavelength (m)
                 uv_max = max(np.amax(np.abs(data_item['uu'])), np.amax(np.abs(data_item['vv'])))
-                u = np.linspace(1.2*uv_max, -1.2*uv_max, 101)
-                v = np.linspace(-1.2*uv_max, 1.2*uv_max, 101)
+                u = np.linspace(1.2 * uv_max, -1.2 * uv_max, 101)
+                v = np.linspace(-1.2 * uv_max, 1.2 * uv_max, 101)
                 uu, vv = np.meshgrid(u, v)
 
                 # Create a data dictionary with the u-v grid
@@ -2459,12 +2520,12 @@ class data():
 
                 # Add colorbar to the figure
                 cbar = plt.colorbar()
-                cbar.ax.set_ylabel('Phase (deg)', rotation=270., fontsize=10., labelpad=12.)
+                cbar.ax.set_ylabel('Phase (deg)', rotation=270.0, fontsize=10.0, labelpad=12.0)
 
                 # Set the (arbitrary) extent of the arrow that indicates
                 # the direction to the companion of the provided parameters
-                u_comp = 0.5*(uv_max/rad2asec)*fit['p'][1]/np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
-                v_comp = 0.5*(uv_max/rad2asec)*fit['p'][2]/np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
+                u_comp = 0.5 * (uv_max / rad2asec) * fit['p'][1] / np.sqrt(fit['p'][1] ** 2 + fit['p'][2] ** 2)
+                v_comp = 0.5 * (uv_max / rad2asec) * fit['p'][2] / np.sqrt(fit['p'][1] ** 2 + fit['p'][2] ** 2)
 
             # Invert the CP-to-phase matrix
             cpmat = data_item['cpmat']
@@ -2485,17 +2546,41 @@ class data():
             if ofile is not None:
                 # Create scatter plot of phases in the u-v plane. Positive
                 # phase are plotted in orange and negative phases in gray.
-                plt.scatter(u_coord[phase<0.], v_coord[phase<0.], c='none',
-                            s=40.*np.abs(phase[phase<0.]), edgecolor='silver', **scatter_kwargs)
-                plt.scatter(u_coord[phase>0.], v_coord[phase>0.], c='none',
-                            s=40.*phase[phase>0.], edgecolor='tab:orange', **scatter_kwargs)
+                plt.scatter(
+                    u_coord[phase < 0.0],
+                    v_coord[phase < 0.0],
+                    c='none',
+                    s=40.0 * np.abs(phase[phase < 0.0]),
+                    edgecolor='silver',
+                    **scatter_kwargs,
+                )
+                plt.scatter(
+                    u_coord[phase > 0.0],
+                    v_coord[phase > 0.0],
+                    c='none',
+                    s=40.0 * phase[phase > 0.0],
+                    edgecolor='tab:orange',
+                    **scatter_kwargs,
+                )
 
                 # Due to the anti-symmetry of the phases, the colors are
                 # swapped on the mirrored side
-                plt.scatter(-u_coord[phase<0.], -v_coord[phase<0.], c='none',
-                            s=40.*np.abs(phase[phase<0.]), edgecolor='tab:orange', **scatter_kwargs)
-                plt.scatter(-u_coord[phase>0.], -v_coord[phase>0.], c='none',
-                            s=40.*phase[phase>0.], edgecolor='silver', **scatter_kwargs)
+                plt.scatter(
+                    -u_coord[phase < 0.0],
+                    -v_coord[phase < 0.0],
+                    c='none',
+                    s=40.0 * np.abs(phase[phase < 0.0]),
+                    edgecolor='tab:orange',
+                    **scatter_kwargs,
+                )
+                plt.scatter(
+                    -u_coord[phase > 0.0],
+                    -v_coord[phase > 0.0],
+                    c='none',
+                    s=40.0 * phase[phase > 0.0],
+                    edgecolor='silver',
+                    **scatter_kwargs,
+                )
 
             # Add the phases and coordinates to the output lists
             phase_list.append(phase)
@@ -2505,14 +2590,24 @@ class data():
         if ofile is not None:
             if fit is not None:
                 # Plot the arrow to the provided companion parameters
-                plt.arrow(0., 0., u_comp, v_comp, head_width=1., head_length=1.,
-                          ls='-', lw=0.7, capstyle='round', facecolor='black')
+                plt.arrow(
+                    0.0,
+                    0.0,
+                    u_comp,
+                    v_comp,
+                    head_width=1.0,
+                    head_length=1.0,
+                    ls='-',
+                    lw=0.7,
+                    capstyle='round',
+                    facecolor='black',
+                )
 
             # Update the axes labels and ticks
-            plt.xlabel('$u$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
-            plt.ylabel('$v$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
+            plt.xlabel('$u$ (arcsec$^{-1}$)', fontsize=12.0, labelpad=0.25)
+            plt.ylabel('$v$ (arcsec$^{-1}$)', fontsize=12.0, labelpad=0.25)
             plt.minorticks_on()
             plt.tight_layout()
-            plt.savefig(ofile+'_phase.pdf')
+            plt.savefig(ofile + '_phase.pdf')
 
         return phase_list, u_list, v_list

@@ -20,11 +20,9 @@ observables_known = ['v2', 'cp', 'kp']
 # MAIN
 # =============================================================================
 
-class data():
 
-    def __init__(self,
-                 idir,
-                 fitsfiles):
+class data:
+    def __init__(self, idir, fitsfiles):
         """
         Parameters
         ----------
@@ -38,8 +36,8 @@ class data():
         self.idir = idir
         self.fitsfiles = fitsfiles
 
-        if (self.fitsfiles is None):
-            self.fitsfiles = glob.glob(self.idir+'*fits')
+        if self.fitsfiles is None:
+            self.fitsfiles = glob.glob(self.idir + '*fits')
             for i, item in enumerate(self.fitsfiles):
                 head, tail = os.path.split(item)
                 self.fitsfiles[i] = tail
@@ -47,9 +45,7 @@ class data():
         self.inst_list = []
         self.data_list = []
         for i in range(len(self.fitsfiles)):
-            inst_list, data_list = inst.open(idir=idir,
-                                             fitsfile=self.fitsfiles[i],
-                                             verbose=False)
+            inst_list, data_list = inst.open(idir=idir, fitsfile=self.fitsfiles[i], verbose=False)
             self.inst_list += inst_list
             self.data_list += data_list
 
@@ -68,8 +64,7 @@ class data():
 
         return self.inst_list
 
-    def set_inst(self,
-                 inst):
+    def set_inst(self, inst):
         """
         Parameters
         ----------
@@ -77,12 +72,12 @@ class data():
             Instrument which shall be selected.
         """
 
-        if (inst in self.inst_list):
+        if inst in self.inst_list:
             self.inst = inst
-            print('Selected instrument = '+self.inst)
+            print('Selected instrument = ' + self.inst)
             print('   Use self.set_inst(inst) to change the selected instrument')
         else:
-            raise UserWarning(inst+' is an unknown instrument')
+            raise UserWarning(inst + ' is an unknown instrument')
 
         return None
 
@@ -99,8 +94,8 @@ class data():
         for i in range(len(observables_known)):
             j = 0
             flag = True
-            while (j < len(ww) and flag):
-                if (observables_known[i] not in self.data_list[ww[j]][0].keys()):
+            while j < len(ww) and flag:
+                if observables_known[i] not in self.data_list[ww[j]][0].keys():
                     flag = False
                 j += 1
             if flag:
@@ -108,8 +103,7 @@ class data():
 
         return observables
 
-    def set_observables(self,
-                        observables):
+    def set_observables(self, observables):
         """
         Parameters
         ----------
@@ -119,17 +113,16 @@ class data():
 
         observables_valid = self.get_observables()
         for i in range(len(observables)):
-            if (observables[i] not in observables_valid):
-                raise UserWarning(observables[i]+' is not a valid observable for the currently selected instrument')
+            if observables[i] not in observables_valid:
+                raise UserWarning(observables[i] + ' is not a valid observable for the currently selected instrument')
         self.observables = observables
-        print('Selected observables = '+str(self.observables))
+        print('Selected observables = ' + str(self.observables))
         print('   Use self.set_observables(observables) to change the selected observables')
 
         return None
 
     def clear_cov(self):
-        """
-        """
+        """ """
 
         for i in range(len(self.fitsfiles)):
             hdul = pyfits.open(os.path.join(self.idir, self.fitsfiles[i]))
@@ -145,8 +138,7 @@ class data():
 
         pass
 
-    def add_v2cov(self,
-                  odir):
+    def add_v2cov(self, odir):
         """
         Parameters
         ----------
@@ -157,7 +149,7 @@ class data():
 
         print('   Computing visibility amplitude correlations')
 
-        if (not os.path.exists(odir)):
+        if not os.path.exists(odir):
             os.makedirs(odir)
 
         data_list = []
@@ -165,18 +157,18 @@ class data():
         for i in range(len(ww)):
             data_list += [self.data_list[ww[i]]]
 
-        if (len(self.fitsfiles) != len(data_list)):
+        if len(self.fitsfiles) != len(data_list):
             raise UserWarning('All input fits files should contain data of the selected instrument')
 
         for i in range(len(self.fitsfiles)):
             Nwave = data_list[i][0]['wave'].shape[0]
             Nbase = data_list[i][0]['v2'].shape[0]
 
-            cor = np.diag(np.ones(Nwave*Nbase))
+            cor = np.diag(np.ones(Nwave * Nbase))
             covs = []
             for j in range(len(data_list[i])):
                 dv2 = data_list[i][j]['dv2']
-                cov = np.multiply(cor, dv2.flatten()[:, None]*dv2.flatten()[None, :])
+                cov = np.multiply(cor, dv2.flatten()[:, None] * dv2.flatten()[None, :])
                 covs += [cov]
             covs = np.array(covs)
 
@@ -185,7 +177,7 @@ class data():
             hdu0.header['EXTNAME'] = 'V2COV'
             hdu0.header['INSNAME'] = self.inst
             hdul += [hdu0]
-            hdul.writeto(odir+self.fitsfiles[i], output_verify='fix', overwrite=True)
+            hdul.writeto(odir + self.fitsfiles[i], output_verify='fix', overwrite=True)
 
         # plt.imshow(cor, origin='lower')
         # plt.xlabel('Index')
@@ -196,8 +188,7 @@ class data():
 
         return None
 
-    def add_cpcov(self,
-                  odir):
+    def add_cpcov(self, odir):
         """
         Parameters
         ----------
@@ -208,7 +199,7 @@ class data():
 
         print('   Computing closure phase correlations')
 
-        if (not os.path.exists(odir)):
+        if not os.path.exists(odir):
             os.makedirs(odir)
 
         data_list = []
@@ -216,7 +207,7 @@ class data():
         for i in range(len(ww)):
             data_list += [self.data_list[ww[i]]]
 
-        if (len(self.fitsfiles) != len(data_list)):
+        if len(self.fitsfiles) != len(data_list):
             raise UserWarning('All input fits files should contain data of the selected instrument')
 
         for i in range(len(self.fitsfiles)):
@@ -225,16 +216,18 @@ class data():
             Nbase = cpmat.shape[1]
             Ntria = cpmat.shape[0]
 
-            trafo = np.zeros((Nwave*Ntria, Nwave*Nbase))
+            trafo = np.zeros((Nwave * Ntria, Nwave * Nbase))
             for k in range(Ntria):
                 for l in range(Nbase):
-                    trafo[k*Nwave:(k+1)*Nwave, l*Nwave:(l+1)*Nwave] = np.diag(np.ones(Nwave))*cpmat[k, l]
+                    trafo[k * Nwave : (k + 1) * Nwave, l * Nwave : (l + 1) * Nwave] = (
+                        np.diag(np.ones(Nwave)) * cpmat[k, l]
+                    )
 
-            cor = np.dot(trafo, np.dot(np.diag(np.ones(Nwave*Nbase)), trafo.T))/3.
+            cor = np.dot(trafo, np.dot(np.diag(np.ones(Nwave * Nbase)), trafo.T)) / 3.0
             covs = []
             for j in range(len(data_list[i])):
                 dcp = data_list[i][j]['dcp']
-                cov = np.multiply(cor, dcp.flatten()[:, None]*dcp.flatten()[None, :])
+                cov = np.multiply(cor, dcp.flatten()[:, None] * dcp.flatten()[None, :])
                 covs += [cov]
             covs = np.array(covs)
 
@@ -243,7 +236,7 @@ class data():
             hdu0.header['EXTNAME'] = 'CPCOV'
             hdu0.header['INSNAME'] = self.inst
             hdul += [hdu0]
-            hdul.writeto(odir+self.fitsfiles[i], output_verify='fix', overwrite=True)
+            hdul.writeto(odir + self.fitsfiles[i], output_verify='fix', overwrite=True)
 
         # plt.imshow(cor, origin='lower')
         # plt.xlabel('Index')
@@ -254,9 +247,7 @@ class data():
 
         return None
 
-    def add_cov(self,
-                odir):
-
+    def add_cov(self, odir):
         """
         Parameters
         ----------
@@ -267,7 +258,7 @@ class data():
 
         print('Computing correlations')
 
-        if (not os.path.exists(odir)):
+        if not os.path.exists(odir):
             os.makedirs(odir)
 
         self.add_v2cov(odir=odir)
