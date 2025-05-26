@@ -55,7 +55,7 @@ def v2_ud_base(data_list,
     ofile: str
         Path under which figures shall be saved.
     """
-    
+
     bb = []
     v2 = []
     dv2 = []
@@ -74,7 +74,7 @@ def v2_ud_base(data_list,
     dv2 = np.concatenate(dv2)
     v2_mod = np.concatenate(v2_mod)
     v2_res = v2-v2_mod
-    
+
     xmin, xmax = np.min(bb), np.max(bb)
     data = {}
     data['uu'] = np.linspace(xmin, xmax, modres)
@@ -91,7 +91,7 @@ def v2_ud_base(data_list,
     v2_mod = np.abs(vis_mod)**2
     v2_mod_l = np.abs(vis_mod_l)**2
     v2_mod_u = np.abs(vis_mod_u)**2
-    
+
     fig, ax = plt.subplots(2, 1, sharex='col', gridspec_kw={'height_ratios': [4, 1]}, figsize=(6.4, 4.8))
     ax[0].errorbar(bb/1e6, v2, yerr=dv2, elinewidth=1, ls='none', marker='s', ms=2, color=datacol, zorder=1, label='Data')
     ax[0].plot(data['uu']/1e6, v2_mod, color=modelcol, zorder=4, label='Model')
@@ -144,7 +144,7 @@ def v2_ud(data_list,
     ofile: str
         Path under which figures shall be saved.
     """
-    
+
     v2 = []
     dv2 = []
     v2_mod = []
@@ -160,7 +160,7 @@ def v2_ud(data_list,
     dv2 = np.concatenate(dv2)
     v2_mod = np.concatenate(v2_mod)
     v2_res = v2-v2_mod
-    
+
     fig, ax = plt.subplots(2, 1, sharex='col', gridspec_kw={'height_ratios': [4, 1]}, figsize=(6.4, 4.8))
     ax[0].errorbar(v2_mod, v2, yerr=dv2, elinewidth=1, ls='none', marker='s', ms=2, color=datacol, zorder=1, label='Data')
     ax[0].plot([np.min(v2_mod), np.max(v2_mod)], [np.min(v2_mod), np.max(v2_mod)], color=modelcol, zorder=4, label='Model')
@@ -203,7 +203,7 @@ def cp_bin(data_list,
     Parameters
     ----------
     data_list: list of dict
-        List of data whose closure phases shall be plotted. The list contains 
+        List of data whose closure phases shall be plotted. The list contains
         one data structure for each observation.
     fit: dict
         Point-source companion fit whose closure phase shall be plotted.
@@ -212,7 +212,7 @@ def cp_bin(data_list,
     ofile: str
         Path under which figures shall be saved.
     """
-    
+
     cp = []
     dcp = []
     cp_mod = []
@@ -242,7 +242,7 @@ def cp_bin(data_list,
     dcp = np.concatenate(dcp)
     cp_mod = np.concatenate(cp_mod)
     cp_res = cp-cp_mod
-    
+
     fig, ax = plt.subplots(2, 1, sharex='col', gridspec_kw={'height_ratios': [4, 1]}, figsize=(6.4, 4.8))
     ax[0].errorbar(cp_mod, cp, yerr=dcp, elinewidth=1, ls='none', marker='s', ms=2, color=datacol, zorder=1, label='Data')
     ax[0].plot([np.min(cp_mod), np.max(cp_mod)], [np.min(cp_mod), np.max(cp_mod)], color=modelcol, zorder=4, label='Model')
@@ -294,7 +294,7 @@ def v2_cp_ud_bin(data_list,
     ofile: str
         Path under which figures shall be saved.
     """
-    
+
     v2 = []
     dv2 = []
     v2_mod = []
@@ -335,7 +335,7 @@ def v2_cp_ud_bin(data_list,
     dcp = np.concatenate(dcp)
     cp_mod = np.concatenate(cp_mod)
     cp_res = cp-cp_mod
-    
+
     fig, ax = plt.subplots(2, 2, sharex='col', gridspec_kw={'height_ratios': [4, 1]}, figsize=(9.6, 4.8))
     ax[0, 0].errorbar(v2_mod, v2, yerr=dv2, elinewidth=1, ls='none', marker='s', ms=2, color=datacol, zorder=1, label='Data')
     ax[0, 0].plot([np.min(v2_mod), np.max(v2_mod)], [np.min(v2_mod), np.max(v2_mod)], color=modelcol, zorder=4, label='Model')
@@ -393,7 +393,7 @@ def kp_bin(data_list,
     Parameters
     ----------
     data_list: list of dict
-        List of data whose kernel phases shall be plotted. The list contains 
+        List of data whose kernel phases shall be plotted. The list contains
         one data structure for each observation.
     fit: dict
         Point-source companion fit whose kernel phase shall be plotted.
@@ -402,7 +402,7 @@ def kp_bin(data_list,
     ofile: str
         Path under which figures shall be saved.
     """
-    
+
     kp = []
     dkp = []
     kp_mod = []
@@ -432,7 +432,7 @@ def kp_bin(data_list,
     dkp = np.concatenate(dkp)
     kp_mod = np.concatenate(kp_mod)
     kp_res = kp-kp_mod
-    
+
     fig, ax = plt.subplots(2, 1, sharex='col', gridspec_kw={'height_ratios': [4, 1]}, figsize=(6.4, 4.8))
     ax[0].errorbar(kp_mod, kp, yerr=dkp, elinewidth=1, ls='none', marker='s', ms=2, color=datacol, zorder=1, label='Data')
     ax[0].plot([np.min(kp_mod), np.max(kp_mod)], [np.min(kp_mod), np.max(kp_mod)], color=modelcol, zorder=4, label='Model')
@@ -512,7 +512,7 @@ def lincmap(pps,
     plot_nsigma: bool
             Plot detection significance instead of chi-squared map.
     """
-    
+
     grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
                                              step_size=step_size,
                                              verbose=False)
@@ -542,7 +542,7 @@ def lincmap(pps,
             searchmap[phi > searchbox['phi'][1]] = 0.
         searchmap = searchmap.reshape(grid_ra_dec[0].shape)
         searchmap[np.isnan(grid_ra_dec[0])] = 0.
-    
+
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     fig, ax = plt.subplots(1, 3, figsize=(19.2, 4.8))
     temp = pps[0]
@@ -655,7 +655,7 @@ def chi2map(pps_unique,
         [rho_min, rho_max], 'phi': [phi_min, phi_max]}. Note that -180 <= phi
         < 180.
     """
-    
+
     grid_ra_dec_fine, grid_sep_pa_fine = util.get_grid(sep_range=sep_range,
                                                        step_size=step_size/4.,
                                                        verbose=False)
@@ -686,7 +686,7 @@ def chi2map(pps_unique,
             searchmap[phi > searchbox['phi'][1]] = 0.
         searchmap = searchmap.reshape(grid_ra_dec_fine[0].shape)
         searchmap[np.isnan(grid_ra_dec_fine[0])] = 0.
-    
+
     fig = plt.figure(figsize=(6.4, 4.8))
     ax = plt.gca()
     p0 = ax.imshow(chi2s_rbf/fit['ndof'], cmap='cubehelix', origin='lower', extent=(emax+step_size/2., -emax-step_size/2., -emax-step_size/2., emax+step_size/2.))
@@ -746,7 +746,7 @@ def chains(fit,
     fixpos: bool
         Fix position of fit?
     """
-    
+
     if (fit['model'] == 'ud'):
         fig = plt.figure()
         plt.plot(samples[:, 0], color=datacol)
@@ -870,7 +870,7 @@ def corner(fit,
     fixpos: bool
         Fix position of fit?
     """
-    
+
     if (fit['model'] == 'ud'):
         fig = cp.corner(samples,
                         labels=[r'$\theta$ [mas]'],
@@ -996,12 +996,12 @@ def detlim(ffs_absil,
     ofile: str
         Path under which figures shall be saved.
     """
-    
+
     grid_ra_dec, grid_sep_pa = util.get_grid(sep_range=sep_range,
                                              step_size=step_size,
                                              verbose=False)
     emax = np.nanmax(grid_ra_dec[0])
-    
+
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     gs = gridspec.GridSpec(2, 2)
     fig = plt.figure(figsize=(2*6.4, 2*4.8))
@@ -1024,12 +1024,12 @@ def detlim(ffs_absil,
     ax.set_ylabel('$\Delta$DEC [mas]')
     ax.set_title('Method Injection')
     ax = plt.subplot(gs[1, :])
-    
+
     # temp = np.load('/Users/jkammerer/Documents/Code/fouriever/test/axcir_smear_nocov_sub_detlim_absil.npy', allow_pickle=True)
     # ax.plot(temp[0], temp[1], color=colors[0], lw=3, label='Method Absil (w/o cov)')
     # temp = np.load('/Users/jkammerer/Documents/Code/fouriever/test/axcir_smear_nocov_sub_detlim_injection.npy', allow_pickle=True)
     # ax.plot(temp[0], temp[1], color=colors[1], lw=3, label='Method Injection (w/o cov)')
-    
+
     rad, avg = ot.azimuthalAverage(ffs_absil, returnradii=True, binsize=1)
     ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[0], lw=3, label='Method Absil')
     # ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[0], lw=3, ls='--', label='Method Absil (w/ cov)')
@@ -1064,7 +1064,7 @@ def detlim(ffs_absil,
             np.save(ofile[:-4]+'_detlim_injection.npy', data)
         else:
             np.save(ofile+'_detlim_injection.npy', data)
-    
+
     # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_X.npy')
     # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_Y.npy')
     # temp_f = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_f.npy')
@@ -1081,7 +1081,7 @@ def detlim(ffs_absil,
     # rad = rad*step_size
     # ww = rad <= 40.
     # ax.plot(rad[ww], avg[ww], color=colors[1], lw=3, alpha=1./3., label='Method Injection (CANDID)')
-    
+
     ax.grid(axis='both')
     ax.invert_yaxis()
     # ax.set_xlim([0., 60.])

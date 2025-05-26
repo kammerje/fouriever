@@ -21,18 +21,18 @@ def invert(M):
     ----------
     M: array
         Matrix which shall be inverted.
-    
+
     Returns
     -------
     M_inv: array
         Inverse matrix of M.
     """
-    
+
     sx, sy = M.shape
     if (sx != sy):
         raise UserWarning('Can only invert square matrices')
     M_inv = np.linalg.pinv(M)
-    
+
     return M_inv
 
 def open(idir,
@@ -47,7 +47,7 @@ def open(idir,
         Fits file which shall be opened.
     verbose: bool
         True if feedback shall be printed.
-    
+
     Returns
     -------
     inst_list: list of str
@@ -57,7 +57,7 @@ def open(idir,
         each instrument, and this list contains one data structure for each
         observation.
     """
-    
+
     hdul = pyfits.open(os.path.join(idir, fitsfile), memmap=False)
     if ('OI_TARGET' in hdul):
         inst_list, data_list = open_oifile(hdul)
@@ -69,7 +69,7 @@ def open(idir,
     else:
         raise UserWarning(f'Unknown file type: {idir+fitsfile}')
     hdul.close()
-    
+
     if verbose:
         for i in range(len(inst_list)):
             print('Opened '+inst_list[i]+' data')
@@ -88,7 +88,7 @@ def open(idir,
             except KeyError:
                 None
             print('   %.0f wavelengths' % data_list[i][0]['wave'].shape[0])
-    
+
     return inst_list, data_list
 
 def open_oifile(hdul):
@@ -97,7 +97,7 @@ def open_oifile(hdul):
     ----------
     hdul: HDUList
         Fits file which shall be opened.
-    
+
     Returns
     -------
     inst_list: list of str
@@ -107,7 +107,7 @@ def open_oifile(hdul):
         each instrument, and this list contains one data structure for each
         observation.
     """
-    
+
     data = {}
     klflag = False
     for i in range(len(hdul)):
@@ -188,7 +188,7 @@ def open_oifile(hdul):
                     data[inst]['cpcov'] = hdul[i].data
         except Exception:
             continue
-    
+
     inst_list = []
     data_list = []
     is_sampy = False
@@ -362,7 +362,7 @@ def open_oifile(hdul):
                     else:
                         data_list[i][j]['diam'] = 6.5
                         # raise UserWarning('Telescope not known')
-    
+
     return inst_list, data_list
 
 def open_kpfile_old(hdul):
@@ -371,7 +371,7 @@ def open_kpfile_old(hdul):
     ----------
     hdul: HDUList
         Fits file which shall be opened.
-    
+
     Returns
     -------
     inst_list: list of str
@@ -381,7 +381,7 @@ def open_kpfile_old(hdul):
         each instrument, and this list contains one data structure for each
         observation.
     """
-    
+
     if (len(hdul['KP-DATA'].data.shape) == 1):
         try:
             inst_list = [hdul[0].header['INSTRUME']]
@@ -409,7 +409,7 @@ def open_kpfile_old(hdul):
         except KeyError:
             pass
         data_list[0][0]['klflag'] = False # only relevant for OIFITS files
-        data_list[0][0]['kpmat'] = hdul['KER-MAT'].data    
+        data_list[0][0]['kpmat'] = hdul['KER-MAT'].data
         if ('ESO-VLT' in hdul[0].header['TELESCOP']):
             data_list[0][0]['diam'] = 8.2
         elif ('Keck' in hdul[0].header['TELESCOP']):
@@ -455,7 +455,7 @@ def open_kpfile_old(hdul):
                 raise UserWarning('Telescope not known')
             data_list += [temp]
         data_list = [data_list]
-    
+
     return inst_list, data_list
 
 def open_kpfile_new(hdul):
@@ -464,7 +464,7 @@ def open_kpfile_new(hdul):
     ----------
     hdul: HDUList
         Fits file which shall be opened.
-    
+
     Returns
     -------
     inst_list: list of str
@@ -474,7 +474,7 @@ def open_kpfile_new(hdul):
         each instrument, and this list contains one data structure for each
         observation.
     """
-    
+
     nobs = hdul['KP-DATA'].data.shape[0]
     inst_list = [hdul[0].header['INSTRUME']]
     data_list = []
@@ -512,5 +512,5 @@ def open_kpfile_new(hdul):
         temp['diam'] = hdul[0].header['DIAM']
         data_list += [temp]
     data_list = [data_list]
-    
+
     return inst_list, data_list
