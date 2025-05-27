@@ -2421,11 +2421,6 @@ class data():
                     data_list[-1]['uu_smear'] = np.divide(data_list[-1]['v2u'][:, np.newaxis], wave[np.newaxis, :])
                     data_list[-1]['vv_smear'] = np.divide(data_list[-1]['v2v'][:, np.newaxis], wave[np.newaxis, :])
 
-        # Initiate the figure
-        if ofile is not None:
-            plt.figure(figsize=(3.7, 3.))
-            ax = plt.gca()
-
         # Initiate the output list that will be returned
         u_list = []
         v_list = []
