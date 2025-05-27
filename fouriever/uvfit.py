@@ -2431,6 +2431,13 @@ class data():
         v_list = []
         phase_list = []
 
+        # Initiate model lists for plotting
+        model_u = None
+        model_v = None
+        model_phase = None
+        u_comp = None
+        v_comp = None
+
         # Iterate over the data files
         for data_idx, data_item in enumerate(data_list):
             if fit is not None and ofile is not None and data_idx == 0:
@@ -2454,13 +2461,6 @@ class data():
                 u /= rad2asec
                 v /= rad2asec
 
-                # Plot the model phase in the background as image
-                plt.imshow(model_phase, extent=[u[0], u[-1], v[0], v[-1]], origin='lower', cmap='PiYG', aspect='auto')
-
-                # Add colorbar to the figure
-                cbar = plt.colorbar()
-                cbar.ax.set_ylabel('Phase (deg)', rotation=270., fontsize=10., labelpad=12.)
-
                 # Set the (arbitrary) extent of the arrow that indicates
                 # the direction to the companion of the provided parameters
                 u_comp = 0.5*(uv_max/rad2asec)*fit['p'][1]/np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
@@ -2482,6 +2482,7 @@ class data():
             u_coord /= rad2asec
             v_coord /= rad2asec
 
+
             if ofile is not None:
                 # Create scatter plot of phases in the u-v plane. Positive
                 # phase are plotted in orange and negative phases in gray.
@@ -2502,17 +2503,17 @@ class data():
             u_list.append(u_coord)
             v_list.append(v_coord)
 
-        if ofile is not None:
-            if fit is not None:
-                # Plot the arrow to the provided companion parameters
-                plt.arrow(0., 0., u_comp, v_comp, head_width=1., head_length=1.,
-                          ls='-', lw=0.7, capstyle='round', facecolor='black')
-
-            # Update the axes labels and ticks
-            plt.xlabel('$u$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
-            plt.ylabel('$v$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
-            plt.minorticks_on()
-            plt.tight_layout()
-            plt.savefig(ofile+'_phase.pdf')
+        plot.estimate_phase(
+            phase_list,
+            u_list,
+            v_list,
+            model_phase=model_phase,
+            model_u=model_u,
+            model_v=model_v,
+            scatter_kwargs=scatter_kwargs,
+            u_comp=u_comp,
+            v_comp=v_comp,
+            ofile=ofile,
+        )
 
         return phase_list, u_list, v_list

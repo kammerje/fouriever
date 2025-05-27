@@ -1104,3 +1104,50 @@ def detlim(ffs_absil,
             plt.savefig(ofile+'_detlim.pdf')
     # plt.show()
     plt.close()
+
+def estimate_phase(
+    phase_list,
+    u_list,
+    v_list,
+    model_phase=None,
+    model_u=None,
+    model_v=None,
+    scatter_kwargs=None,
+    u_comp=None,
+    v_comp=None,
+    ofile=None,
+):
+    # Plot the model only for the first data item
+    if model_phase is not None:
+        # Plot the model phase in the background as image
+        plt.imshow(
+            model_phase, extent=[model_u[0], model_u[-1], model_v[0], model_v[-1]], origin='lower', cmap='PiYG', aspect='auto'
+        )
+        cbar = plt.colorbar()
+        cbar.ax.set_ylabel('Phase (deg)', rotation=270., fontsize=10., labelpad=12.)
+        plt.arrow(0., 0., u_comp, v_comp, head_width=1., head_length=1.,
+                    ls='-', lw=0.7, capstyle='round', facecolor='black')
+
+    for phase, u, v in zip(phase_list, u_list, v_list):
+        # Create scatter plot of phases in the u-v plane. Positive
+        # phase are plotted in orange and negative phases in gray.
+        plt.scatter(u[phase<0.], v[phase<0.], c='none',
+                    s=40.*np.abs(phase[phase<0.]), edgecolor='silver', **scatter_kwargs)
+        plt.scatter(u[phase>0.], v[phase>0.], c='none',
+                    s=40.*phase[phase>0.], edgecolor='tab:orange', **scatter_kwargs)
+
+        # Due to the anti-symmetry of the phases, the colors are
+        # swapped on the mirrored side
+        plt.scatter(-u[phase<0.], -v[phase<0.], c='none',
+                    s=40.*np.abs(phase[phase<0.]), edgecolor='tab:orange', **scatter_kwargs)
+        plt.scatter(-u[phase>0.], -v[phase>0.], c='none',
+                    s=40.*phase[phase>0.], edgecolor='silver', **scatter_kwargs)
+
+    # Update the axes labels and ticks
+    plt.xlabel('$u$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
+    plt.ylabel('$v$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
+    plt.minorticks_on()
+    plt.tight_layout()
+    if (ofile is not None):
+        plt.savefig(ofile+'_phase.pdf')
+    plt.close()
