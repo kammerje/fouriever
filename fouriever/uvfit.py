@@ -2477,22 +2477,6 @@ class data():
             u_coord /= rad2asec
             v_coord /= rad2asec
 
-
-            if ofile is not None:
-                # Create scatter plot of phases in the u-v plane. Positive
-                # phase are plotted in orange and negative phases in gray.
-                plt.scatter(u_coord[phase<0.], v_coord[phase<0.], c='none',
-                            s=40.*np.abs(phase[phase<0.]), edgecolor='silver', **scatter_kwargs)
-                plt.scatter(u_coord[phase>0.], v_coord[phase>0.], c='none',
-                            s=40.*phase[phase>0.], edgecolor='tab:orange', **scatter_kwargs)
-
-                # Due to the anti-symmetry of the phases, the colors are
-                # swapped on the mirrored side
-                plt.scatter(-u_coord[phase<0.], -v_coord[phase<0.], c='none',
-                            s=40.*np.abs(phase[phase<0.]), edgecolor='tab:orange', **scatter_kwargs)
-                plt.scatter(-u_coord[phase>0.], -v_coord[phase>0.], c='none',
-                            s=40.*phase[phase>0.], edgecolor='silver', **scatter_kwargs)
-
             # Add the phases and coordinates to the output lists
             phase_list.append(phase)
             u_list.append(u_coord)
