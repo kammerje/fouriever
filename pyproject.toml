@@ -2,6 +2,33 @@
 requires = ["setuptools", "wheel"]
 build-backend = 'setuptools.build_meta'
 
+[project]
+name = "fouriever"
+version = "0.4.15"
+description = "A single toolkit for calibrations, correlations, and companion search for kernel phase, aperture masking, and long-baseline interferometry data."
+readme = "README.md"
+authors = [{ name = "Jens Kammerer" },]
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "scipy",
+    "astropy",
+    "corner",
+    "emcee",
+    "pymultinest",
+    "mpmath",
+]
+
+[tool.setuptools.packages.find]
+include = ["fouriever"]  # package names should match these glob patterns (["*"] by default)
+
+[project.urls]
+Homepage = "https://github.com/kammerje/fouriever"
+Issues = "https://github.com/kammerje/fouriever/issues"
+
+[project.optional-dependencies]
+fft = ["pyFFTW"]
+
 [tool.ruff]
 line-length = 120
 
