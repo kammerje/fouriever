@@ -8,9 +8,10 @@ from __future__ import division
 import astropy.io.fits as pyfits
 import numpy as np
 
-import glob
 import os
 import sys
+
+from fouriever.util import glob_fits_files
 
 from . import inst
 
@@ -45,16 +46,10 @@ class data:
         self.calfiles = calfiles
 
         if self.scifiles is None:
-            self.scifiles = glob.glob(self.scidir + '*fits')
-            for i, item in enumerate(self.scifiles):
-                head, tail = os.path.split(item)
-                self.scifiles[i] = tail
+            self.scifiles = glob_fits_files(self.scidir)
 
         if self.calfiles is None:
-            self.calfiles = glob.glob(self.caldir + '*fits')
-            for i, item in enumerate(self.calfiles):
-                head, tail = os.path.split(item)
-                self.calfiles[i] = tail
+            self.calfiles = glob_fits_files(self.caldir)
 
         self.sci_inst_list = []
         self.sci_data_list = []
@@ -428,17 +423,9 @@ class data:
                         except Exception:
                             pass
 
-                ww = self.scifiles[i].rfind('/')
-                if ww == -1:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][:-5] + '_klcal.fits'), overwrite=True, output_verify='fix'
-                    )
-                else:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][ww + 1 : -5] + '_klcal.fits'),
-                        overwrite=True,
-                        output_verify='fix',
-                    )
+                file_stem = os.path.splitext(os.path.basename(self.scifiles[i]))[0]
+                out_path = os.path.join(odir, file_stem + '_klcal.fits')
+                hdul.writeto(out_path, overwrite=True, output_verify='fix')
                 hdul.close()
 
             elif ('OI_VIS2' in hdul) and ('OI_T3' in hdul):
@@ -531,17 +518,9 @@ class data:
                                 )
                         hdul += [hdu0, hdu1, hdu2]
 
-                ww = self.scifiles[i].rfind('/')
-                if ww == -1:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][:-7] + '_klcal.oifits'), overwrite=True, output_verify='fix'
-                    )
-                else:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][ww + 1 : -7] + '_klcal.oifits'),
-                        overwrite=True,
-                        output_verify='fix',
-                    )
+                file_stem = os.path.splitext(os.path.basename(self.scifiles[i]))[0]
+                out_path = os.path.join(odir, file_stem + '_klcal.oifits')
+                hdul.writeto(out_path, overwrite=True, output_verify='fix')
                 hdul.close()
 
             else:
@@ -648,13 +627,9 @@ class data:
                             hdul['KP-COV'].data.copy() + np.mean(kp_kpcov_cal, axis=0) / kp_kpcov_cal.shape[0]
                         )
 
-                ww = self.scifiles[i].rfind('/')
-                if ww == -1:
-                    hdul.writeto(odir + self.scifiles[i][:-5] + '_cal.fits', overwrite=True, output_verify='fix')
-                else:
-                    hdul.writeto(
-                        odir + self.scifiles[i][ww + 1 : -5] + '_cal.fits', overwrite=True, output_verify='fix'
-                    )
+                file_stem = os.path.splitext(os.path.basename(self.scifiles[i]))[0]
+                out_path = os.path.join(odir, file_stem + '_cal.fits')
+                hdul.writeto(out_path, overwrite=True, output_verify='fix')
                 hdul.close()
 
             elif ('OI_VIS2' in hdul) and ('OI_T3' in hdul):
@@ -835,17 +810,9 @@ class data:
                             hdul.pop('OI_T3')
                             hdul += [hdu_cp]
 
-                ww = self.scifiles[i].rfind('/')
-                if ww == -1:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][:-7] + '_cal.oifits'), overwrite=True, output_verify='fix'
-                    )
-                else:
-                    hdul.writeto(
-                        os.path.join(odir, self.scifiles[i][ww + 1 : -7] + '_cal.oifits'),
-                        overwrite=True,
-                        output_verify='fix',
-                    )
+                file_stem = os.path.splitext(os.path.basename(self.scifiles[i]))[0]
+                out_path = os.path.join(odir, file_stem + '_cal.oifits')
+                hdul.writeto(out_path, overwrite=True, output_verify='fix')
                 hdul.close()
 
             else:

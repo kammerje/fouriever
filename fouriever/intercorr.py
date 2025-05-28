@@ -8,8 +8,9 @@ from __future__ import division
 import astropy.io.fits as pyfits
 import numpy as np
 
-import glob
 import os
+
+from fouriever.util import glob_fits_files
 
 from . import inst
 
@@ -37,10 +38,7 @@ class data:
         self.fitsfiles = fitsfiles
 
         if self.fitsfiles is None:
-            self.fitsfiles = glob.glob(self.idir + '*fits')
-            for i, item in enumerate(self.fitsfiles):
-                head, tail = os.path.split(item)
-                self.fitsfiles[i] = tail
+            self.fitsfiles = glob_fits_files(self.idir)
 
         self.inst_list = []
         self.data_list = []
@@ -125,7 +123,8 @@ class data:
         """ """
 
         for i in range(len(self.fitsfiles)):
-            hdul = pyfits.open(os.path.join(self.idir, self.fitsfiles[i]))
+            file_path = os.path.join(self.idir, self.fitsfiles[i])
+            hdul = pyfits.open(file_path)
             try:
                 hdul.pop('V2COV')
             except KeyError:
@@ -134,7 +133,7 @@ class data:
                 hdul.pop('CPCOV')
             except KeyError:
                 pass
-            hdul.writeto(os.path.join(self.idir, self.fitsfiles[i]), output_verify='fix', overwrite=True)
+            hdul.writeto(file_path, output_verify='fix', overwrite=True)
 
         pass
 
@@ -177,7 +176,7 @@ class data:
             hdu0.header['EXTNAME'] = 'V2COV'
             hdu0.header['INSNAME'] = self.inst
             hdul += [hdu0]
-            hdul.writeto(odir + self.fitsfiles[i], output_verify='fix', overwrite=True)
+            hdul.writeto(os.path.join(odir, self.fitsfiles[i]), output_verify='fix', overwrite=True)
 
         # plt.imshow(cor, origin='lower')
         # plt.xlabel('Index')
@@ -236,7 +235,7 @@ class data:
             hdu0.header['EXTNAME'] = 'CPCOV'
             hdu0.header['INSNAME'] = self.inst
             hdul += [hdu0]
-            hdul.writeto(odir + self.fitsfiles[i], output_verify='fix', overwrite=True)
+            hdul.writeto(os.path.join(odir, self.fitsfiles[i]), output_verify='fix', overwrite=True)
 
         # plt.imshow(cor, origin='lower')
         # plt.xlabel('Index')
