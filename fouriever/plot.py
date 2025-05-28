@@ -263,7 +263,7 @@ def cp_bin(data_list, fit, smear=None, ofile=None):
     plt.subplots_adjust(wspace=0.25, hspace=0.0)
     fig.align_ylabels()
     plt.suptitle('Point-source companion fit')
-    util.save_ofile(ofile, "cp_bin")
+    util.save_ofile(ofile, 'cp_bin')
     # plt.show()
     plt.close()
 
@@ -386,7 +386,7 @@ def v2_cp_ud_bin(data_list, fit, smear=None, ofile=None):
     plt.subplots_adjust(wspace=1.0 / 3.0, hspace=0.0)
     fig.align_ylabels()
     plt.suptitle('Uniform disk with point-source companion fit')
-    util.save_ofile(ofile, "v2_cp_ud_bin")
+    util.save_ofile(ofile, 'v2_cp_ud_bin')
     # plt.show()
     plt.close()
 
@@ -466,7 +466,7 @@ def kp_bin(data_list, fit, smear=None, ofile=None):
     plt.subplots_adjust(wspace=0.25, hspace=0.0)
     fig.align_ylabels()
     plt.suptitle('Point-source companion fit')
-    util.save_ofile(ofile, "kp_bin")
+    util.save_ofile(ofile, 'kp_bin')
     # plt.show()
     plt.close()
 
@@ -669,7 +669,7 @@ def lincmap(
     # ax.plot(rad, max/avg, color='black', ls=':')
     # ax.set_ylabel(r'Significance [$\sigma$]', rotation=270, labelpad=20)
     plt.tight_layout()
-    util.save_ofile(ofile, "lincmap")
+    util.save_ofile(ofile, 'lincmap')
     # plt.show()
     plt.close()
 
@@ -795,7 +795,7 @@ def chi2map(pps_unique, chi2s_unique, fit, sep_range, step_size, ofile=None, sea
         plt.suptitle('Chi-squared map')
     else:
         plt.suptitle('Chi-squared map (search region shaded red)')
-    util.save_ofile(ofile, "chi2map")
+    util.save_ofile(ofile, 'chi2map')
     # plt.show()
     plt.close()
 
@@ -825,7 +825,7 @@ def chains(fit, samples, ofile=None, fixpos=False):
         plt.ylabel('$\\theta$ [mas]')
         plt.legend(loc='upper right')
         plt.suptitle('MCMC chains')
-        util.save_ofile(ofile, "mcmc_chains")
+        util.save_ofile(ofile, 'mcmc_chains')
         # plt.show()
         plt.close()
     elif (fit['model'] == 'bin'):
@@ -887,7 +887,7 @@ def chains(fit, samples, ofile=None, fixpos=False):
             plt.subplots_adjust(wspace=0.25, hspace=0.)
             fig.align_ylabels()
         plt.suptitle('MCMC chains')
-        util.save_ofile(ofile, "mcmc_chains")
+        util.save_ofile(ofile, 'mcmc_chains')
         # plt.show()
         plt.close()
     else:
@@ -917,7 +917,7 @@ def chains(fit, samples, ofile=None, fixpos=False):
         plt.subplots_adjust(wspace=0.25, hspace=0.0)
         fig.align_ylabels()
         plt.suptitle('MCMC chains')
-        util.save_ofile(ofile, "mcmc_chains")
+        util.save_ofile(ofile, 'mcmc_chains')
         # plt.show()
         plt.close()
 
@@ -944,7 +944,7 @@ def corner(fit, samples, ofile=None, fixpos=False):
             show_titles=True,
             title_fmt='.3f',
         )
-        util.save_ofile(ofile, "mcmc_corner")
+        util.save_ofile(ofile, 'mcmc_corner')
         # plt.show()
         plt.close()
     elif fit['model'] == 'bin':
@@ -959,7 +959,7 @@ def corner(fit, samples, ofile=None, fixpos=False):
                 show_titles=True,
                 title_fmt='.3f',
             )
-            util.save_ofile(ofile, "mcmc_corner")
+            util.save_ofile(ofile, 'mcmc_corner')
             # plt.show()
             plt.close()
         else:
@@ -977,7 +977,7 @@ def corner(fit, samples, ofile=None, fixpos=False):
                     show_titles=True,
                     title_fmt='.3f',
                 )
-                util.save_ofile(ofile, "mcmc_corner")
+                util.save_ofile(ofile, 'mcmc_corner')
                 # plt.show()
                 plt.close()
             else:
@@ -993,7 +993,7 @@ def corner(fit, samples, ofile=None, fixpos=False):
                     show_titles=True,
                     title_fmt='.3f',
                 )
-                util.save_ofile(ofile, "mcmc_corner")
+                util.save_ofile(ofile, 'mcmc_corner')
                 # plt.show()
                 plt.close()
     else:
@@ -1009,7 +1009,7 @@ def corner(fit, samples, ofile=None, fixpos=False):
             show_titles=True,
             title_fmt='.3f',
         )
-        util.save_ofile(ofile, "mcmc_corner")
+        util.save_ofile(ofile, 'mcmc_corner')
         # plt.show()
         plt.close()
 
@@ -1080,7 +1080,7 @@ def detlim(ffs_absil, ffs_injection, sigma, sep_range, step_size, ofile=None):
     data += [rad * step_size]  # mas
     data += [-2.5 * np.log10(avg)]  # mag
     data = np.array(data)
-    util.save_ofile(ofile, "detlim_absil", data, out_ext="npy")
+    util.save_ofile(ofile, 'detlim_absil', data, out_ext='npy')
     rad, avg = ot.azimuthalAverage(ffs_injection, returnradii=True, binsize=1)
     ax.plot(rad * step_size, -2.5 * np.log10(avg), color=colors[1], lw=3, label='Method Injection')
     # ax.plot(rad*step_size, -2.5*np.log10(avg), color=colors[1], lw=3, ls='--', label='Method Injection (w/ cov)')
@@ -1088,7 +1088,7 @@ def detlim(ffs_absil, ffs_injection, sigma, sep_range, step_size, ofile=None):
     data += [rad * step_size]  # mas
     data += [-2.5 * np.log10(avg)]  # mag
     data = np.array(data)
-    util.save_ofile(ofile, "detlim_injection", data, out_ext="npy")
+    util.save_ofile(ofile, 'detlim_injection', data, out_ext='npy')
 
     # temp_X = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_X.npy')
     # temp_Y = np.load('/Users/jkammerer/Documents/Code/fouriever/test/Absil_Y.npy')
@@ -1115,6 +1115,6 @@ def detlim(ffs_absil, ffs_injection, sigma, sep_range, step_size, ofile=None):
     ax.legend(loc='upper right')
     plt.suptitle('Detection limits (' + str(sigma) + '-$\sigma$)')
     plt.tight_layout()
-    util.save_ofile(ofile, "detlim")
+    util.save_ofile(ofile, 'detlim')
     # plt.show()
     plt.close()

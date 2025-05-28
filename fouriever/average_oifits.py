@@ -19,9 +19,8 @@ pa_mtoc = '-'  # model to chip conversion for position angle
 
 
 def average_single(fitsfile):
-
     fitsfile = str(fitsfile)  # In case a Path is passed
-    
+
     out_path = fitsfile.replace('.oifits', '_avg.oifits')
     hdul = pyfits.open(fitsfile)
 

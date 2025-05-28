@@ -912,6 +912,7 @@ def nsigma(chi2r_test, chi2r_true, ndof, use_mpmath=False):
     #     nsigma = 50.
     # return nsigma
 
+
 def glob_fits_files(fits_dir):
     fits_files = glob.glob(os.path.join(fits_dir, '*fits'))
     for i, item in enumerate(fits_files):
@@ -921,11 +922,11 @@ def glob_fits_files(fits_dir):
 
 def save_ofile(ofile, out_id, *save_args, out_ext=None, **save_kwargs):
     # ofile is [dir/]prefix where dir is optional
-    if (ofile is None):
+    if ofile is None:
         return
     odir, basename = os.path.split(ofile)
     stem, ext = os.path.splitext(basename)
-    if (odir != ""):
+    if odir != '':
         os.makedirs(odir, exist_ok=True)
 
     # Figure out extension:
@@ -938,22 +939,22 @@ def save_ofile(ofile, out_id, *save_args, out_ext=None, **save_kwargs):
             out_ext = ext
         else:
             warnings.warn(
-                f"ofile {ofile} contains known extension {ext}, but output extension {out_ext} will be used",
+                f'ofile {ofile} contains known extension {ext}, but output extension {out_ext} will be used',
                 category=RuntimeWarning,
-                stacklevel=2
+                stacklevel=2,
             )
     else:
-        out_ext = out_ext or "pdf"
-        if ext != "":
+        out_ext = out_ext or 'pdf'
+        if ext != '':
             warnings.warn(
-                f"ofile {ofile} contains unknown extension {ext}. Output extension {out_ext} will be used",
+                f'ofile {ofile} contains unknown extension {ext}. Output extension {out_ext} will be used',
                 category=RuntimeWarning,
-                stacklevel=2
+                stacklevel=2,
             )
 
     # os.path.join will just ignore odir if it is empty
     out_path = os.path.join(odir, stem + '_' + out_id + '.' + out_ext)
-    if out_ext == "npy":
+    if out_ext == 'npy':
         np.save(out_path, *save_args, **save_kwargs)
     elif out_ext in formats_known:
         plt.savefig(out_path, *save_args, **save_kwargs)
