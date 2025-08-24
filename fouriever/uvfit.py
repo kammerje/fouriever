@@ -1442,15 +1442,25 @@ class data:
             ln_prob = samples[:, -1]
             samples = samples[:, :-1]
 
-        if sampler == 'emcee':
-            plot.chains(fit=fit, samples=samples, ofile=ofile, fixpos=fixpos)
+        if (ofile is not None):
+            index = ofile.rfind('/')
+            if (index != -1):
+                temp = ofile[:index]
+                if (not os.path.exists(temp)):
+                    os.makedirs(temp)
+            np.save(ofile+'_mcmc_chains.npy', samples)
+        if (sampler == 'emcee'):
+            plot.chains(fit=fit,
+                        samples=samples,
+                        ofile=ofile)
 
-        if ofile is not None:
-            plot.corner(fit=fit, samples=samples, ofile=ofile, fixpos=fixpos)
-
-        pp = np.percentile(samples, 50.0, axis=0)
-        pu = np.percentile(samples, 84.0, axis=0) - pp
-        pl = pp - np.percentile(samples, 16.0, axis=0)
+        plot.corner(fit=fit,
+                    samples=samples,
+                    ofile=ofile)
+        
+        pp = np.percentile(samples, 50., axis=0)
+        pu = np.percentile(samples, 84., axis=0)-pp
+        pl = pp-np.percentile(samples, 16., axis=0)
         pe = np.mean(np.vstack((pu, pl)), axis=0)
         if fit['model'] == 'ud':
             chi2 = util.chi2_ud(p0=pp, data_list=data_list, observables=self.observables, cov=cov, smear=smear)

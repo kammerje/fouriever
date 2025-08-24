@@ -902,7 +902,7 @@ def chains(fit, samples, ofile=None, fixpos=False):
                 plt.savefig(ofile + '_mcmc_chains.pdf')
         # plt.show()
         plt.close()
-    elif fit['model'] == 'bin':
+    elif (fit['model'] == 'bin'):
         if fixpos:
             ylabels = ['$f$ [%]']
             fig = plt.figure(figsize=(6.4, 1.6))
@@ -912,28 +912,53 @@ def chains(fit, samples, ofile=None, fixpos=False):
             plt.xlabel('Step')
             plt.ylabel(ylabels[0])
             plt.tight_layout()
-        else:
+        if (len(fit['p']) == 3):
             ylabels = ['$f$ [%]', '$\\rho$ [mas]', '$\\varphi$ [deg]']
-            rho = np.sqrt(samples[:, 1] ** 2 + samples[:, 2] ** 2)
-            rho0 = np.sqrt(fit['p'][1] ** 2 + fit['p'][2] ** 2)
+            rho = np.sqrt(samples[:, 1]**2+samples[:, 2]**2)
+            rho0 = np.sqrt(fit['p'][1]**2+fit['p'][2]**2)
             phi = np.rad2deg(np.arctan2(samples[:, 1], samples[:, 2]))
             phi0 = np.rad2deg(np.arctan2(fit['p'][1], fit['p'][2]))
-            fig, ax = plt.subplots(len(fit['p']), 1, sharex='col', figsize=(6.4, 1.6 * len(fit['p'])))
-            ax[0].plot(samples[:, 0] * 100.0, color=datacol)
-            ax[0].axhline(np.percentile(samples[:, 0], 50.0) * 100.0, color=modelcol, label='MCMC median')
-            ax[0].axhline(fit['p'][0] * 100.0, ls='--', color=gridcol, label='Initial guess')
+            fig, ax = plt.subplots(len(fit['p']), 1, sharex='col', figsize=(6.4, 1.6*len(fit['p'])))
+            ax[0].plot(samples[:, 0]*100., color=datacol)
+            ax[0].axhline(np.percentile(samples[:, 0], 50.)*100., color=modelcol, label='MCMC median')
+            ax[0].axhline(fit['p'][0]*100., ls='--', color=gridcol, label='Initial guess')
             ax[1].plot(rho, color=datacol)
-            ax[1].axhline(np.percentile(rho, 50.0), color=modelcol)
+            ax[1].axhline(np.percentile(rho, 50.), color=modelcol)
             ax[1].axhline(rho0, ls='--', color=gridcol)
             ax[2].plot(phi, color=datacol)
-            ax[2].axhline(np.percentile(phi, 50.0), color=modelcol)
+            ax[2].axhline(np.percentile(phi, 50.), color=modelcol)
             ax[2].axhline(phi0, ls='--', color=gridcol)
             plt.xlabel('Step')
             for i in range(len(fit['p'])):
                 ax[i].set_ylabel(ylabels[i])
-                if i == 0:
+                if (i == 0):
                     ax[i].legend(loc='upper right')
-            plt.subplots_adjust(wspace=0.25, hspace=0.0)
+            plt.subplots_adjust(wspace=0.25, hspace=0.)
+            fig.align_ylabels()
+        else:
+            ylabels = ['$f%.0f$ [%%]' % (i + 1) for i in range(len(fit['p']) - 2)]
+            ylabels += ['$\\rho$ [mas]', '$\\varphi$ [deg]']
+            rho = np.sqrt(samples[:, -2]**2+samples[:, -1]**2)
+            rho0 = np.sqrt(fit['p'][-2]**2+fit['p'][-1]**2)
+            phi = np.rad2deg(np.arctan2(samples[:, -2], samples[:, -1]))
+            phi0 = np.rad2deg(np.arctan2(fit['p'][-2], fit['p'][-1]))
+            fig, ax = plt.subplots(len(fit['p']), 1, sharex='col', figsize=(6.4, 1.6*len(fit['p'])))
+            for i in range(len(fit['p']) - 2):
+                ax[i].plot(samples[:, i]*100., color=datacol)
+                ax[i].axhline(np.percentile(samples[:, i], 50.)*100., color=modelcol, label='MCMC median')
+                ax[i].axhline(fit['p'][i]*100., ls='--', color=gridcol, label='Initial guess')
+            ax[-2].plot(rho, color=datacol)
+            ax[-2].axhline(np.percentile(rho, 50.), color=modelcol)
+            ax[-2].axhline(rho0, ls='--', color=gridcol)
+            ax[-1].plot(phi, color=datacol)
+            ax[-1].axhline(np.percentile(phi, 50.), color=modelcol)
+            ax[-1].axhline(phi0, ls='--', color=gridcol)
+            plt.xlabel('Step')
+            for i in range(len(fit['p'])):
+                ax[i].set_ylabel(ylabels[i])
+                if (i == 0):
+                    ax[i].legend(loc='upper right')
+            plt.subplots_adjust(wspace=0.25, hspace=0.)
             fig.align_ylabels()
         plt.suptitle('MCMC chains')
         if ofile is not None:
@@ -1027,7 +1052,7 @@ def corner(fit, samples, ofile=None, fixpos=False):
     elif fit['model'] == 'bin':
         if fixpos:
             temp = samples.copy()
-            temp[:, 0] *= 100.0
+            temp[:, 0] *= 100.
             fig = cp.corner(
                 temp,
                 labels=[r'$f$ [%]'],
@@ -1048,18 +1073,16 @@ def corner(fit, samples, ofile=None, fixpos=False):
         else:
             if samples.shape[1] > 3:
                 temp = samples.copy()
-                temp[:, :-2] *= 100.0
-                temp[:, -2] = np.sqrt(samples[:, -2] ** 2 + samples[:, -1] ** 2)
+                temp[:, :-2] *= 100.
+                temp[:, -2] = np.sqrt(samples[:, -2]**2+samples[:, -1]**2)
                 temp[:, -1] = np.rad2deg(np.arctan2(samples[:, -2], samples[:, -1]))
-                fig = cp.corner(
-                    temp,
-                    labels=[r'$f$ [%]'] * (temp.shape[1] - 2) + [r'$\rho$ [mas]', r'$\varphi$ [deg]'],
-                    titles=[r'$f$'] * (temp.shape[1] - 2) + [r'$\rho$', r'$\varphi$'],
-                    quantiles=[0.16, 0.5, 0.84],
-                    show_titles=True,
-                    title_fmt='.3f',
-                )
-                if ofile is not None:
+                fig = cp.corner(temp,
+                                labels=[r'$f%.0f$ [%%]' % (i + 1) for i in range(temp.shape[1]-2)]+[r'$\rho$ [mas]', r'$\varphi$ [deg]'],
+                                titles=[r'$f%.0f$' % (i + 1) for i in range(temp.shape[1]-2)]+[r'$\rho$', r'$\varphi$'],
+                                quantiles=[0.16, 0.5, 0.84],
+                                show_titles=True,
+                                title_fmt='.3f')
+                if (ofile is not None):
                     index = ofile.rfind('/')
                     if index != -1:
                         temp = ofile[:index]
