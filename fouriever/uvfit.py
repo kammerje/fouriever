@@ -48,10 +48,7 @@ class data:
         """
 
         if fitsfiles is None:
-            fitsfiles = glob.glob(idir + '*fits')
-            for i, item in enumerate(fitsfiles):
-                head, tail = os.path.split(item)
-                fitsfiles[i] = tail
+            fitsfiles = util.glob_fits_files(idir)
 
         self.inst_list = []
         self.data_list = []
@@ -455,7 +452,8 @@ class data:
             hdu3 = pyfits.ImageHDU(nsigmas)
             hdu3.header['EXTNAME'] = 'NSIGMAS'
             hdul = pyfits.HDUList([hdu0, hdu1, hdu2, hdu3])
-            hdul.writeto(ofile + '.fits', output_verify='fix', overwrite=True)
+            out_path = util.save_ofile(ofile, 'lincmap', out_ext='fits')
+            hdul.writeto(out_path, output_verify='fix', overwrite=True)
             hdul.close()
 
         return fit
@@ -1122,27 +1120,28 @@ class data:
                         - util.v2kp(vis_ref, data=self.data_list[ww[i]][j])
                     )
 
+        # TODO: Handle ofile here
         if 'v2' in self.observables:
             v2_out = []
             for i in range(len(ww)):
                 for j in range(len(self.data_list[ww[i]])):
                     v2_out += [self.data_list[ww[i]][j]['v2']]
             v2_out = np.concatenate(v2_out)
-            np.save(ofile + '_v2', v2_out)
+            util.save_ofile(ofile, 'v2', v2_out, out_ext='npy')
         if 'cp' in self.observables:
             cp_out = []
             for i in range(len(ww)):
                 for j in range(len(self.data_list[ww[i]])):
                     cp_out += [self.data_list[ww[i]][j]['cp']]
             cp_out = np.concatenate(cp_out)
-            np.save(ofile + '_cp', cp_out)
+            util.save_ofile(ofile, 'cp', cp_out, out_ext='npy')
         if 'kp' in self.observables:
             kp_out = []
             for i in range(len(ww)):
                 for j in range(len(self.data_list[ww[i]])):
                     kp_out += [self.data_list[ww[i]][j]['kp']]
             kp_out = np.concatenate(kp_out)
-            np.save(ofile + '_kp', kp_out)
+            util.save_ofile(ofile, 'kp', kp_out, out_ext='npy')
 
         self.data_list = buffer
 
@@ -2618,6 +2617,6 @@ class data:
             plt.ylabel('$v$ (arcsec$^{-1}$)', fontsize=12.0, labelpad=0.25)
             plt.minorticks_on()
             plt.tight_layout()
-            plt.savefig(ofile + '_phase.pdf')
+            util.save_ofile(ofile, 'phase')
 
         return phase_list, u_list, v_list
