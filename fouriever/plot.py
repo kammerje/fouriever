@@ -37,7 +37,11 @@ plt.rc('figure', titlesize=18)
 # =============================================================================
 # MAIN
 # =============================================================================
-def v2_ud_base(data_list, fit, smear=None, ofile=None):
+def v2_ud_base(data_list,
+               fit,
+               smear=None,
+               ofile=None,
+               return_fig=False):
     """
     Parameters
     ----------
@@ -115,12 +119,19 @@ def v2_ud_base(data_list, fit, smear=None, ofile=None):
     plt.subplots_adjust(wspace=0.0, hspace=0.0)
     fig.align_ylabels()
     plt.suptitle('Uniform disk fit')
+
     util.save_ofile(ofile, 'v2_ud')
-    # plt.show()
-    plt.close()
+    if return_fig:
+        return fig
+    else:
+        plt.close()
 
 
-def v2_ud(data_list, fit, smear=None, ofile=None):
+def v2_ud(data_list,
+          fit,
+          smear=None,
+          ofile=None,
+          return_fig=False):
     """
     Parameters
     ----------
@@ -184,11 +195,17 @@ def v2_ud(data_list, fit, smear=None, ofile=None):
     fig.align_ylabels()
     plt.suptitle('Uniform disk fit')
     util.save_ofile(ofile, 'v2_ud')
-    # plt.show()
-    plt.close()
+    if return_fig:
+        return fig
+    else:
+        plt.close()
 
 
-def cp_bin(data_list, fit, smear=None, ofile=None):
+def cp_bin(data_list,
+           fit,
+           smear=None,
+           ofile=None,
+           return_fig=False):
     """
     Parameters
     ----------
@@ -264,11 +281,17 @@ def cp_bin(data_list, fit, smear=None, ofile=None):
     fig.align_ylabels()
     plt.suptitle('Point-source companion fit')
     util.save_ofile(ofile, 'cp_bin')
-    # plt.show()
-    plt.close()
+    if return_fig:
+        return fig
+    else:
+        plt.close()
 
 
-def v2_cp_ud_bin(data_list, fit, smear=None, ofile=None):
+def v2_cp_ud_bin(data_list,
+                 fit,
+                 smear=None,
+                 ofile=None,
+                 return_fig=False):
     """
     Parameters
     ----------
@@ -387,11 +410,17 @@ def v2_cp_ud_bin(data_list, fit, smear=None, ofile=None):
     fig.align_ylabels()
     plt.suptitle('Uniform disk with point-source companion fit')
     util.save_ofile(ofile, 'v2_cp_ud_bin')
-    # plt.show()
-    plt.close()
+    if return_fig:
+        return fig
+    else:
+        plt.close()
 
 
-def kp_bin(data_list, fit, smear=None, ofile=None):
+def kp_bin(data_list,
+           fit,
+           smear=None,
+           ofile=None,
+           return_fig=False):
     """
     Parameters
     ----------
@@ -467,24 +496,25 @@ def kp_bin(data_list, fit, smear=None, ofile=None):
     fig.align_ylabels()
     plt.suptitle('Point-source companion fit')
     util.save_ofile(ofile, 'kp_bin')
-    # plt.show()
-    plt.close()
+    if return_fig:
+        return fig
+    else:
+        plt.close()
 
 
-def lincmap(
-    pps,
-    pes,
-    chi2s,
-    nsigmas,
-    fit,
-    sep_range,
-    step_size,
-    vmin=None,
-    vmax=None,
-    ofile=None,
-    searchbox=None,
-    plot_nsigma=False,
-):
+def lincmap(pps,
+            pes,
+            chi2s,
+            nsigmas,
+            fit,
+            sep_range,
+            step_size,
+            vmin=None,
+            vmax=None,
+            ofile=None,
+            searchbox=None,
+            plot_nsigma=False,
+            return_fig=False):
     """
     Parameters
     ----------
@@ -670,11 +700,20 @@ def lincmap(
     # ax.set_ylabel(r'Significance [$\sigma$]', rotation=270, labelpad=20)
     plt.tight_layout()
     util.save_ofile(ofile, 'lincmap')
-    # plt.show()
-    plt.close()
+    if return_fig:
+        return fig
+    else:
+        plt.close()
 
 
-def chi2map(pps_unique, chi2s_unique, fit, sep_range, step_size, ofile=None, searchbox=None):
+def chi2map(pps_unique,
+            chi2s_unique,
+            fit,
+            sep_range,
+            step_size,
+            ofile=None,
+            searchbox=None,
+            return_fig=False):
     """
     Parameters
     ----------
@@ -796,13 +835,16 @@ def chi2map(pps_unique, chi2s_unique, fit, sep_range, step_size, ofile=None, sea
     else:
         plt.suptitle('Chi-squared map (search region shaded red)')
     util.save_ofile(ofile, 'chi2map')
-    # plt.show()
-    plt.close()
+    if return_fig:
+        return fig, chi2s_rbf, grid_ra_dec_fine
+    else:
+        plt.close()
+        return chi2s_rbf, grid_ra_dec_fine
 
-    return chi2s_rbf, grid_ra_dec_fine
-
-
-def chains(fit, samples, ofile=None, fixpos=False):
+def chains(fit,
+           samples,
+           ofile=None,
+           return_fig=False):
     """
     Parameters
     ----------
@@ -826,8 +868,6 @@ def chains(fit, samples, ofile=None, fixpos=False):
         plt.legend(loc='upper right')
         plt.suptitle('MCMC chains')
         util.save_ofile(ofile, 'mcmc_chains')
-        # plt.show()
-        plt.close()
     elif (fit['model'] == 'bin'):
         if fixpos:
             ylabels = ['$f$ [%]']
@@ -888,8 +928,6 @@ def chains(fit, samples, ofile=None, fixpos=False):
             fig.align_ylabels()
         plt.suptitle('MCMC chains')
         util.save_ofile(ofile, 'mcmc_chains')
-        # plt.show()
-        plt.close()
     else:
         ylabels = ['$f$ [%]', '$\\rho$ [mas]', '$\\varphi$ [deg]', '$\\theta$ [mas]']
         rho = np.sqrt(samples[:, 1] ** 2 + samples[:, 2] ** 2)
@@ -918,11 +956,19 @@ def chains(fit, samples, ofile=None, fixpos=False):
         fig.align_ylabels()
         plt.suptitle('MCMC chains')
         util.save_ofile(ofile, 'mcmc_chains')
-        # plt.show()
+
+
+    if return_fig:
+        return fig
+    else:
         plt.close()
 
 
-def corner(fit, samples, ofile=None, fixpos=False):
+def corner(fit,
+           samples,
+           ofile=None,
+           fixpos=False,
+           return_fig=False):
     """
     Parameters
     ----------
@@ -945,8 +991,6 @@ def corner(fit, samples, ofile=None, fixpos=False):
             title_fmt='.3f',
         )
         util.save_ofile(ofile, 'mcmc_corner')
-        # plt.show()
-        plt.close()
     elif fit['model'] == 'bin':
         if fixpos:
             temp = samples.copy()
@@ -960,8 +1004,6 @@ def corner(fit, samples, ofile=None, fixpos=False):
                 title_fmt='.3f',
             )
             util.save_ofile(ofile, 'mcmc_corner')
-            # plt.show()
-            plt.close()
         else:
             if samples.shape[1] > 3:
                 temp = samples.copy()
@@ -978,8 +1020,6 @@ def corner(fit, samples, ofile=None, fixpos=False):
                     title_fmt='.3f',
                 )
                 util.save_ofile(ofile, 'mcmc_corner')
-                # plt.show()
-                plt.close()
             else:
                 temp = samples.copy()
                 temp[:, 0] *= 100.0
@@ -994,8 +1034,6 @@ def corner(fit, samples, ofile=None, fixpos=False):
                     title_fmt='.3f',
                 )
                 util.save_ofile(ofile, 'mcmc_corner')
-                # plt.show()
-                plt.close()
     else:
         temp = samples.copy()
         temp[:, 0] *= 100.0
@@ -1010,11 +1048,20 @@ def corner(fit, samples, ofile=None, fixpos=False):
             title_fmt='.3f',
         )
         util.save_ofile(ofile, 'mcmc_corner')
-        # plt.show()
+
+    if return_fig:
+        return fig
+    else:
         plt.close()
 
 
-def detlim(ffs_absil, ffs_injection, sigma, sep_range, step_size, ofile=None):
+def detlim(ffs_absil,
+           ffs_injection,
+           sigma,
+           sep_range,
+           step_size,
+           ofile=None,
+           return_fig=False):
     """
     Parameters
     ----------
@@ -1116,5 +1163,60 @@ def detlim(ffs_absil, ffs_injection, sigma, sep_range, step_size, ofile=None):
     plt.suptitle('Detection limits (' + str(sigma) + '-$\sigma$)')
     plt.tight_layout()
     util.save_ofile(ofile, 'detlim')
-    # plt.show()
-    plt.close()
+    if return_fig:
+        return fig
+    else:
+        plt.close()
+
+
+def estimate_phase(phase_list,
+                   u_list,
+                   v_list,
+                   model_phase=None,
+                   model_u=None,
+                   model_v=None,
+                   scatter_kwargs=None,
+                   u_comp=None,
+                   v_comp=None,
+                   ofile=None,
+                   return_fig=False):
+
+    fig = plt.figure(figsize=(3.7, 3.))
+
+    # Plot the model only for the first data item
+    if model_phase is not None:
+        # Plot the model phase in the background as image
+        plt.imshow(
+            model_phase, extent=[model_u[0], model_u[-1], model_v[0], model_v[-1]], origin='lower', cmap='PiYG', aspect='auto'
+        )
+        cbar = plt.colorbar()
+        cbar.ax.set_ylabel('Phase (deg)', rotation=270., fontsize=10., labelpad=12.)
+        plt.arrow(0., 0., u_comp, v_comp, head_width=1., head_length=1.,
+                    ls='-', lw=0.7, capstyle='round', facecolor='black')
+
+    for phase, u, v in zip(phase_list, u_list, v_list):
+        # Create scatter plot of phases in the u-v plane. Positive
+        # phase are plotted in orange and negative phases in gray.
+        plt.scatter(u[phase<0.], v[phase<0.], c='none',
+                    s=40.*np.abs(phase[phase<0.]), edgecolor='silver', **scatter_kwargs)
+        plt.scatter(u[phase>0.], v[phase>0.], c='none',
+                    s=40.*phase[phase>0.], edgecolor='tab:orange', **scatter_kwargs)
+
+        # Due to the anti-symmetry of the phases, the colors are
+        # swapped on the mirrored side
+        plt.scatter(-u[phase<0.], -v[phase<0.], c='none',
+                    s=40.*np.abs(phase[phase<0.]), edgecolor='tab:orange', **scatter_kwargs)
+        plt.scatter(-u[phase>0.], -v[phase>0.], c='none',
+                    s=40.*phase[phase>0.], edgecolor='silver', **scatter_kwargs)
+
+    # Update the axes labels and ticks
+    plt.xlabel('$u$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
+    plt.ylabel('$v$ (arcsec$^{-1}$)', fontsize=12., labelpad=0.25)
+    plt.minorticks_on()
+    plt.tight_layout()
+    if (ofile is not None):
+        plt.savefig(ofile+'_phase.pdf')
+    if return_fig:
+        return fig
+    else:
+        plt.close()
